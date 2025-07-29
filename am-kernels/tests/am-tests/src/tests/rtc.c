@@ -12,6 +12,6 @@ void rtc_test() {
     } else {
       printf("%d seconds).\n", sec);
     }
-    sec ++;
+    // sec ++;
   }
 }
