@@ -16,7 +16,7 @@ void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
   
   // // 组合成一个64位的微秒计数值
   // uptime->us = ((uint64_t)hi << 32) | lo;
-  static int first_call = 1;  // 静态变量，只初始化一次
+  static int first_call = 2;  // 静态变量，只初始化一次
   
   if (first_call) {
     printf("未初始化的uptime->us值: %lu\n", uptime->us);
