@@ -1,5 +1,6 @@
 #include <am.h>
 #include <nemu.h>
+#include <stdio.h>
 
 void __am_timer_init() {
 }
@@ -15,7 +16,13 @@ void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
   
   // // 组合成一个64位的微秒计数值
   // uptime->us = ((uint64_t)hi << 32) | lo;
-
+  static int first_call = 1;  // 静态变量，只初始化一次
+  
+  if (first_call) {
+    printf("未初始化的uptime->us值: %lu\n", uptime->us);
+    first_call = 0;  // 更新标志，确保后续调用不再输出
+  }
+  
 }
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
