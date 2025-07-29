@@ -143,7 +143,7 @@ config TRACE_END
 
 config ITRACE
   depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER
-  bool "Enable instruction tracer"
+  bool "Enable itrace"
   default y
 
 config ITRACE_COND
@@ -151,7 +151,27 @@ config ITRACE_COND
   string "Only trace instructions when the condition is true"
   default "true"
 
+config MTRACE
+  depends on TRACE
+  bool "Enable mtrace"
+  default n
+  help
+    Enable mtrace feature to trace memory access.
 
+config FTRACE
+  depends on TRACE
+  bool "Enable ftrace"
+  default n
+  help
+    Enable ftrace feature to trace function call.
+  
+config DTRACE
+  depends on TRACE
+  bool "Enable dtrace"
+  default n
+  help
+    Enable dtrace feature to trace function call.
+    
 config DIFFTEST
   depends on TARGET_NATIVE_ELF
   bool "Enable differential testing"
@@ -215,3 +235,10 @@ config RT_CHECK
   default y
 
 endmenu
+
+config WATCHPOINT
+  bool "Enable watchpoint"
+  default n
+  help
+    Enable watchpoint feature to monitor memory access.
+

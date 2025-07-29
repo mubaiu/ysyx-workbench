@@ -52,12 +52,40 @@ void init_map() {
   p_space = io_space;
 }
 
+void dtrace_read(paddr_t offset_now, IOMap *map_now, paddr_t addr, int len, word_t data) {
+  // 获取设备名称
+  IOMap *map = map_now;
+  const char *dev_name = map ? map->name : "unknown";
+  
+  // 计算设备内偏移量
+  paddr_t offset = offset_now;
+  
+  // 输出跟踪信息
+  printf("\033[1;34m[DTRACE]\033[0m READ  | %-15s | 0x%08x (offset +0x%04x) | 0x%0*lx | %d bytes\n", 
+         dev_name, addr, offset, len * 2, data & (~0UL >> ((4 - len) * 8)), len);
+}
+
+void dtrace_write(paddr_t offset_now, IOMap *map_now, paddr_t addr, int len, word_t data) {
+  // 获取设备名称
+  IOMap *map = map_now;
+  const char *dev_name = map ? map->name : "unknown";
+  
+  // 计算设备内偏移量
+  paddr_t offset = offset_now;
+  
+  // 输出跟踪信息
+  printf("\033[1;32m[DTRACE]\033[0m WRITE | %-15s | 0x%08x (offset +0x%04x) | 0x%0*lx | %d bytes\n", 
+         dev_name, addr, offset, len * 2, data & (~0UL >> ((4 - len) * 8)), len);
+}
+
+
 word_t map_read(paddr_t addr, int len, IOMap *map) {
   assert(len >= 1 && len <= 8);
   check_bound(map, addr);
   paddr_t offset = addr - map->low;
   invoke_callback(map->callback, offset, len, false); // prepare data to read
   word_t ret = host_read(map->space + offset, len);
+  IFDEF(CONFIG_DTRACE, dtrace_read(offset, map, addr, len, ret));
   return ret;
 }
 
@@ -65,6 +93,7 @@ void map_write(paddr_t addr, int len, word_t data, IOMap *map) {
   assert(len >= 1 && len <= 8);
   check_bound(map, addr);
   paddr_t offset = addr - map->low;
+  IFDEF(CONFIG_DTRACE, dtrace_write(offset, map, addr, len, data));
   host_write(map->space + offset, len, data);
   invoke_callback(map->callback, offset, len, true);
 }

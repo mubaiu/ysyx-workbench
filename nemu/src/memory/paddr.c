@@ -24,6 +24,68 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
+#define MAX_NUM 100
+typedef struct mem_log{
+    bool type;
+    paddr_t addr;
+    uint8_t len;
+    word_t data;
+    struct mem_log *next;
+}mem;
+
+enum{
+  READ, 
+  WRITE
+};  
+
+mem memlog[MAX_NUM];
+mem *lognow;
+
+void init_memlog() {
+  lognow = &memlog[MAX_NUM-1];
+  for(int i = 0; i < MAX_NUM; i++){
+    memlog[i].type = READ;
+    memlog[i].addr = 0;
+    memlog[i].len = 0;
+    memlog[i].data = 0;
+    memlog[i].next = &memlog[(i+1) % MAX_NUM];
+  }
+}
+
+void read_log(paddr_t addr, int len, word_t data) {
+  lognow->next->type = READ;
+  lognow->next->addr = addr;
+  lognow->next->len = len;
+  lognow->next->data = data;
+  lognow = lognow->next;
+}
+
+void write_log(paddr_t addr, int len, word_t data) {
+  lognow->next->type = WRITE;
+  lognow->next->addr = addr;
+  lognow->next->len = len;
+  lognow->next->data = data;
+  lognow = lognow->next;
+}
+
+void print_log() {
+  char printflog[MAX_NUM];
+  char *ptr = printflog;
+  mem *pmem = lognow->next;
+  for(int i = 0; i < MAX_NUM; i++)
+  {
+    if(pmem->addr == 0){
+      pmem = pmem->next;
+      continue;
+    }
+    ptr += sprintf(ptr, "%s%s at " FMT_PADDR ", len : %d, data : " FMT_PADDR , pmem == lognow ? "--->" : "    " , pmem->type==WRITE ? "WRITE" : "READ", pmem->addr, pmem->len, pmem->data);
+    pmem = pmem->next;
+    puts(printflog);
+    ptr = printflog;
+  }
+}
+
+
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
 
@@ -51,14 +113,28 @@ void init_mem() {
 }
 
 word_t paddr_read(paddr_t addr, int len) {
-  if (likely(in_pmem(addr))) return pmem_read(addr, len);
+  if (likely(in_pmem(addr)))
+  {
+    uint32_t data = pmem_read(addr, len);
+    #ifdef CONFIG_MTRACE 
+      read_log(addr, len, data);
+    #endif
+    return data;
+  }
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
+  
   return 0;
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  if (likely(in_pmem(addr))) { pmem_write(addr, len, data); return; }
+  if (likely(in_pmem(addr))) { 
+    #ifdef CONFIG_MTRACE 
+      write_log(addr, len, data);
+    #endif
+    pmem_write(addr, len, data); return; 
+  }
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
+  
 }

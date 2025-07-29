@@ -1,0 +1,34 @@
+/home/mubai/ysyx-workbench/abstract-machine/fceux-am/build/native/src/fceu.o: \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/fceu.cpp \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/config.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/types.h \
+ /home/mubai/ysyx-workbench/abstract-machine/klib/include/klib.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/am.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/arch/native.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/amdev.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/x6502.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/x6502struct.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/fceu.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/git.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/utils/md5.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/utils/../types.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/utils/valuearray.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/ppu.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/sound.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/file.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/emufile.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/utils/memory.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/cart.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/ines.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/palette.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/state.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/video.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/input.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/sdl.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/main.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../driver.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../types.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../git.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../file.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/dface.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/input.h

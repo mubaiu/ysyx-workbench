@@ -20,10 +20,13 @@
 #include "sdb.h"
 
 static int is_batch_mode = false;
-
+void print_log();
 void init_regex();
 void init_wp_pool();
-
+void wp_set(char *args, int32_t res);
+void wp_remove(int no);
+void wp_difftest();
+void info_watchpoint();
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
   static char *line_read = NULL;
@@ -49,7 +52,115 @@ static int cmd_c(char *args) {
 
 
 static int cmd_q(char *args) {
+  nemu_state.state = NEMU_QUIT;
   return -1;
+}
+
+static int cmd_info(char *args) {
+  if (args == NULL) {
+    printf("\"r\"-Print register status  or  \"w\"-Print watchpoint information\n");
+  }
+  else if (strcmp(args, "r") == 0) {
+    isa_reg_display();
+  }
+  #ifdef CONFIG_WATCHPOINT
+  else if (strcmp(args, "w") == 0) {
+    info_watchpoint();
+  }
+  #endif
+  return 0;
+}
+
+static int cmd_p(char *args) {
+  bool success = true;
+  uint32_t res = expr(args, &success);
+  if (!success) printf("Invalid expression\n");
+  else  if(strchr(args,'$') != NULL)
+  {
+    printf("Result: 0x%x\n", res);
+  }
+  else
+  {
+    printf("Result: %d\n", res);
+  }
+  return 0;
+}
+
+
+extern int paddr_read(int addr, int len);
+
+static int cmd_x(char *args) {
+  if (!args) {
+        printf("Usage: x LEN EXPR\n");
+        return 0;
+    }
+  char *len_str = strtok(args, " ");
+  int len = atoi(len_str);
+  char *expr_str = strtok(NULL, "");
+  if (!expr_str) {
+        printf("Missing expression\n");
+        return 0;
+  }
+  bool success = true;
+  uint32_t addr = expr(expr_str, &success);
+  if (!success) {
+      printf("Invalid address expression\n");
+      return 0;
+  }
+
+  for ( int i = 0; i < len; i++)
+  {
+    printf("addr: 0x%08x  value: 0x%08x\n",addr+i*4, paddr_read(addr+i*4,4));
+  }
+  #ifdef CONFIG_
+    print_log();
+  #endif
+  return 0;
+}
+
+static int cmd_w(char *args) {
+  #ifdef  CONFIG_WATCHPOINT
+  if(!args)
+  {
+    printf("Usage: w EXPR\n");
+    return 0;
+  }
+  bool success;
+  int32_t res = expr(args, &success);
+  if (!success) {
+    printf("Invalid expression\n");
+    return 0;
+  }
+  else
+  {
+    wp_set(args, res);
+  }
+  #else
+  printf("Watchpoint has been closed.\n");
+  #endif
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  #ifdef  CONFIG_WATCHPOINT
+  char *arg = strtok(NULL, " ");
+  if(!arg) {
+    printf("Usage: dN\n");
+    return 0;
+  }
+  int no = strtol(arg, NULL, 10);
+  wp_remove(no);
+  #endif
+  return 0;
+}
+
+static int cmd_si(char *args) {
+  int n;
+  if (args == NULL) n=1;
+  else n=atoi(args);
+  cpu_exec(n);
+  printf("Step excute N=%d\n",n);
+  return 0;
 }
 
 static int cmd_help(char *args);
@@ -62,7 +173,12 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  { "si", "Single step the execution of the program", cmd_si},
+  { "info", "Display reg about the system", cmd_info },
+  {"x", "scan memory", cmd_x},
+  {"p", "print the value of an expression", cmd_p},
+  {"d", "delete a watchpoint", cmd_d},
+  {"w", "set a watchpoint", cmd_w}
   /* TODO: Add more commands */
 
 };

@@ -21,6 +21,7 @@
 #include <string.h>
 
 // this should be enough
+typedef uint32_t word_t;
 static char buf[65536] = {};
 static char code_buf[65536 + 128] = {}; // a little larger than `buf`
 static char *code_format =
@@ -31,14 +32,74 @@ static char *code_format =
 "  return 0; "
 "}";
 
-static void gen_rand_expr() {
-  buf[0] = '\0';
+
+static void gen_num(){
+  word_t num = (rand() % 10) + 1;
+  char num_str[2];
+  snprintf(num_str, sizeof(num_str), "%d", num);
+  if(strlen(buf) + strlen(num_str) < sizeof(buf)-1){
+    strcat(buf, num_str);
+  }
+  else{return;}
 }
+
+static void gen_rand_op(){
+  char ops[] = {'+', '-', '*', '/'};
+  word_t op_index = rand() % 4;
+  char op_str[2] = {ops[op_index], '\0'};
+  if(strlen(buf) + strlen(op_str) < sizeof(buf)){
+    strcat(buf, op_str);
+  }
+  else{return;}
+}
+
+
+
+static void gen_rand_expr() {
+    buf[0] = '\0';
+    switch (rand() % 3) {
+  case 0:
+    if(buf[strlen(buf) - 1] != ')')
+    {
+      gen_num();
+      gen_rand_op();
+      gen_num();
+      gen_rand_expr();
+    }
+    break;
+  case 1:
+    if (strchr("+-*/", buf[strlen(buf) - 1]))
+    {
+      strcat(buf, "(");
+      gen_num();
+      gen_rand_op();
+      gen_num();
+      strcat(buf, ")");
+      gen_rand_expr();
+    }
+    else
+    {
+      gen_rand_op();
+      gen_num();
+      gen_rand_expr();
+    }
+    break;  
+  default:
+    if(buf[strlen(buf) - 1] != ')'){
+      gen_num();
+      gen_rand_op();
+      gen_num();
+      break;
+    }
+  }
+}
+
+
 
 int main(int argc, char *argv[]) {
   int seed = time(0);
   srand(seed);
-  int loop = 1;
+  int loop = *argv[1];
   if (argc > 1) {
     sscanf(argv[1], "%d", &loop);
   }
@@ -52,6 +113,18 @@ int main(int argc, char *argv[]) {
     assert(fp != NULL);
     fputs(code_buf, fp);
     fclose(fp);
+    int j = 0;
+    int len = strlen(buf);
+    if (len > 1){
+      for(int i = 0; i < len-1; i++){
+        if (buf[i] == '/' && (buf[i + 1] == '0' || (buf[i + 1] == '('&& buf[i + 2] == '0'))){
+              j = 1; 
+        }
+        if (buf[i] == '*' && (buf[i + 1] == '0' || (buf[i + 1] == '('&& buf[i + 2] == '0'))) j = 1;
+        if (buf[i] == '/' && (buf[i - 1] < buf[i + 1])) j = 1;
+      }
+    }
+    if (j == 1){continue;}
 
     int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
     if (ret != 0) continue;

@@ -1,0 +1,27 @@
+/home/mubai/ysyx-workbench/abstract-machine/fceux-am/build/native/src/drivers/sdl/sdl-video.o: \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/sdl-video.cpp \
+ /home/mubai/ysyx-workbench/abstract-machine/klib/include/klib-macros.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/sdl.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/main.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../driver.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../types.h \
+ /home/mubai/ysyx-workbench/abstract-machine/klib/include/klib.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/am.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/arch/native.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/amdev.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../git.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../utils/md5.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../utils/../types.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../utils/valuearray.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../file.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../emufile.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/dface.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/input.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../common/vidblit.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../fceu.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../version.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../video.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../utils/memory.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/sdl-icon.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/sdl-video.h \
+ /home/mubai/ysyx-workbench/abstract-machine/fceux-am/src/drivers/sdl/../../config.h

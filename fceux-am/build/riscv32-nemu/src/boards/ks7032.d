@@ -1,0 +1,22 @@
+/home/mubai/ysyx-workbench/fceux-am/build/riscv32-nemu/src/boards/ks7032.o: \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/ks7032.cpp \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/mapinc.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../types.h \
+ /home/mubai/ysyx-workbench/abstract-machine/klib/include/klib.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/am.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/arch/riscv.h \
+ /home/mubai/ysyx-workbench/abstract-machine/am/include/amdev.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../utils/memory.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../x6502.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../x6502struct.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../fceu.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../types.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../git.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../utils/md5.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../utils/../types.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../utils/valuearray.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../ppu.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../sound.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../state.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../cart.h \
+ /home/mubai/ysyx-workbench/fceux-am/src/boards/../unif.h

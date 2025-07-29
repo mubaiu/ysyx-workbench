@@ -24,7 +24,11 @@
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
-
+#define MAX_iring 10
+void wp_difftest();
+void print_log();
+void free_symbol();
+void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
@@ -32,19 +36,93 @@ static bool g_print_step = false;
 
 void device_update();
 
+typedef struct ItraceNode
+{
+  paddr_t pc;
+  uint32_t inst;
+  struct ItraceNode* next;
+}Node;
+
+Node iringbuf[MAX_iring];
+Node *iringbufnow;
+
+
+void init_iringbuf()
+{
+  iringbufnow = &iringbuf[MAX_iring-1];
+  for(int i = 0; i < MAX_iring; i++)
+  {
+    iringbuf[i].pc = 0;
+    iringbuf[i].inst = 0;
+    iringbuf[i].next = &iringbuf[(i+1) % MAX_iring];
+  }
+}
+
+void push_inst(paddr_t pc, uint32_t inst)
+{
+  iringbufnow->next->pc = pc;
+  iringbufnow->next->inst = inst;
+  iringbufnow = iringbufnow->next;
+}
+
+void printf_iringbuf()
+{
+  char printfbuf[128];
+  char *p = printfbuf;
+  Node *pnode = iringbufnow->next;
+  for(int i = 0; i < MAX_iring; i++)
+  {
+    if (pnode->pc == 0){
+    pnode = pnode->next;
+    continue;
+    }
+    p += sprintf(p, "%sPC: " FMT_PADDR ": ", pnode == iringbufnow ? "--->" : "    ", pnode->pc);
+    for(int j = 3; j >= 0; j--){
+      p += sprintf(p, "%02x ", ((uint8_t*)&pnode->inst)[j]);
+    }
+    int ilen_max = MUXDEF(CONFIG_ISA_x86, 8, 4);
+    int space_len = ilen_max - 4;
+    if (space_len < 0) space_len = 0;
+    space_len = space_len * 3 + 1;
+    memset(p, ' ', space_len);
+    p += space_len;
+
+    #ifdef CONFIG_ITRACE
+    disassemble(p, printfbuf + sizeof(printfbuf) - p,
+        pnode->pc, (uint8_t *)&pnode->inst, 4);
+        pnode = pnode->next;
+        puts(printfbuf);
+        p = printfbuf;
+    #endif
+  }
+}
+
+
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+  IFDEF(CONFIG_WATCHPOINT, wp_difftest());
 }
+
+
+
+
+
+
+
 
 static void exec_once(Decode *s, vaddr_t pc) {
   s->pc = pc;
   s->snpc = pc;
-  isa_exec_once(s);
+  // printf("get_pc:%x\n",s->pc);
+  
+  isa_exec_once(s); //  取指
+  // printf("get_dnpc:%x\n",s->dnpc);
   cpu.pc = s->dnpc;
+  
 #ifdef CONFIG_ITRACE
   char *p = s->logbuf;
   p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
@@ -65,17 +143,20 @@ static void exec_once(Decode *s, vaddr_t pc) {
   memset(p, ' ', space_len);
   p += space_len;
 
-  void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
+
   disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
       MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
+      push_inst(s->pc, s->isa.inst);
 #endif
 }
 
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
+    
     exec_once(&s, cpu.pc);
     g_nr_guest_inst ++;
+    // isa_reg_display();
     trace_and_difftest(&s, cpu.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
@@ -122,6 +203,10 @@ void cpu_exec(uint64_t n) {
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           nemu_state.halt_pc);
+          IFDEF(CONFIG_ITRACE, printf_iringbuf());
+          IFDEF(CONFIG_MTRACE, print_log());
+          
+          IFDEF(CONFIG_FTRACE, free_symbol());
       // fall through
     case NEMU_QUIT: statistic();
   }
