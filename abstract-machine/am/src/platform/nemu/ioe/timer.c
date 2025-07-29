@@ -18,10 +18,27 @@ void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
 }
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
-  rtc->second = 0;
-  rtc->minute = 0;
-  rtc->hour   = 0;
-  rtc->day    = 0;
-  rtc->month  = 0;
-  rtc->year   = 1900;
+  // 获取系统运行时间（微秒）
+  AM_TIMER_UPTIME_T uptime = {};
+  __am_timer_uptime(&uptime);
+  
+  // 将微秒转换为秒
+  uint64_t total_seconds = uptime.us / 1000000;
+  
+  // 设置一个基准时间（例如：2023年1月1日00:00:00）
+  uint32_t base_year = 2023;
+  
+  // 计算当前时间
+  // 每分钟60秒，每小时60分钟，每天24小时
+  rtc->second = total_seconds % 60;
+  rtc->minute = (total_seconds / 60) % 60;
+  rtc->hour   = (total_seconds / 3600) % 24;
+  
+  // 简化的日期计算（不考虑闰年和月份天数差异）
+  uint64_t days = total_seconds / (24 * 3600);
+  
+  // 假设平均每月30天
+  rtc->day   = (days % 30) + 1;  // 日期从1开始
+  rtc->month = ((days / 30) % 12) + 1;  // 月份从1开始
+  rtc->year  = base_year + (days / 365);  // 简化年份计算
 }
