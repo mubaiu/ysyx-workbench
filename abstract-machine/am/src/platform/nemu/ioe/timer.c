@@ -15,7 +15,7 @@ void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
   
   // // 组合成一个64位的微秒计数值
   // uptime->us = ((uint64_t)hi << 32) | lo;
-  
+  uptime->us = 50000000;
 }
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {
