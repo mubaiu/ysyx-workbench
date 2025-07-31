@@ -1,5 +1,5 @@
 [1;34m[../csrc/utils/log.c:15 init_log] Log is written to /home/mubai/ysyx-workbench/npc/mynpc/build/npc-log.txt[0m
-[1;34m[../csrc/memory/paddr.c:119 init_mem] physical memory area [0x80000000, 0x87ffffff][0m
+[1;34m[../csrc/memory/paddr.c:120 init_mem] physical memory area [0x80000000, 0x87ffffff][0m
 [1;34m[../csrc/monitor.c:211 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/kernels/hello/build/hello-riscv32e-npc.bin, size = 276[0m
 [1;34m[../csrc/difftest/dut.c:70 init_difftest] Differential testing: [1;32mON[0m[0m
 [1;34m[../csrc/difftest/dut.c:71 init_difftest] The result of every instruction will be compared with /home/mubai/ysyx-workbench/nemu/build/riscv32-nemu-interpreter-so. This will help you a lot for debugging, but also significantly reduce the performance. If it is not necessary, you can turn it off in menuconfig.[0m
@@ -338,6 +338,6 @@
 0x8000007c: 00 41 24 83 lw	s1, 4(sp)
 0x80000080: 01 01 01 13 addi	sp, sp, 0x10
 [1;34m[../csrc/cpu/cpu-exec.c:211 cpu_exec] npc: [1;32mHIT GOOD TRAP[0m at pc = 0x800000a0[0m
-[1;34m[../csrc/cpu/cpu-exec.c:178 statistic] host time spent = 1,171 us[0m
+[1;34m[../csrc/cpu/cpu-exec.c:178 statistic] host time spent = 1,197 us[0m
 [1;34m[../csrc/cpu/cpu-exec.c:179 statistic] total guest instructions = 655[0m
-[1;34m[../csrc/cpu/cpu-exec.c:180 statistic] simulation frequency = 559,350 inst/s[0m
+[1;34m[../csrc/cpu/cpu-exec.c:180 statistic] simulation frequency = 547,201 inst/s[0m
