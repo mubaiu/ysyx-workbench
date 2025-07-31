@@ -22,7 +22,7 @@
 
 # define DEVICE_BASE 0xa0000000
 #define RTC_ADDR        (DEVICE_BASE + 0x0000048)
-#define UART_ADDR       (DEVICE_BASE + 0x00003F8)
+#define SERIAL_PORT     (DEVICE_BASE + 0x00003f8)
 
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
@@ -155,7 +155,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   }
   
   // 处理串口输出
-  if(addr == UART_ADDR) {
+  if(addr == SERIAL_PORT) {
     putchar(data);
     // fflush(stdout); // 确保立即显示
     return;
