@@ -153,14 +153,15 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     pmem_write(addr, len, data); return; 
   }
   
-  // 处理串口输出
-  if((addr & ~0x7) == UART_ADDR) {
-    // 只处理数据寄存器(偏移量0)的写入
-    if((addr & 0x7) == 0) {
-      putchar((char)data);
-      fflush(stdout); // 确保立即显示
-    }
-    return;
+  // 在paddr_write函数开头添加
+  static FILE *log_file = NULL;
+  if (!log_file) {
+    log_file = fopen("memory_access.log", "w");
+  }
+  if (log_file) {
+    fprintf(log_file, "WRITE: addr=0x%lx, len=%d, data=0x%lx\n", 
+            (unsigned long)addr, len, (unsigned long)data);
+    fflush(log_file);
   }
   
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
