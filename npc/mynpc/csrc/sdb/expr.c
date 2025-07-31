@@ -20,7 +20,7 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
-word_t paddr_read(paddr_t addr, int len);
+extern "C" word_t paddr_read(paddr_t addr, int len);
 enum {
   TK_NOTYPE = 256, TK_EQ, REG, HEX, NUM,
   NEQ, AND, OR, DEREF, NEG, LE_EQ, GR_EQ, PC

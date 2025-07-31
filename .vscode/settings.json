@@ -2,6 +2,7 @@
     "files.associations": {
         "cstdlib": "c",
         "am.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "regex.h": "c"
     }
 }
