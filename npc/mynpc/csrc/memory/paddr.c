@@ -18,7 +18,7 @@
 #include <device/mmio.h>
 #include <isa.h>
 #include <stdio.h>
-#include <time.h>
+
 #include <stdint.h>
 #include <sys/time.h>
 
