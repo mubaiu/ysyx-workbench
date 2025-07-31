@@ -140,7 +140,7 @@ word_t paddr_read(paddr_t addr, int len) {
       return (word_t)((rtc_val >> 32) & 0xffffffff);
     }
   }
-  IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
+  // IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   
   return 0;
@@ -161,6 +161,6 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     return;
   }
   
-  IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
+  // IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }
