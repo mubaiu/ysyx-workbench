@@ -153,7 +153,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     #endif
     pmem_write(addr, len, data); return; 
   }
-   int cnt = 0;
+  static int cnt = 0;
   // 处理串口输出
   if(addr == SERIAL_PORT) {
     if(cnt==2){
