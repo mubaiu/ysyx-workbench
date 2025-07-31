@@ -147,13 +147,6 @@ word_t paddr_read(paddr_t addr, int len) {
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
-  // 处理串口输出
-  if(addr == SERIAL_PORT) {
-    printf("----------------------\n");
-    putchar((char)data);
-    fflush(stdout); // 确保立即显示
-    return;
-  }
   if (likely(in_pmem(addr))) { 
     #ifdef CONFIG_MTRACE 
       write_log(addr, len, data);
@@ -161,7 +154,13 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     pmem_write(addr, len, data); return; 
   }
   
-  
+  // 处理串口输出
+  if(addr == SERIAL_PORT) {
+    printf("----------------------\n");
+    putchar((char)data);
+    fflush(stdout); // 确保立即显示
+    return;
+  }
   
   // IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);

@@ -13,6 +13,8 @@
         "stdio.h": "c",
         "isa.h": "c",
         "time.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "map.h": "c",
+        "utils.h": "c"
     }
 }
