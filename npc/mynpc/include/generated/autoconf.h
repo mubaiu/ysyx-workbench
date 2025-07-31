@@ -20,7 +20,7 @@
 #define CONFIG_ENGINE_INTERPRETER 1
 #define CONFIG_CC_OPT "-O2"
 #define CONFIG_RT_CHECK 1
-#define CONFIG_ITRACE_COND "true"
+// #define CONFIG_ITRACE_COND "true"
 #define CONFIG_CC "gcc"
 #define CONFIG_DIFFTEST_REF_PATH "tools/spike-diff"
 #define CONFIG_CC_DEBUG 1
