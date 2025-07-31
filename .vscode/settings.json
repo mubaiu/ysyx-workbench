@@ -3,6 +3,9 @@
         "cstdlib": "c",
         "am.h": "c",
         "stdlib.h": "c",
-        "regex.h": "c"
+        "regex.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c"
     }
 }
