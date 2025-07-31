@@ -132,7 +132,6 @@ word_t paddr_read(paddr_t addr, int len) {
   if(addr == RTC_ADDR || addr == RTC_ADDR + 4) {
     // 获取当前时间戳
     uint64_t rtc_val = get_time();
-    printf("rtc_val = %lu\n", rtc_val);
     if(addr == RTC_ADDR) {
       // 返回低32位
       return (word_t)rtc_val;
@@ -154,7 +153,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     #endif
     pmem_write(addr, len, data); return; 
   }
-  
+  printf("---------------------------\n");
   // 处理串口输出
   if(addr == SERIAL_PORT) {
     putchar((char)data);
