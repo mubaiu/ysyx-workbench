@@ -153,14 +153,14 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     pmem_write(addr, len, data); return; 
   }
   
+  // 处理串口输出
   if((addr & ~0x7) == UART_ADDR) {
-    // UART状态寄存器通常在偏移量5
-    if((addr & 0x7) == 5) {
-      // bit 5 (发送就绪) 和 bit 0 (接收就绪) 置1
-      return 0x21;
+    // 只处理数据寄存器(偏移量0)的写入
+    if((addr & 0x7) == 0) {
+      putchar((char)data);
+      fflush(stdout); // 确保立即显示
     }
-    // 数据端口在偏移量0
-    return 0;
+    return;
   }
   
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
