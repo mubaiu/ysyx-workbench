@@ -1187,9 +1187,9 @@ Disassembly of section .text:
 80001194:	00008067          	ret
 
 80001198 <__am_timer_uptime>:
-80001198:	2a05f737          	lui	a4,0x2a05f
-8000119c:	20070713          	addi	a4,a4,512 # 2a05f200 <_entry_offset+0x2a05f200>
-800011a0:	00100793          	li	a5,1
+80001198:	456397b7          	lui	a5,0x45639
+8000119c:	44f40737          	lui	a4,0x44f40
+800011a0:	18278793          	addi	a5,a5,386 # 45639182 <_entry_offset+0x45639182>
 800011a4:	00e52023          	sw	a4,0(a0)
 800011a8:	00f52223          	sw	a5,4(a0)
 800011ac:	00008067          	ret
