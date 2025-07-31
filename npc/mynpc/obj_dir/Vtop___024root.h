@@ -51,10 +51,10 @@ class Vtop___024root final : public VerilatedModule {
     IData/*31:0*/ top__DOT__lsu__DOT__temp_data;
     IData/*31:0*/ __Vfunc_top__DOT__ifu__DOT__intake__2__Vfuncout;
     IData/*31:0*/ __Vfunc_top__DOT__ifu__DOT__intake__3__Vfuncout;
-    IData/*31:0*/ __Vfunc_top__DOT__lsu__DOT__vaddr_read__10__Vfuncout;
-    IData/*31:0*/ __Vfunc_top__DOT__lsu__DOT__vaddr_read__11__Vfuncout;
-    IData/*31:0*/ __Vfunc_top__DOT__lsu__DOT__vaddr_read__12__Vfuncout;
-    IData/*31:0*/ __Vfunc_top__DOT__lsu__DOT__vaddr_read__13__Vfuncout;
+    IData/*31:0*/ __Vfunc_top__DOT__lsu__DOT__paddr_read__10__Vfuncout;
+    IData/*31:0*/ __Vfunc_top__DOT__lsu__DOT__paddr_read__11__Vfuncout;
+    IData/*31:0*/ __Vfunc_top__DOT__lsu__DOT__paddr_read__12__Vfuncout;
+    IData/*31:0*/ __Vfunc_top__DOT__lsu__DOT__paddr_read__13__Vfuncout;
     IData/*31:0*/ __VstlIterCount;
     IData/*31:0*/ __VicoIterCount;
     IData/*31:0*/ __VactIterCount;

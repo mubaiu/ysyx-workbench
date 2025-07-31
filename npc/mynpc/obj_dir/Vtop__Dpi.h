@@ -22,6 +22,10 @@ extern "C" {
     extern int intake(int pc);
     // DPI import at vsrc/IDU.v:31:30
     extern void invalid_inst(int thispc);
+    // DPI import at vsrc/LSU.v:21:33
+    extern int paddr_read(int addr, int len);
+    // DPI import at vsrc/LSU.v:20:34
+    extern void paddr_write(int addr, int len, int data);
     // DPI import at vsrc/top.v:131:30
     extern void set_callfunc();
     // DPI import at vsrc/IFU.v:18:34
@@ -34,10 +38,6 @@ extern "C" {
     extern void set_retfunc();
     // DPI import at vsrc/IFU.v:17:34
     extern void set_snpc(int pc);
-    // DPI import at vsrc/LSU.v:21:33
-    extern int vaddr_read(int addr, int len);
-    // DPI import at vsrc/LSU.v:20:34
-    extern void vaddr_write(int addr, int len, int data);
 
 #ifdef __cplusplus
 }
