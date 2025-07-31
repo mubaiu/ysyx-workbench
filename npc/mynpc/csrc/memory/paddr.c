@@ -18,6 +18,7 @@
 #include <device/mmio.h>
 #include <isa.h>
 #include <time.h>
+#include <stdio.h>
 
 # define DEVICE_BASE 0xa0000000
 #define RTC_ADDR        (DEVICE_BASE + 0x0000048)
