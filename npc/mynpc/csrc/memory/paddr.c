@@ -139,6 +139,7 @@ word_t paddr_read(paddr_t addr, int len) {
       // 返回高32位
       return (word_t)(rtc_val >> 32);
     }
+    printf("----------------------------------------\n");
   }
   // IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
