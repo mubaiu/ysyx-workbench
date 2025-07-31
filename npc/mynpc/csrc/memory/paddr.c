@@ -155,7 +155,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   
   // 处理串口输出
   if(addr == UART_ADDR) {
-    putch((char)data);
+    putc((char)data);
     fflush(stdout); // 确保立即显示
     return;
   }
