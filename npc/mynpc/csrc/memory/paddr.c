@@ -15,12 +15,12 @@
 
 #include <memory/host.h>
 #include <memory/paddr.h>
-#include <device/mmio.h>
+#include <device/mmio.h>0x0000048
 #include <isa.h>
 #include <time.h>
 #include <stdio.h>
 
-# define DEVICE_BASE 0xa0000000
+#define DEVICE_BASE 0xa0000000
 #define RTC_ADDR        (DEVICE_BASE + 0x0000048)
 #define SERIAL_PORT     (DEVICE_BASE + 0x00003f8)
 
@@ -141,7 +141,7 @@ word_t paddr_read(paddr_t addr, int len) {
     }
   }
   // IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
-  // out_of_bound(addr);
+  out_of_bound(addr);
   
   return 0;
 }
@@ -153,7 +153,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     #endif
     pmem_write(addr, len, data); return; 
   }
-  printf("---------------------------\n");
+  
   // 处理串口输出
   if(addr == SERIAL_PORT) {
     putchar((char)data);
@@ -162,5 +162,5 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   }
   
   // IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
-  // out_of_bound(addr);
+  out_of_bound(addr);
 }
