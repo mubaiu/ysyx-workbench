@@ -154,9 +154,13 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   }
   
   // 处理串口输出
-  if(addr == UART_ADDR) {
-    putchar((char)data);
-    fflush(stdout); // 确保立即显示
+  if((addr & ~0x7UL) == UART_ADDR) {
+    // 只处理数据寄存器的写入 (通常是偏移量0)
+    if((addr & 0x7) == 0) {
+      putchar((char)data);
+      fflush(stdout); // 确保立即显示
+    }
+    // 可以添加其他UART寄存器的处理
     return;
   }
   
