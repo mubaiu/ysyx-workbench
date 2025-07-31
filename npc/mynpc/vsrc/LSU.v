@@ -17,8 +17,8 @@ module LSU(
     output wire [31:0] ram_wdata
 );
 
-    import "DPI-C" function void vaddr_write(input int addr, input int len, input int data);
-    import "DPI-C" function int vaddr_read(input int addr, input int len);
+    import "DPI-C" function void paddr_write(input int addr, input int len, input int data);
+    import "DPI-C" function int paddr_read(input int addr, input int len);
 
     // RAM控制信号
     assign ram_we = mem_write;
@@ -33,10 +33,10 @@ module LSU(
             temp_data = 32'h0; // 默认值
             case (funct3)
                 3'b100: begin
-                    load_data = vaddr_read(addr, 1);   //lbu
+                    load_data = paddr_read(addr, 1);   //lbu
                 end
                 3'b101: begin
-                    load_data = vaddr_read(addr, 2);   //lhu
+                    load_data = paddr_read(addr, 2);   //lhu
                 end
                 3'b001: begin
                     temp_data = vaddr_read(addr, 2);

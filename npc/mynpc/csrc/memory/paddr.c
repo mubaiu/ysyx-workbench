@@ -120,7 +120,7 @@ void init_mem() {
   Log("physical memory area [" FMT_PADDR ", " FMT_PADDR "]", PMEM_LEFT, PMEM_RIGHT);
 }
 
-word_t paddr_read(paddr_t addr, int len) {
+extern "C" word_t paddr_read(paddr_t addr, int len) {
   if (likely(in_pmem(addr)))
   {
     word_t data = pmem_read(addr, len);
@@ -146,7 +146,7 @@ word_t paddr_read(paddr_t addr, int len) {
   return 0;
 }
 
-void paddr_write(paddr_t addr, int len, word_t data) {
+extern "C" void paddr_write(paddr_t addr, int len, word_t data) {
   if (likely(in_pmem(addr))) { 
     #ifdef CONFIG_MTRACE 
       write_log(addr, len, data);
@@ -157,7 +157,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   // 处理串口输出
   if(addr == SERIAL_PORT) {
     putchar(data);
-    // fflush(stdout); // 确保立即显示
+    fflush(stdout); // 确保立即显示
     return;
   }
   
