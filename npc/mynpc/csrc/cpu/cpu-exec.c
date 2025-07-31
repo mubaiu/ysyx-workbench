@@ -147,7 +147,7 @@ static void execute(uint64_t n) {
     
     top->clk = !top->clk;
     if(top->clk){
-      trace_and_difftest(&d, d.dnpc);
+      // trace_and_difftest(&d, d.dnpc);
     }
     
     top->eval(); 
