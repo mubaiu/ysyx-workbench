@@ -17,6 +17,12 @@
 #include <memory/paddr.h>
 #include <device/mmio.h>
 #include <isa.h>
+#include <time.h>
+#include <stdio.h>
+
+#define DEVICE_BASE 0xa0000000
+#define RTC_ADDR        (DEVICE_BASE + 0x0000048)
+#define SERIAL_PORT     (DEVICE_BASE + 0x00003f8)
 
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
@@ -123,7 +129,18 @@ word_t paddr_read(paddr_t addr, int len) {
     #endif
     return data;
   }
-  IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
+  if(addr == RTC_ADDR || addr == RTC_ADDR + 4) {
+    // 获取当前时间戳
+    uint64_t rtc_val = get_time();
+    if(addr == RTC_ADDR) {
+      // 返回低32位
+      return (word_t)rtc_val;
+    } else {
+      // 返回高32位
+      return (word_t)(rtc_val >> 32);
+    }
+  }
+  // IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   
   return 0;
@@ -136,7 +153,19 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     #endif
     pmem_write(addr, len, data); return; 
   }
-  IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
-  out_of_bound(addr);
+  static int cnt = 0;
+  // 处理串口输出
+  if(addr == SERIAL_PORT) {
+    if(cnt==2){
+    cnt = 0;
+    putchar((char)data);
+    // fflush(stdout); // 确保立即显示
+    return;
+    }
+    cnt++;
+    return;
+  }
   
+  // IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
+  out_of_bound(addr);
 }

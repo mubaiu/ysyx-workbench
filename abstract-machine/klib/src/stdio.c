@@ -9,16 +9,13 @@
 
 
 
-// int fputs(const char *str, FILE *stream) {
-//     if (stream == stdout) {
-//         // 实现将字符串写入标准输出的方法
-//         while (*str) {
-//             putch(*str++); // 自定义或直接实现 putchar
-//         }
-//         return 0; // 成功返回 0
-//     }
-//     return -1; // 错误
+
+// int putchar(int c) {
+//   putch((char)c);
+//   return c & 0xff;  // 返回写入的字符
 // }
+
+
 
 
 int printf(const char *fmt, ...) {

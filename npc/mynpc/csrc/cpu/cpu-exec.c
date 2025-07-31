@@ -146,9 +146,11 @@ static void execute(uint64_t n) {
     g_nr_guest_inst ++;
     
     top->clk = !top->clk;
+    #ifdef CONFIG_DIFFTEST
     if(top->clk){
       trace_and_difftest(&d, d.dnpc);
     }
+    #endif
     
     top->eval(); 
     
