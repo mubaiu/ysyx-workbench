@@ -131,13 +131,13 @@ word_t paddr_read(paddr_t addr, int len) {
   }
   if(addr == RTC_ADDR || addr == RTC_ADDR + 4) {
     // 获取当前时间戳
-    uint64_t rtc_val = (uint64_t)get_time();
+    uint64_t rtc_val = get_time();
     if(addr == RTC_ADDR) {
       // 返回低32位
       return (word_t)rtc_val;
     } else {
       // 返回高32位
-      return (word_t)rtc_val;
+      return (word_t)rtc_val >> 32;
     }
   }
   // IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
@@ -156,8 +156,8 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   
   // 处理串口输出
   if(addr == SERIAL_PORT) {
-    printf("%u",data);
-    // fflush(stdout); // 确保立即显示
+    putchar((char)data);
+    fflush(stdout); // 确保立即显示
     return;
   }
   
