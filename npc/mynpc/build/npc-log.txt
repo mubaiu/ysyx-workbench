@@ -5,10 +5,10 @@
 [1;34m[../csrc/difftest/dut.c:71 init_difftest] The result of every instruction will be compared with /home/mubai/ysyx-workbench/nemu/build/riscv32-nemu-interpreter-so. This will help you a lot for debugging, but also significantly reduce the performance. If it is not necessary, you can turn it off in menuconfig.[0m
 [1;34m[../csrc/monitor.c:19 welcome] Trace: [1;32mON[0m[0m
 [1;34m[../csrc/monitor.c:20 welcome] Itrace: [1;32mON[0m[0m
-[1;34m[../csrc/monitor.c:21 welcome] Ftrace: [1;31mOFF[0m[0m
+[1;34m[../csrc/monitor.c:21 welcome] Ftrace: [1;32mON[0m[0m
 [1;34m[../csrc/monitor.c:22 welcome] Mtrace: [1;31mOFF[0m[0m
 [1;34m[../csrc/monitor.c:24 welcome] If trace is enabled, a log file will be generated to record the trace. This may lead to a large log file. If it is not necessary, you can disable it in menuconfig[0m
-[1;34m[../csrc/monitor.c:27 welcome] Build time: 10:46:08, Jul 31 2025[0m
+[1;34m[../csrc/monitor.c:27 welcome] Build time: 11:00:38, Jul 31 2025[0m
 0x80000000: 00 00 04 13 mv	s0, zero
 0x80000004: 00 00 91 17 auipc	sp, 9
 0x80000008: ff c1 01 13 addi	sp, sp, -4
@@ -338,6 +338,6 @@
 0x8000007c: 00 41 24 83 lw	s1, 4(sp)
 0x80000080: 01 01 01 13 addi	sp, sp, 0x10
 [1;34m[../csrc/cpu/cpu-exec.c:211 cpu_exec] npc: [1;32mHIT GOOD TRAP[0m at pc = 0x800000a0[0m
-[1;34m[../csrc/cpu/cpu-exec.c:178 statistic] host time spent = 1,172 us[0m
+[1;34m[../csrc/cpu/cpu-exec.c:178 statistic] host time spent = 990 us[0m
 [1;34m[../csrc/cpu/cpu-exec.c:179 statistic] total guest instructions = 655[0m
-[1;34m[../csrc/cpu/cpu-exec.c:180 statistic] simulation frequency = 558,873 inst/s[0m
+[1;34m[../csrc/cpu/cpu-exec.c:180 statistic] simulation frequency = 661,616 inst/s[0m
