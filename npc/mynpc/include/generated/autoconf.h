@@ -16,7 +16,7 @@
 #define CONFIG_ITRACE 1
 // #define CONFIG_FTRACE 1
 // #define CONFIG_DEVICE 1
-// #define CONFIG_MTRACE 1
+#define CONFIG_MTRACE 1
 #define CONFIG_ENGINE_INTERPRETER 1
 #define CONFIG_CC_OPT "-O2"
 #define CONFIG_RT_CHECK 1
