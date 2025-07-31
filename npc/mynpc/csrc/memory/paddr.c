@@ -147,15 +147,10 @@ word_t paddr_read(paddr_t addr, int len) {
 
 void paddr_write(paddr_t addr, int len, word_t data) {
   if (likely(in_pmem(addr))) { 
-    #ifdef CONFIG_MTRACE 
-      write_log(addr, len, data);
-    #endif
-    pmem_write(addr, len, data); return; 
-  }
-  
+    #ifdef COND
   // 处理串口输出
   if(addr == UART_ADDR) {
-    putc((char)data);
+    putchar((char)data);
     fflush(stdout); // 确保立即显示
     return;
   }
