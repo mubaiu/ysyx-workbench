@@ -8,6 +8,6 @@
 [1;34m[../csrc/monitor.c:24 welcome] If trace is enabled, a log file will be generated to record the trace. This may lead to a large log file. If it is not necessary, you can disable it in menuconfig[0m
 [1;34m[../csrc/monitor.c:27 welcome] Build time: 20:36:27, Jul 31 2025[0m
 [1;34m[../csrc/cpu/cpu-exec.c:213 cpu_exec] npc: [1;32mHIT GOOD TRAP[0m at pc = 0x80000030[0m
-[1;34m[../csrc/cpu/cpu-exec.c:180 statistic] host time spent = 24 us[0m
+[1;34m[../csrc/cpu/cpu-exec.c:180 statistic] host time spent = 32 us[0m
 [1;34m[../csrc/cpu/cpu-exec.c:181 statistic] total guest instructions = 21[0m
-[1;34m[../csrc/cpu/cpu-exec.c:182 statistic] simulation frequency = 875,000 inst/s[0m
+[1;34m[../csrc/cpu/cpu-exec.c:182 statistic] simulation frequency = 656,250 inst/s[0m
