@@ -17,21 +17,10 @@
 #include <memory/paddr.h>
 #include <device/mmio.h>
 #include <isa.h>
-#include <stdio.h>
 #include <time.h>
-#include <stdint.h>
-#include <sys/time.h>
+#include <stdio.h>
 
-// uint64_t get_time() {
-//   struct timeval tv;
-//   gettimeofday(&tv, NULL);
-  
-//   // 将秒和微秒转换为64位微秒时间戳
-//   uint64_t us = tv.tv_sec * 1000000ULL + tv.tv_usec;
-//   return us;
-// }
-
-#define DEVICE_BASE 0xa0000000
+# define DEVICE_BASE 0xa0000000
 #define RTC_ADDR        (DEVICE_BASE + 0x0000048)
 #define SERIAL_PORT     (DEVICE_BASE + 0x00003f8)
 
