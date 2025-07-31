@@ -45,6 +45,19 @@ VM_USER_LDLIBS = \
 # User .cpp files (from .cpp's on Verilator command line)
 VM_USER_CLASSES = \
 	cpu-exec \
+	alarm \
+	audio \
+	device \
+	disk \
+	intr \
+	map \
+	mmio \
+	port-io \
+	keyboard \
+	sdcard \
+	serial \
+	timer \
+	vga \
 	dut \
 	engine_init \
 	hostcall \
@@ -68,6 +81,8 @@ VM_USER_CLASSES = \
 VM_USER_DIR = \
 	./csrc \
 	./csrc/cpu \
+	./csrc/device \
+	./csrc/device/io \
 	./csrc/difftest \
 	./csrc/memory \
 	./csrc/sdb \
@@ -85,6 +100,32 @@ include $(VERILATOR_ROOT)/include/verilated.mk
 VPATH += $(VM_USER_DIR)
 
 cpu-exec.o: ./csrc/cpu/cpu-exec.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+alarm.o: ./csrc/device/alarm.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+audio.o: ./csrc/device/audio.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+device.o: ./csrc/device/device.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+disk.o: ./csrc/device/disk.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+intr.o: ./csrc/device/intr.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+map.o: ./csrc/device/io/map.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+mmio.o: ./csrc/device/io/mmio.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+port-io.o: ./csrc/device/io/port-io.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+keyboard.o: ./csrc/device/keyboard.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+sdcard.o: ./csrc/device/sdcard.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+serial.o: ./csrc/device/serial.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+timer.o: ./csrc/device/timer.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+vga.o: ./csrc/device/vga.c
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
 dut.o: ./csrc/difftest/dut.c
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
