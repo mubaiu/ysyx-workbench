@@ -6,6 +6,13 @@
         "regex.h": "c",
         "array": "c",
         "string": "c",
-        "string_view": "c"
+        "string_view": "c",
+        "mmio.h": "c",
+        "paddr.h": "c",
+        "host.h": "c",
+        "stdio.h": "c",
+        "isa.h": "c",
+        "time.h": "c",
+        "stdint.h": "c"
     }
 }
