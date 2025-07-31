@@ -9,12 +9,11 @@
 
 
 
-// ...existing code...
 
-int putchar(int c) {
-  putch((char)c);
-  return c & 0xff;  // 返回写入的字符
-}
+// int putchar(int c) {
+//   putch((char)c);
+//   return c & 0xff;  // 返回写入的字符
+// }
 
 
 

@@ -1,5 +1,5 @@
 [1;34m[../csrc/utils/log.c:15 init_log] Log is written to /home/mubai/ysyx-workbench/npc/mynpc/build/npc-log.txt[0m
-[1;34m[../csrc/memory/paddr.c:119 init_mem] physical memory area [0x80000000, 0x87ffffff][0m
+[1;34m[../csrc/memory/paddr.c:120 init_mem] physical memory area [0x80000000, 0x87ffffff][0m
 [1;34m[../csrc/monitor.c:211 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/tests/am-tests/build/amtest-riscv32e-npc.bin, size = 614812[0m
 [1;34m[../csrc/difftest/dut.c:70 init_difftest] Differential testing: [1;32mON[0m[0m
 [1;34m[../csrc/difftest/dut.c:71 init_difftest] The result of every instruction will be compared with /home/mubai/ysyx-workbench/nemu/build/riscv32-nemu-interpreter-so. This will help you a lot for debugging, but also significantly reduce the performance. If it is not necessary, you can turn it off in menuconfig.[0m
