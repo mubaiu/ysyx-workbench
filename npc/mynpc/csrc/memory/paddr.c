@@ -17,11 +17,6 @@
 #include <memory/paddr.h>
 #include <device/mmio.h>
 #include <isa.h>
-#include <time.h>
-
-# define DEVICE_BASE 0xa0000000
-#define RTC_ADDR        (DEVICE_BASE + 0x0000048)
-#define UART_ADDR       (DEVICE_BASE + 0x00003F8)
 
 #if   defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
@@ -128,17 +123,6 @@ word_t paddr_read(paddr_t addr, int len) {
     #endif
     return data;
   }
-  if(addr == RTC_ADDR || addr == RTC_ADDR + 4) {
-    // 获取当前时间戳
-    uint64_t rtc_val = (uint64_t)time(NULL);
-    if(addr == RTC_ADDR) {
-      // 返回低32位
-      return (word_t)(rtc_val & 0xffffffff);
-    } else {
-      // 返回高32位
-      return (word_t)((rtc_val >> 32) & 0xffffffff);
-    }
-  }
   IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   
@@ -152,14 +136,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     #endif
     pmem_write(addr, len, data); return; 
   }
-  
-  // 处理串口输出
-  if(addr == UART_ADDR) {
-    putchar((char)data);
-    fflush(stdout); // 确保立即显示
-    return;
-  }
-  
   IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
+  
 }
