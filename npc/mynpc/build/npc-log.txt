@@ -1,6 +1,6 @@
 [1;34m[../csrc/utils/log.c:15 init_log] Log is written to /home/mubai/ysyx-workbench/npc/mynpc/build/npc-log.txt[0m
 [1;34m[../csrc/memory/paddr.c:120 init_mem] physical memory area [0x80000000, 0x87ffffff][0m
-[1;34m[../csrc/monitor.c:211 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/tests/am-tests/build/amtest-riscv32e-npc.bin, size = 614828[0m
+[1;34m[../csrc/monitor.c:211 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/kernels/hello/build/hello-riscv32e-npc.bin, size = 284[0m
 [1;34m[../csrc/difftest/dut.c:70 init_difftest] Differential testing: [1;32mON[0m[0m
 [1;34m[../csrc/difftest/dut.c:71 init_difftest] The result of every instruction will be compared with /home/mubai/ysyx-workbench/nemu/build/riscv32-nemu-interpreter-so. This will help you a lot for debugging, but also significantly reduce the performance. If it is not necessary, you can turn it off in menuconfig.[0m
 [1;34m[../csrc/monitor.c:19 welcome] Trace: [1;32mON[0m[0m
@@ -9,3 +9,7 @@
 [1;34m[../csrc/monitor.c:22 welcome] Mtrace: [1;31mOFF[0m[0m
 [1;34m[../csrc/monitor.c:24 welcome] If trace is enabled, a log file will be generated to record the trace. This may lead to a large log file. If it is not necessary, you can disable it in menuconfig[0m
 [1;34m[../csrc/monitor.c:27 welcome] Build time: 19:48:42, Jul 31 2025[0m
+[1;34m[../csrc/cpu/cpu-exec.c:211 cpu_exec] npc: [1;32mHIT GOOD TRAP[0m at pc = 0x800000a8[0m
+[1;34m[../csrc/cpu/cpu-exec.c:178 statistic] host time spent = 643 us[0m
+[1;34m[../csrc/cpu/cpu-exec.c:179 statistic] total guest instructions = 831[0m
+[1;34m[../csrc/cpu/cpu-exec.c:180 statistic] simulation frequency = 1,292,379 inst/s[0m
