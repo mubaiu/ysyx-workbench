@@ -156,7 +156,6 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   
   // 处理串口输出
   if(addr == SERIAL_PORT) {
-    printf("----------------------\n");
     putchar((char)data);
     fflush(stdout); // 确保立即显示
     return;
