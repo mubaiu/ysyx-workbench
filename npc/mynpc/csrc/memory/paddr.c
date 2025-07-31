@@ -137,7 +137,7 @@ word_t paddr_read(paddr_t addr, int len) {
       return (word_t)rtc_val;
     } else {
       // 返回高32位
-      return (word_t)rtc_val >> 32;
+      return (word_t)(rtc_val >> 32);
     }
   }
   // IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
