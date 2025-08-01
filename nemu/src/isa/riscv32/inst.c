@@ -165,7 +165,7 @@ static int decode_exec(Decode *s) {
                                                                 cpu.csr.mstatus |= (1 << 7);
                                                                 
                                                                 //设置MPP为U模式(00)
-                                                                // cpu.csr.mstatus &= ~(3 << 11);            // 清除MPP位
+                                                                cpu.csr.mstatus &= ~(3 << 11);            // 清除MPP位
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
