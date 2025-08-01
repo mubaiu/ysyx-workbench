@@ -121,21 +121,14 @@ static int decode_exec(Decode *s) {
                                                                 
                                                                 // 根据CSR地址读取相应的寄存器
                                                                 word_t csr_val = 0;
-                                                                printf("csrrs: csr_addr=0x%x, inst=0x%x\n", csr_addr, s->isa.inst);
                                                                 if (csr_addr == 0x305) {       // mtvec地址
                                                                     csr_val = cpu.csr.mtvec;
-                                                                    printf("Reading mtvec=0x%x\n", csr_val);
                                                                 } else if (csr_addr == 0x342) { // mcause地址
                                                                     csr_val = cpu.csr.mcause;
-                                                                    printf("Reading mcause=0x%x\n", csr_val);
                                                                 } else if (csr_addr == 0x300) { // mstatus地址
                                                                     csr_val = cpu.csr.mstatus;
-                                                                    printf("Reading mstatus=0x%x\n", csr_val);
                                                                 } else if (csr_addr == 0x341) { // mepc地址
                                                                     csr_val = cpu.csr.mepc;
-                                                                    printf("Reading mepc=0x%x\n", csr_val);
-                                                                } else {
-                                                                    printf("Unknown CSR address: 0x%x\n", csr_addr);
                                                                 }
                                                                 
                                                                 // 将CSR值保存到目标寄存器
@@ -155,14 +148,11 @@ static int decode_exec(Decode *s) {
                                                                 }
                                                             );
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
-                                                                printf("ecall: mstatus before=0x%x\n", cpu.csr.mstatus);
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
-                                                                printf("ecall: mstatus after=0x%x\n", cpu.csr.mstatus);
                                                                 // nemu_state.state = NEMU_STOP;
                                                                 );
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;                    //设置PC为mepc中保存的返回地址
                                                                 
-                                                                printf("mret: mstatus before=0x%x\n", cpu.csr.mstatus);
                                                                 uint32_t mstatus_val = cpu.csr.mstatus;
                                                                 
                                                                 //从MPIE恢复MIE位
@@ -180,7 +170,6 @@ static int decode_exec(Decode *s) {
                                                                 // mstatus_val &= ~(3 << 11);  // 注释掉这行
                                                                 
                                                                 cpu.csr.mstatus = mstatus_val;
-                                                                printf("mret: mstatus after=0x%x\n", cpu.csr.mstatus);
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
