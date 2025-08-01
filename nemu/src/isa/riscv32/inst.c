@@ -127,7 +127,7 @@ static int decode_exec(Decode *s) {
                                                                     csr_val = cpu.csr.mcause;
                                                                 } else if (csr_addr == 0x300) { // mstatus地址
                                                                     csr_val = cpu.csr.mstatus;
-                                                                    printf("Reading mstatus=0x%x\n", csr_val);
+                                                                    // printf("Reading mstatus=0x%x\n", csr_val);
                                                                 } else if (csr_addr == 0x341) { // mepc地址
                                                                     csr_val = cpu.csr.mepc;
                                                                 }
@@ -150,6 +150,7 @@ static int decode_exec(Decode *s) {
                                                             );
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
                                                                 // nemu_state.state = NEMU_STOP;
+                                                                printf("ecall to pc=0x%08x\n", isa_raise_intr(ecall_code, s->pc));
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
                                                                 );
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;                    //设置PC为mepc中保存的返回地址
