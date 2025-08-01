@@ -150,6 +150,21 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
                                                                 );
+  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;                    //设置PC为mepc中保存的返回地址
+                                                                
+                                                                //从MPIE恢复MIE位
+                                                                if ((cpu.csr.mstatus & (1 << 7)) != 0) {  // 如果MPIE位为1
+                                                                    cpu.csr.mstatus |= (1 << 3);          // 设置MIE位为1
+                                                                } else {
+                                                                    cpu.csr.mstatus &= ~(1 << 3);         // 设置MIE位为0
+                                                                }
+                                                                
+                                                                //设置MPIE位为1
+                                                                cpu.csr.mstatus |= (1 << 7);
+                                                                
+                                                                //设置MPP为U模式(00)
+                                                                cpu.csr.mstatus &= ~(3 << 11);            // 清除MPP位
+                                                                );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
   
