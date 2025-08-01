@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     // 初始化CPU状态 - 修改初始化顺序
     contextp = new VerilatedContext;
     contextp->commandArgs(argc, argv);
-    contextp->traceEverOn(true);
+    contextp->traceEverOn(false);
     
     top = new Vtop{contextp};
     tfp = new VerilatedFstC;
