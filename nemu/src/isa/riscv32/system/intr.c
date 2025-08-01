@@ -16,11 +16,34 @@
 #include <isa.h>
 
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
-  /* TODO: Trigger an interrupt/exception with ``NO''.
-   * Then return the address of the interrupt/exception vector.
-   */
-
-  return 0;
+  /* 触发中断/异常，并返回中断/异常向量地址 */
+  
+  // 保存异常PC到mepc CSR
+  cpu.csr.mepc = epc;
+  
+  // 保存中断/异常原因到mcause CSR
+  cpu.csr.mcause = NO;
+  
+  // 设置中断状态标志
+  // 保存MIE到MPIE，然后清除MIE位
+  uint32_t mstatus_val = cpu.csr.mstatus;
+  if (mstatus_val & (1 << 3)) {  // 如果MIE位为1
+    mstatus_val |= (1 << 7);     // 设置MPIE位为1
+  } else {
+    mstatus_val &= ~(1 << 7);    // 设置MPIE位为0
+  }
+  mstatus_val &= ~(1 << 3);      // 清除MIE位
+  cpu.csr.mstatus = mstatus_val;
+  
+  // 确定异常处理程序入口地址
+  // 根据mtvec的模式位(最低两位)决定入口地址
+  if ((cpu.csr.mtvec & 0x3) == 0) {
+    // 直接模式：所有异常使用同一个入口
+    return cpu.csr.mtvec & ~0x3;
+  } else {
+    // 向量模式：根据异常类型计算不同的入口地址
+    return (cpu.csr.mtvec & ~0x3) + 4 * NO;
+  }
 }
 
 word_t isa_query_intr() {

@@ -98,7 +98,9 @@ static int decode_exec(Decode *s) {
                                                                 R(rd) = csr_val;              // 将CSR当前值保存到rd寄存
                                                                 R(csr_addr) = src1;        // 将rs1的值写入CSR
                                                                 );
-
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
+                                                                s->dnpc = isa_raise_intr(ecall_code, s->pc);
+                                                                );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
   

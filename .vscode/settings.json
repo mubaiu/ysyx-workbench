@@ -17,6 +17,9 @@
         "map.h": "c",
         "utils.h": "c",
         "nemu.h": "c",
-        "cpu.h": "c"
+        "cpu.h": "c",
+        "riscv.h": "c",
+        "*.def": "c",
+        "limits": "c"
     }
 }
