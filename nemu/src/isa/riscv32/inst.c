@@ -127,6 +127,7 @@ static int decode_exec(Decode *s) {
                                                                     csr_val = cpu.csr.mcause;
                                                                 } else if (csr_addr == 0x300) { // mstatus地址
                                                                     csr_val = cpu.csr.mstatus;
+                                                                    printf("Reading mstatus=0x%x\n", csr_val);
                                                                 } else if (csr_addr == 0x341) { // mepc地址
                                                                     csr_val = cpu.csr.mepc;
                                                                 }
