@@ -30,18 +30,11 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   
   // 简化的中断处理：在Machine-only模式下禁用中断
   cpu.csr.mstatus &= ~(1 << 3);  // 清除MIE位，禁用中断
-  // printf("isa_raise_intr: mstatus after=0x%x\n", mstatus_val);
   
-  // 确定异常处理程序入口地址
-  // 根据mtvec的模式位(最低两位)决定入口地址
-  vaddr_t handler_addr;
-  if ((cpu.csr.mtvec & 0x3) == 0) {
-    // 直接模式：所有异常使用同一个入口
-    handler_addr = cpu.csr.mtvec & ~0x3;
-  } else {
-    // 向量模式：根据异常类型计算不同的入口地址
-    handler_addr = (cpu.csr.mtvec & ~0x3) + 4 * NO;
-  }
+  // 根据mtvec模式计算异常处理程序入口地址
+  vaddr_t handler_addr = (cpu.csr.mtvec & 0x3) == 0 ? 
+    cpu.csr.mtvec & ~0x3 :                              // 直接模式
+    (cpu.csr.mtvec & ~0x3) + 4 * NO;                    // 向量模式
   
   // 记录异常处理踪迹
   IFDEF(CONFIG_ETRACE, etrace_exception(NO, epc, handler_addr));
