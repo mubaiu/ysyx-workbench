@@ -151,25 +151,7 @@ static int decode_exec(Decode *s) {
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
                                                                 // nemu_state.state = NEMU_STOP;
                                                                 );
-  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;                    //设置PC为mepc中保存的返回地址
-                                                                
-                                                                uint32_t mstatus_val = cpu.csr.mstatus;
-                                                                
-                                                                //从MPIE恢复MIE位
-                                                                if (mstatus_val & (1 << 7)) {  // 如果MPIE位为1
-                                                                    mstatus_val |= (1 << 3);   // 设置MIE位为1
-                                                                } else {
-                                                                    mstatus_val &= ~(1 << 3);  // 设置MIE位为0
-                                                                }
-                                                                
-                                                                //设置MPIE位为1
-                                                                mstatus_val |= (1 << 7);
-                                                                
-                                                                // 在 Machine-only 实现中，MPP 保持为 Machine 模式
-                                                                // 不清除 MPP 位，保持为 Machine 模式 (11)
-                                                                // mstatus_val &= ~(3 << 11);  // 注释掉这行
-                                                                
-                                                                cpu.csr.mstatus = mstatus_val;
+  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;  // 直接返回到异常前的PC
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
