@@ -93,11 +93,9 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 010 ????? 00000 11", lw     , I, R(rd) = SEXT(Mr(src1 + imm, 4), 32));
   INSTPAT("??????? ????? ????? 100 ????? 00000 11", lbu    , I, R(rd) = Mr(src1 + imm, 1));
   INSTPAT("??????? ????? ????? 000 ????? 00100 11", addi   , I, R(rd) = src1 + imm);
-  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , I, word_t csr_addr = imm;      // CSR地址存储在immediate字段中
-                                                                printf("csrrw: csr_addr = %d", csr_addr);
-                                                                word_t csr_val = R(csr_addr); // 读取CSR的当前值
+  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , I, word_t csr_val = cpu.csr.mtvec; // 读取CSR的当前值
                                                                 R(rd) = csr_val;              // 将CSR当前值保存到rd寄存
-                                                                R(csr_addr) = src1;        // 将rs1的值写入CSR
+                                                                cpu.csr.mtvec = src1;        // 将rs1的值写入CSR
                                                                 );
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
