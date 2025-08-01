@@ -16,6 +16,7 @@
         "stdint.h": "c",
         "map.h": "c",
         "utils.h": "c",
-        "nemu.h": "c"
+        "nemu.h": "c",
+        "cpu.h": "c"
     }
 }

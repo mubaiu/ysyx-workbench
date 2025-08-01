@@ -7,6 +7,7 @@
 #include "Vtop.h"
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
+#define IF(cond, then_clause) ((cond) ? (then_clause) : (void)0)
 extern uint64_t sim_time;
 Decode d = {d.pc = 0x80000000};
 
