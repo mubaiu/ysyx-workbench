@@ -6,4 +6,5 @@ monitor.o: ../csrc/monitor.c \
  /home/mubai/ysyx-workbench/npc/mynpc/include/macro.h \
  /home/mubai/ysyx-workbench/npc/mynpc/include/debug.h \
  /home/mubai/ysyx-workbench/npc/mynpc/include/utils.h \
- /home/mubai/ysyx-workbench/npc/mynpc/include/memory/paddr.h
+ /home/mubai/ysyx-workbench/npc/mynpc/include/memory/paddr.h \
+ /home/mubai/ysyx-workbench/npc/mynpc/include/cpu/cpu.h
