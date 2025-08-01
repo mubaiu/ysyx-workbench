@@ -97,6 +97,12 @@ static int decode_exec(Decode *s) {
                                                                 R(rd) = csr_val;              // 将CSR当前值保存到rd寄存
                                                                 cpu.csr.mtvec = src1;        // 将rs1的值写入CSR
                                                                 );
+  INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs  , I, word_t csr_val = cpu.csr.mtvec; // 读取CSR的当前值
+                                                                R(rd) = csr_val;
+                                                                if (BITS(s->isa.inst, 19, 15) != 0) {         // 如果rs1不是x0寄存器
+                                                                    cpu.csr.mtvec |= src1;                    // 将rs1的值与CSR按位或
+                                                                }
+                                                              );
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
                                                                 );
