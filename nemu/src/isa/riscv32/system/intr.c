@@ -22,9 +22,6 @@ void etrace_exception(word_t mcause, vaddr_t epc, vaddr_t mtvec);
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   /* 触发中断/异常，并返回中断/异常向量地址 */
   
-  // 调试输出：无论etrace是否启用都打印
-  printf("DEBUG: isa_raise_intr called with NO=%u, epc=" FMT_WORD "\n", NO, epc);
-  
   // 保存异常PC到mepc CSR
   cpu.csr.mepc = epc;
   
