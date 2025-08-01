@@ -162,19 +162,24 @@ static int decode_exec(Decode *s) {
                                                                 );
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;                    //设置PC为mepc中保存的返回地址
                                                                 
+                                                                printf("mret: mstatus before=0x%x\n", cpu.csr.mstatus);
+                                                                uint32_t mstatus_val = cpu.csr.mstatus;
+                                                                
                                                                 //从MPIE恢复MIE位
-                                                                if ((cpu.csr.mstatus & (1 << 7)) != 0) {  // 如果MPIE位为1
-                                                                    cpu.csr.mstatus |= (1 << 3);          // 设置MIE位为1
+                                                                if (mstatus_val & (1 << 7)) {  // 如果MPIE位为1
+                                                                    mstatus_val |= (1 << 3);   // 设置MIE位为1
                                                                 } else {
-                                                                    cpu.csr.mstatus &= ~(1 << 3);         // 设置MIE位为0
+                                                                    mstatus_val &= ~(1 << 3);  // 设置MIE位为0
                                                                 }
                                                                 
-                                                                //设置MPIE位为1（保持原有的其他位）
-                                                                cpu.csr.mstatus |= (1 << 7);
+                                                                //设置MPIE位为1
+                                                                mstatus_val |= (1 << 7);
                                                                 
-                                                                //清除MPP位但保持其他位不变
-                                                                cpu.csr.mstatus &= ~(3 << 11);            // 只清除MPP位(bit 11-12)
+                                                                // 设置MPP为User模式(00) - 只清除MPP位，保持其他高位
+                                                                // 注意：这里需要保持mstatus的高位(如0x1000位)不变
+                                                                mstatus_val &= ~(3 << 11);            // 只清除MPP位(bit 11-12)
                                                                 
+                                                                cpu.csr.mstatus = mstatus_val;
                                                                 printf("mret: mstatus after=0x%x\n", cpu.csr.mstatus);
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
