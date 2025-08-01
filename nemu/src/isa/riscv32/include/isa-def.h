@@ -21,6 +21,14 @@
 typedef struct {
   word_t gpr[MUXDEF(CONFIG_RVE, 16, 32)];
   vaddr_t pc;
+  // 添加CSR寄存器结构
+  struct {
+    word_t mepc;     // 机器异常程序计数器
+    word_t mcause;   // 机器异常原因
+    word_t mstatus;  // 机器状态
+    word_t mtvec;    // 机器陷阱向量
+    // 其他CSR寄存器...
+  } csr;
 } MUXDEF(CONFIG_RV64, riscv64_CPU_state, riscv32_CPU_state);
 
 // decode

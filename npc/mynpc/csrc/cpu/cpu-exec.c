@@ -7,6 +7,7 @@
 #include "Vtop.h"
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
+
 extern uint64_t sim_time;
 Decode d = {d.pc = 0x80000000};
 
@@ -154,7 +155,7 @@ static void execute(uint64_t n) {
     
     top->eval(); 
     
-    tfp->dump(sim_time++);
+    IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     if(top->clk){
       exec_once(&d, npc.pc);
     }
@@ -169,7 +170,7 @@ static void execute(uint64_t n) {
     for (int i = 0; i < 2; i++) {
         top->clk = !top->clk;
         top->eval();
-        tfp->dump(sim_time++);
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     exec_once(&d, npc.pc);
 }

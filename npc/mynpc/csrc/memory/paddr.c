@@ -18,7 +18,7 @@
 #include <device/mmio.h>
 #include <isa.h>
 #include <time.h>
-#include <stdio.h>
+
 
 #define DEVICE_BASE 0xa0000000
 #define RTC_ADDR        (DEVICE_BASE + 0x0000048)
@@ -159,7 +159,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     if(cnt==2){
     cnt = 0;
     putchar((char)data);
-    // fflush(stdout); // 确保立即显示
+    fflush(stdout); // 确保立即显示
     return;
     }
     cnt++;

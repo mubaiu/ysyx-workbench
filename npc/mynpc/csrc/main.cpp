@@ -31,14 +31,20 @@ extern "C" {
 uint64_t sim_time = 0;
 int main(int argc, char** argv) {
     // 初始化CPU状态 - 修改初始化顺序
+        // 初始化CPU状态 - 修改初始化顺序
     contextp = new VerilatedContext;
     contextp->commandArgs(argc, argv);
-    contextp->traceEverOn(true);
     
+    #if ENABLE_WAVE_TRACE
+    contextp->traceEverOn(true);
     top = new Vtop{contextp};
     tfp = new VerilatedFstC;
     top->trace(tfp, 99);
     tfp->open("wave.fst");
+    #else
+    contextp->traceEverOn(false);
+    top = new Vtop{contextp};
+    #endif
     
     // 首先让顶层模块评估一次，确保内部信号初始化
     // top->eval();
@@ -67,7 +73,7 @@ int main(int argc, char** argv) {
         top->rst = 0;
         top->clk = !top->clk;
         top->eval();
-        tfp->dump(sim_time++);
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     exec_once(&d, npc.pc);
     // 释放复位信号后，给予额外的时钟周期稳定系统
@@ -75,17 +81,19 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 2; i++) {
         top->clk = !top->clk;
         top->eval();
-        tfp->dump(sim_time++);
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     
     /* Start engine. */
     engine_start();
     
     
+    #if ENABLE_WAVE_TRACE
     tfp->flush();
-
-    // 清理资源
     tfp->close();
+    delete tfp;
+    #endif
+    
     delete top;
     delete contextp;
     return is_exit_status_bad();
