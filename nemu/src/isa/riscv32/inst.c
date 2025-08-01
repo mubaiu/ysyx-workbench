@@ -121,15 +121,21 @@ static int decode_exec(Decode *s) {
                                                                 
                                                                 // 根据CSR地址读取相应的寄存器
                                                                 word_t csr_val = 0;
+                                                                printf("csrrs: csr_addr=0x%x, inst=0x%x\n", csr_addr, s->isa.inst);
                                                                 if (csr_addr == 0x305) {       // mtvec地址
                                                                     csr_val = cpu.csr.mtvec;
+                                                                    printf("Reading mtvec=0x%x\n", csr_val);
                                                                 } else if (csr_addr == 0x342) { // mcause地址
                                                                     csr_val = cpu.csr.mcause;
+                                                                    printf("Reading mcause=0x%x\n", csr_val);
                                                                 } else if (csr_addr == 0x300) { // mstatus地址
                                                                     csr_val = cpu.csr.mstatus;
-                                                                    // printf("Reading mstatus=0x%x\n", csr_val);
+                                                                    printf("Reading mstatus=0x%x\n", csr_val);
                                                                 } else if (csr_addr == 0x341) { // mepc地址
                                                                     csr_val = cpu.csr.mepc;
+                                                                    printf("Reading mepc=0x%x\n", csr_val);
+                                                                } else {
+                                                                    printf("Unknown CSR address: 0x%x\n", csr_addr);
                                                                 }
                                                                 
                                                                 // 将CSR值保存到目标寄存器
