@@ -142,7 +142,7 @@ static int decode_exec(Decode *s) {
                                                                     } else if (csr_addr == 0x342) {
                                                                         cpu.csr.mcause |= src1;
                                                                     } else if (csr_addr == 0x300) {
-                                                                        cpu.csr.mstatus |= src1;
+                                                                        // cpu.csr.mstatus |= src1;
                                                                     } else if (csr_addr == 0x341) {
                                                                         cpu.csr.mepc |= src1;
                                                                     }
