@@ -24,15 +24,20 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   // 保存中断/异常原因到mcause CSR
   cpu.csr.mcause = NO;
   
-  // 设置中断状态标志
-  // 保存MIE到MPIE，然后清除MIE位
+  // 设置中断状态标志 - 只修改MIE和MPIE位，保持其他位不变
   uint32_t mstatus_val = cpu.csr.mstatus;
-  if (mstatus_val & (1 << 3)) {  // 如果MIE位为1
+  
+  // 保存当前MIE位到MPIE位
+  if (mstatus_val & (1 << 3)) {  // 如果当前MIE位为1
     mstatus_val |= (1 << 7);     // 设置MPIE位为1
   } else {
     mstatus_val &= ~(1 << 7);    // 设置MPIE位为0
   }
-  mstatus_val &= ~(1 << 3);      // 清除MIE位
+  
+  // 清除MIE位
+  mstatus_val &= ~(1 << 3);
+  
+  // 更新mstatus寄存器
   cpu.csr.mstatus = mstatus_val;
   
   // 确定异常处理程序入口地址
