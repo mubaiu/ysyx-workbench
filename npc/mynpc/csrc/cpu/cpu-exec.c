@@ -154,7 +154,7 @@ static void execute(uint64_t n) {
     
     top->eval(); 
     
-    tfp->dump(sim_time++);
+    IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     if(top->clk){
       exec_once(&d, npc.pc);
     }
@@ -169,7 +169,7 @@ static void execute(uint64_t n) {
     for (int i = 0; i < 2; i++) {
         top->clk = !top->clk;
         top->eval();
-        tfp->dump(sim_time++);
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     exec_once(&d, npc.pc);
 }
