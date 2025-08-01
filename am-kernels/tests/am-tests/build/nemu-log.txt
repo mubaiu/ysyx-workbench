@@ -2300,6 +2300,6 @@
 0x800013b4: 34 20 22 f3 csrr	t0, mcause
 0x800013b8: 30 00 23 73 csrr	t1, mstatus
 [1;34m[src/cpu/cpu-exec.c:201 cpu_exec] nemu: [1;31mABORT[0m at pc = 0x800013b8[0m
-[1;34m[src/cpu/cpu-exec.c:169 statistic] host time spent = 12,000 us[0m
+[1;34m[src/cpu/cpu-exec.c:169 statistic] host time spent = 10,000 us[0m
 [1;34m[src/cpu/cpu-exec.c:170 statistic] total guest instructions = 2,282[0m
-[1;34m[src/cpu/cpu-exec.c:171 statistic] simulation frequency = 190,166 inst/s[0m
+[1;34m[src/cpu/cpu-exec.c:171 statistic] simulation frequency = 228,200 inst/s[0m
