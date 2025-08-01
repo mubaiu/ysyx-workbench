@@ -5,6 +5,21 @@
 static Context* (*user_handler)(Event, Context*) = NULL;
 
 Context* __am_irq_handle(Context *c) {
+  // Debug: print context information
+  printf("=== Context Debug Information ===\n");
+  printf("mcause = 0x%lx\n", c->mcause);
+  printf("mstatus = 0x%lx\n", c->mstatus);
+  printf("mepc = 0x%lx\n", c->mepc);
+  
+  printf("General Purpose Registers:\n");
+  for (int i = 0; i < NR_REGS; i++) {
+    if (i % 4 == 0) printf("\n");
+    printf("x%-2d: 0x%08lx  ", i, c->gpr[i]);
+  }
+  printf("\n");
+  printf("pdir = %p\n", c->pdir);
+  printf("================================\n\n");
+
   if (user_handler) {
     Event ev = {0};
     switch (c->mcause) {
