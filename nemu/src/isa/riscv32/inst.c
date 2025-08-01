@@ -149,7 +149,7 @@ static int decode_exec(Decode *s) {
                                                                 }
                                                             );
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
-                                                                // nemu_state.state = NEMU_STOP;
+                                                                nemu_state.state = NEMU_STOP;
                                                                 printf("ecall to pc=0x%08x\n", isa_raise_intr(ecall_code, s->pc));
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
                                                                 );
