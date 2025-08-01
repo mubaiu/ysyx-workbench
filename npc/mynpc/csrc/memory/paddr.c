@@ -159,7 +159,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     if(cnt==2){
     cnt = 0;
     putchar((char)data);
-    // fflush(stdout); // 确保立即显示
+    fflush(stdout); // 确保立即显示
     return;
     }
     cnt++;
