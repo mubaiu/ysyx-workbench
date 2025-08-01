@@ -1,3 +1,3 @@
 NAME = hello
-SRCS = hello.c
+SRCS = etrace_test.c
 include $(AM_HOME)/Makefile
