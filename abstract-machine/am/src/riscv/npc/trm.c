@@ -16,7 +16,7 @@ Area heap = RANGE(&_heap_start, PMEM_END);
 static const char mainargs[MAINARGS_MAX_LEN] = MAINARGS_PLACEHOLDER; // defined in CFLAGS
 
 void putch(char ch) {
-  *((volatile char *)(SERIAL_PORT)) = ch;
+  *(( char *)(SERIAL_PORT)) = ch;
 }
 
 void halt(int code) {
