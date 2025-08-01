@@ -153,17 +153,17 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     #endif
     pmem_write(addr, len, data); return; 
   }
-  static int cnt = 0;
+  // static int cnt = 0;
   // 处理串口输出
   if(addr == SERIAL_PORT) {
-    if(cnt==2){
-    cnt = 0;
+    // if(cnt==2){
+    // cnt = 0;
     putchar((char)data);
     fflush(stdout); // 确保立即显示
     return;
-    }
-    cnt++;
-    return;
+    // }
+    // cnt++;
+    // return;
   }
   
   // IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
