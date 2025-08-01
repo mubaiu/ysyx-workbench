@@ -10,5 +10,6 @@ void invalid_inst(vaddr_t thispc);
 
 #define NEMUTRAP(thispc, code) set_nemu_state(NEMU_END, thispc, code)
 #define INV(thispc) invalid_inst(thispc)
+#define IF(cond, then_clause) ((cond) ? (then_clause) : (void)0)
 
 #endif
