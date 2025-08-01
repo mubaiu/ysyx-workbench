@@ -93,10 +93,30 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 010 ????? 00000 11", lw     , I, R(rd) = SEXT(Mr(src1 + imm, 4), 32));
   INSTPAT("??????? ????? ????? 100 ????? 00000 11", lbu    , I, R(rd) = Mr(src1 + imm, 1));
   INSTPAT("??????? ????? ????? 000 ????? 00100 11", addi   , I, R(rd) = src1 + imm);
-  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , I, word_t csr_val = cpu.csr.mtvec; // 读取CSR的当前值
-                                                                R(rd) = csr_val;              // 将CSR当前值保存到rd寄存
-                                                                cpu.csr.mtvec = src1;        // 将rs1的值写入CSR
-                                                                );
+  INSTPAT("??????? ????? ????? 001 ????? 11100 11", csrrw  , I, uint32_t csr_addr = BITS(s->isa.inst, 31, 20); // 从指令中提取CSR地址
+                                                                word_t csr_val = 0;
+                                                                // 根据CSR地址读取相应的寄存器
+                                                                if (csr_addr == 0x305) {       // mtvec地址
+                                                                    csr_val = cpu.csr.mtvec;
+                                                                } else if (csr_addr == 0x342) { // mcause地址
+                                                                    csr_val = cpu.csr.mcause;
+                                                                } else if (csr_addr == 0x300) { // mstatus地址
+                                                                    csr_val = cpu.csr.mstatus;
+                                                                } else if (csr_addr == 0x341) { // mepc地址
+                                                                    csr_val = cpu.csr.mepc;
+                                                                }
+                                                                R(rd) = csr_val;              // 将CSR当前值保存到rd寄存器
+                                                                // 根据CSR地址写入相应的寄存器
+                                                                if (csr_addr == 0x305) {
+                                                                    cpu.csr.mtvec = src1;
+                                                                } else if (csr_addr == 0x342) {
+                                                                    cpu.csr.mcause = src1;
+                                                                } else if (csr_addr == 0x300) {
+                                                                    cpu.csr.mstatus = src1;
+                                                                } else if (csr_addr == 0x341) {
+                                                                    cpu.csr.mepc = src1;
+                                                                }
+                                                              );
   INSTPAT("??????? ????? ????? 010 ????? 11100 11", csrrs  , I,  uint32_t csr_addr = BITS(s->isa.inst, 31, 20); // 从指令中提取CSR地址
                                                                 
                                                                 // 根据CSR地址读取相应的寄存器
@@ -116,7 +136,15 @@ static int decode_exec(Decode *s) {
                                                                 
                                                                 // 如果源寄存器不是x0，则修改CSR
                                                                 if (BITS(s->isa.inst, 19, 15) != 0) {
+                                                                    if (csr_addr == 0x305) {
+                                                                        cpu.csr.mtvec |= src1;
+                                                                    } else if (csr_addr == 0x342) {
+                                                                        cpu.csr.mcause |= src1;
+                                                                    } else if (csr_addr == 0x300) {
+                                                                        cpu.csr.mstatus |= src1;
+                                                                    } else if (csr_addr == 0x341) {
                                                                         cpu.csr.mepc |= src1;
+                                                                    }
                                                                 }
                                                             );
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
