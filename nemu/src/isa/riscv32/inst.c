@@ -175,9 +175,9 @@ static int decode_exec(Decode *s) {
                                                                 //设置MPIE位为1
                                                                 mstatus_val |= (1 << 7);
                                                                 
-                                                                // 设置MPP为User模式(00) - 只清除MPP位，保持其他高位
-                                                                // 注意：这里需要保持mstatus的高位(如0x1000位)不变
-                                                                mstatus_val &= ~(3 << 11);            // 只清除MPP位(bit 11-12)
+                                                                // 在 Machine-only 实现中，MPP 保持为 Machine 模式
+                                                                // 不清除 MPP 位，保持为 Machine 模式 (11)
+                                                                // mstatus_val &= ~(3 << 11);  // 注释掉这行
                                                                 
                                                                 cpu.csr.mstatus = mstatus_val;
                                                                 printf("mret: mstatus after=0x%x\n", cpu.csr.mstatus);
