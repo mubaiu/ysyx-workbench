@@ -155,8 +155,9 @@ static int decode_exec(Decode *s) {
                                                                 }
                                                             );
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
-                                                                // printf("ecall to pc=0x%08x\n", isa_raise_intr(ecall_code, s->pc));
+                                                                printf("ecall: mstatus before=0x%x\n", cpu.csr.mstatus);
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
+                                                                printf("ecall: mstatus after=0x%x\n", cpu.csr.mstatus);
                                                                 // nemu_state.state = NEMU_STOP;
                                                                 );
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;                    //设置PC为mepc中保存的返回地址
@@ -168,11 +169,13 @@ static int decode_exec(Decode *s) {
                                                                     cpu.csr.mstatus &= ~(1 << 3);         // 设置MIE位为0
                                                                 }
                                                                 
-                                                                //设置MPIE位为1
+                                                                //设置MPIE位为1（保持原有的其他位）
                                                                 cpu.csr.mstatus |= (1 << 7);
                                                                 
-                                                                //设置MPP为U模式(00)
-                                                                cpu.csr.mstatus &= ~(3 << 11);            // 清除MPP位
+                                                                //清除MPP位但保持其他位不变
+                                                                cpu.csr.mstatus &= ~(3 << 11);            // 只清除MPP位(bit 11-12)
+                                                                
+                                                                printf("mret: mstatus after=0x%x\n", cpu.csr.mstatus);
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
