@@ -15,6 +15,10 @@
 
 #include <isa.h>
 
+#ifdef CONFIG_ETRACE
+void etrace_exception(word_t mcause, vaddr_t epc, vaddr_t mtvec);
+#endif
+
 word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   /* 触发中断/异常，并返回中断/异常向量地址 */
   
@@ -48,13 +52,19 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   
   // 确定异常处理程序入口地址
   // 根据mtvec的模式位(最低两位)决定入口地址
+  vaddr_t handler_addr;
   if ((cpu.csr.mtvec & 0x3) == 0) {
     // 直接模式：所有异常使用同一个入口
-    return cpu.csr.mtvec & ~0x3;
+    handler_addr = cpu.csr.mtvec & ~0x3;
   } else {
     // 向量模式：根据异常类型计算不同的入口地址
-    return (cpu.csr.mtvec & ~0x3) + 4 * NO;
+    handler_addr = (cpu.csr.mtvec & ~0x3) + 4 * NO;
   }
+  
+  // 记录异常处理踪迹
+  IFDEF(CONFIG_ETRACE, etrace_exception(NO, epc, handler_addr));
+  
+  return handler_addr;
 }
 
 word_t isa_query_intr() {

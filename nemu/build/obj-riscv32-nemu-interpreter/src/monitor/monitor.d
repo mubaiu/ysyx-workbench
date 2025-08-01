@@ -9,6 +9,7 @@ deps_/home/mubai/ysyx-workbench/nemu/build/obj-riscv32-nemu-interpreter/src/moni
     $(wildcard include/config/ftrace.h) \
     $(wildcard include/config/mtrace.h) \
     $(wildcard include/config/dtrace.h) \
+    $(wildcard include/config/etrace.h) \
     $(wildcard include/config/device.h) \
   /home/mubai/ysyx-workbench/nemu/include/isa.h \
   /home/mubai/ysyx-workbench/nemu/src/isa/riscv32/include/isa-def.h \

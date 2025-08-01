@@ -171,6 +171,13 @@ config DTRACE
   default n
   help
     Enable dtrace feature to trace function call.
+
+config ETRACE
+  depends on TRACE
+  bool "Enable etrace"
+  default n
+  help
+    Enable etrace feature to trace exception handling.
     
 config DIFFTEST
   depends on TARGET_NATIVE_ELF

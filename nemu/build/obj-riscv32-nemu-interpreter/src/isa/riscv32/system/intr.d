@@ -3,6 +3,7 @@ cmd_/home/mubai/ysyx-workbench/nemu/build/obj-riscv32-nemu-interpreter/src/isa/r
 source_/home/mubai/ysyx-workbench/nemu/build/obj-riscv32-nemu-interpreter/src/isa/riscv32/system/intr.o := src/isa/riscv32/system/intr.c
 
 deps_/home/mubai/ysyx-workbench/nemu/build/obj-riscv32-nemu-interpreter/src/isa/riscv32/system/intr.o := \
+    $(wildcard include/config/etrace.h) \
   /home/mubai/ysyx-workbench/nemu/include/isa.h \
   /home/mubai/ysyx-workbench/nemu/src/isa/riscv32/include/isa-def.h \
     $(wildcard include/config/rve.h) \
