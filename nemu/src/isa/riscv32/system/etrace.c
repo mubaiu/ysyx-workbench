@@ -77,7 +77,7 @@ void etrace_exception(word_t mcause, vaddr_t epc, vaddr_t mtvec) {
   const char* type_str = is_interrupt ? "INTERRUPT" : "EXCEPTION";
   const char* name = get_exception_name(mcause);
   
-  printf("\033[1;33m[ETRACE]\033[0m %s | NO: %2ld | %-30s | EPC: " FMT_WORD " | Handler: " FMT_WORD "\n",
+  printf("\033[1;33m[ETRACE]\033[0m %s | NO: %2u | %-30s | EPC: " FMT_WORD " | Handler: " FMT_WORD "\n",
          type_str, exception_code, name, epc, mtvec);
 }
 
