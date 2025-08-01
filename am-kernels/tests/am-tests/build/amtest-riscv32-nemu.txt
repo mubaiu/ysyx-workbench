@@ -167,28 +167,28 @@ Disassembly of section .text:
 80000264:	00003517          	auipc	a0,0x3
 80000268:	a2c50513          	addi	a0,a0,-1492 # 80002c90 <_etext+0xe4>
 8000026c:	00112e23          	sw	ra,28(sp)
-80000270:	00812c23          	sw	s0,24(sp)
-80000274:	03d020ef          	jal	80002ab0 <printf>
-80000278:	00003517          	auipc	a0,0x3
-8000027c:	a3450513          	addi	a0,a0,-1484 # 80002cac <_etext+0x100>
-80000280:	031020ef          	jal	80002ab0 <printf>
-80000284:	00c10593          	addi	a1,sp,12
-80000288:	00700513          	li	a0,7
-8000028c:	615000ef          	jal	800010a0 <ioe_read>
-80000290:	00100513          	li	a0,1
-80000294:	00989437          	lui	s0,0x989
-80000298:	0c4010ef          	jal	8000135c <iset>
-8000029c:	67f40413          	addi	s0,s0,1663 # 98967f <_entry_offset+0x98967f>
-800002a0:	00012623          	sw	zero,12(sp)
-800002a4:	00c12783          	lw	a5,12(sp)
-800002a8:	00f44c63          	blt	s0,a5,800002c0 <hello_intr+0x60>
-800002ac:	00c12783          	lw	a5,12(sp)
-800002b0:	00178793          	addi	a5,a5,1
-800002b4:	00f12623          	sw	a5,12(sp)
-800002b8:	00c12783          	lw	a5,12(sp)
-800002bc:	fef458e3          	bge	s0,a5,800002ac <hello_intr+0x4c>
-800002c0:	090010ef          	jal	80001350 <yield>
-800002c4:	fddff06f          	j	800002a0 <hello_intr+0x40>
+80000270:	041020ef          	jal	80002ab0 <printf>
+80000274:	00003517          	auipc	a0,0x3
+80000278:	a3850513          	addi	a0,a0,-1480 # 80002cac <_etext+0x100>
+8000027c:	035020ef          	jal	80002ab0 <printf>
+80000280:	00c10593          	addi	a1,sp,12
+80000284:	00700513          	li	a0,7
+80000288:	619000ef          	jal	800010a0 <ioe_read>
+8000028c:	00100513          	li	a0,1
+80000290:	0cc010ef          	jal	8000135c <iset>
+80000294:	00012623          	sw	zero,12(sp)
+80000298:	00c12783          	lw	a5,12(sp)
+8000029c:	00989737          	lui	a4,0x989
+800002a0:	67f70713          	addi	a4,a4,1663 # 98967f <_entry_offset+0x98967f>
+800002a4:	00f74c63          	blt	a4,a5,800002bc <hello_intr+0x5c>
+800002a8:	00c12783          	lw	a5,12(sp)
+800002ac:	00178793          	addi	a5,a5,1
+800002b0:	00f12623          	sw	a5,12(sp)
+800002b4:	00c12783          	lw	a5,12(sp)
+800002b8:	fef758e3          	bge	a4,a5,800002a8 <hello_intr+0x48>
+800002bc:	01c12083          	lw	ra,28(sp)
+800002c0:	02010113          	addi	sp,sp,32
+800002c4:	08c0106f          	j	80001350 <yield>
 
 800002c8 <rtc_test>:
 800002c8:	fb010113          	addi	sp,sp,-80
