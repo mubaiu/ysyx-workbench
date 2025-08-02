@@ -195,8 +195,8 @@ Disassembly of section .text:
 800002a4:	80078793          	addi	a5,a5,-2048 # 1800 <_entry_offset+0x1800>
 800002a8:	00000717          	auipc	a4,0x0
 800002ac:	1ec70713          	addi	a4,a4,492 # 80000494 <__am_kcontext_start>
-800002b0:	fb242a23          	sw	s2,-76(s0)
-800002b4:	f8942c23          	sw	s1,-104(s0)
+800002b0:	f9242823          	sw	s2,-112(s0)
+800002b4:	f8942a23          	sw	s1,-108(s0)
 800002b8:	02c12083          	lw	ra,44(sp)
 800002bc:	fee42c23          	sw	a4,-8(s0)
 800002c0:	fef42a23          	sw	a5,-12(s0)
