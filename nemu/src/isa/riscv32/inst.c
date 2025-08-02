@@ -159,21 +159,21 @@ static int decode_exec(Decode *s) {
                                                                 mstatus &= ~(1UL << 3);              // Clear MIE bit
                                                                 mstatus |= (mpie << 3);              // Set MIE to original MPIE value
                                                                 
-                                                                // Set MPIE to 1
+                                                                // Set MPIE to 1 (RISC-V specification requirement)
                                                                 mstatus |= (1UL << 7);               // Set MPIE bit to 1
                                                                 
-                                                                // Restore privilege level: from MPP field (simplified, assume return to Machine mode)
-                                                                // In simplified implementation, we always stay in Machine mode
-                                                                // Extract MPP field for future use if needed
-                                                                // word_t mpp = (mstatus >> 11) & 0x3;
+                                                                // Restore privilege level from MPP field
+                                                                word_t mpp = (mstatus >> 11) & 0x3;  // Extract MPP field
+                                                                (void)mpp; // Prevent unused variable warning - in simple implementation we don't change privilege levels
                                                                 
-                                                                // Clear MPP field (set to U mode if available)
+                                                                // Clear MPP field (according to RISC-V spec, set to lowest supported privilege level)
+                                                                // In our simplified implementation, we clear it to indicate User mode support
                                                                 mstatus &= ~(0x3UL << 11);           // Clear MPP field
                                                                 
                                                                 // Update mstatus register
                                                                 cpu.csr.mstatus = mstatus;
                                                                 
-                                                                // Return to PC before exception
+                                                                // Return to PC stored in mepc
                                                                 s->dnpc = cpu.csr.mepc;
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);

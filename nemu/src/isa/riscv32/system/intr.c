@@ -36,10 +36,14 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   mstatus &= ~(1UL << 7);             // 清除MPIE位
   mstatus |= (mie << 7);              // 设置MPIE位为原MIE值
   
-  // 保存当前特权级到MPP字段 (假设当前在Machine模式)
+  // 获取当前特权级 (从MPP字段或假设为Machine模式)
+  // 在简化实现中，我们假设当前已经在Machine模式
+  word_t current_priv = 3; // Machine mode
+  
+  // 保存当前特权级到MPP字段
   // MPP位于mstatus的[12:11]位
   mstatus &= ~(0x3UL << 11);          // 清除MPP字段
-  mstatus |= (3UL << 11);             // 设置MPP为Machine模式(11b)
+  mstatus |= (current_priv << 11);    // 设置MPP为当前特权级
   
   // 清除MIE位，禁用中断
   mstatus &= ~(1UL << 3);             // 清除MIE位
