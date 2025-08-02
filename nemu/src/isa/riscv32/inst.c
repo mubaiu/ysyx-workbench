@@ -147,8 +147,8 @@ static int decode_exec(Decode *s) {
                                                                     }
                                                                 }
                                                             );
-  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I,   // Machine环境调用异常码
-                                                                s->dnpc = isa_raise_intr(11, s->pc);
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
+                                                                s->dnpc = isa_raise_intr(ecall_code, s->pc);
                                                                 printf("ecall at " FMT_WORD "\n", s->pc);
                                                                 );
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;  // 直接返回到异常前的PC
