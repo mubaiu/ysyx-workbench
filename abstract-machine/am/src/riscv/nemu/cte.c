@@ -47,9 +47,9 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
   // Set up argument in GPR1 (a7 for RV32I/RV64I, a5 for RV32E)
   ctx->GPR1 = (uintptr_t)arg;
   
-  // Set up entry function address in a1 register (gpr[11])
+  // Set up entry function address in a1 register (gpr[10] maps to x11)
   // This matches the native RISC-V implementation which uses 'jalr a1'
-  ctx->gpr[11] = (uintptr_t)entry;
+  ctx->gpr[10] = (uintptr_t)entry;
   
   // Set up machine status register for machine mode
   ctx->mstatus = 0x1800; // MPP = 11 (machine mode), other bits 0
