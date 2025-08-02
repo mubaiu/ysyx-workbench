@@ -6,3 +6,4 @@
 [    load-store] [1;32mPASS[0m
 [           bit] [1;32mPASS[0m
 [           fib] [1;32mPASS[0m
+[  add-longlong] [1;32mPASS[0m
