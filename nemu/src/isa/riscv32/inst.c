@@ -151,7 +151,30 @@ static int decode_exec(Decode *s) {
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
                                                                 // nemu_state.state = NEMU_STOP;
                                                                 );
-  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;  // 直接返回到异常前的PC
+  INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, // mret instruction privilege restoration
+                                                                word_t mstatus = cpu.csr.mstatus;
+                                                                
+                                                                // Restore interrupt enable: MIE = MPIE
+                                                                word_t mpie = (mstatus >> 7) & 0x1;  // Extract MPIE bit
+                                                                mstatus &= ~(1UL << 3);              // Clear MIE bit
+                                                                mstatus |= (mpie << 3);              // Set MIE to original MPIE value
+                                                                
+                                                                // Set MPIE to 1
+                                                                mstatus |= (1UL << 7);               // Set MPIE bit to 1
+                                                                
+                                                                // Restore privilege level: from MPP field (simplified, assume return to Machine mode)
+                                                                // In simplified implementation, we always stay in Machine mode
+                                                                // Extract MPP field for future use if needed
+                                                                // word_t mpp = (mstatus >> 11) & 0x3;
+                                                                
+                                                                // Clear MPP field (set to U mode if available)
+                                                                mstatus &= ~(0x3UL << 11);           // Clear MPP field
+                                                                
+                                                                // Update mstatus register
+                                                                cpu.csr.mstatus = mstatus;
+                                                                
+                                                                // Return to PC before exception
+                                                                s->dnpc = cpu.csr.mepc;
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
