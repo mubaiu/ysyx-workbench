@@ -29,7 +29,7 @@ void wp_difftest();
 void print_log();
 void free_symbol();
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-CPU_state cpu = { .csr = { .mstatus = 0x1800 } };
+CPU_state cpu = { .csr = { .mstatus = 0x1800 }, .privilege_level = 3 };
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;

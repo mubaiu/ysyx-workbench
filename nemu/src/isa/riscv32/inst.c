@@ -164,11 +164,14 @@ static int decode_exec(Decode *s) {
                                                                 
                                                                 // Restore privilege level from MPP field
                                                                 word_t mpp = (mstatus >> 11) & 0x3;  // Extract MPP field
-                                                                (void)mpp; // Prevent unused variable warning - in simple implementation we don't change privilege levels
+                                                                
+                                                                // Restore the privilege level
+                                                                cpu.privilege_level = mpp;
                                                                 
                                                                 // Clear MPP field (according to RISC-V spec, set to lowest supported privilege level)
-                                                                // In our simplified implementation, we clear it to indicate User mode support
-                                                                mstatus &= ~(0x3UL << 11);           // Clear MPP field
+                                                                // After mret, MPP should be set to the lowest privilege level supported
+                                                                // In our implementation, we set it to User mode (0) if available, otherwise Machine mode
+                                                                mstatus &= ~(0x3UL << 11);           // Clear MPP field (sets to User mode)
                                                                 
                                                                 // Update mstatus register
                                                                 cpu.csr.mstatus = mstatus;

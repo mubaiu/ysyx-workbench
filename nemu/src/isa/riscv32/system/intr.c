@@ -36,9 +36,8 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   mstatus &= ~(1UL << 7);             // 清除MPIE位
   mstatus |= (mie << 7);              // 设置MPIE位为原MIE值
   
-  // 获取当前特权级 (从MPP字段或假设为Machine模式)
-  // 在简化实现中，我们假设当前已经在Machine模式
-  word_t current_priv = 3; // Machine mode
+  // 获取当前特权级
+  word_t current_priv = cpu.privilege_level;
   
   // 保存当前特权级到MPP字段
   // MPP位于mstatus的[12:11]位
@@ -50,6 +49,9 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   
   // 更新mstatus寄存器
   cpu.csr.mstatus = mstatus;
+  
+  // 异常发生后，特权级提升到Machine模式
+  cpu.privilege_level = 3;
   
   // 根据mtvec模式计算异常处理程序入口地址
   vaddr_t handler_addr = (cpu.csr.mtvec & 0x3) == 0 ? 
