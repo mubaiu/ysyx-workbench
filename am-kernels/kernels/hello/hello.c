@@ -3,49 +3,46 @@
 
 #define STACK_SIZE 4096
 static char stack1[STACK_SIZE] __attribute__((aligned(16)));
-static char stack2[STACK_SIZE] __attribute__((aligned(16)));
 
-static Context *ctx1, *ctx2;
-static Context *current_ctx = NULL;
+static Context *task_ctx = NULL;
+static int switch_count = 0;
 
-void task1(void *arg) {
-  for (int i = 0; i < 5; i++) {
-    putstr("Task 1 running, iteration ");
+void task_function(void *arg) {
+  putstr("Task function started! arg = ");
+  putstr((char*)arg);
+  putch('\n');
+  
+  for (int i = 0; i < 3; i++) {
+    putstr("Task iteration ");
     putch('0' + i);
     putch('\n');
-    yield();  // Switch to other task
+    yield();  // Switch back to main
   }
-  putstr("Task 1 completed\n");
-  while(1) yield();  // Keep yielding
+  
+  putstr("Task function completed\n");
+  // Tasks should not return, but if they do, panic
 }
 
-void task2(void *arg) {
-  for (int i = 0; i < 5; i++) {
-    putstr("Task 2 running, iteration ");
-    putch('0' + i);
-    putch('\n');
-    yield();  // Switch to other task
-  }
-  putstr("Task 2 completed\n");
-  while(1) yield();  // Keep yielding
-}
-
-Context *scheduler(Event ev, Context *ctx) {
-  putstr("Scheduler called, event: ");
+Context *simple_scheduler(Event ev, Context *ctx) {
+  switch_count++;
+  putstr("Scheduler called ");
+  putch('0' + switch_count);
+  putstr(", event: ");
   putch('0' + ev.event);
   putch('\n');
   
-  // Save current context
-  if (current_ctx == ctx1) {
-    ctx1 = ctx;
-    current_ctx = ctx2;
-    putstr("Switching to Task 2\n");
-    return ctx2;
+  if (switch_count == 1) {
+    // First call from main's yield() - switch to task
+    putstr("Switching to task\n");
+    return task_ctx;
+  } else if (switch_count <= 4) {
+    // Task is yielding back - switch back to main (return original context)
+    putstr("Task yielding, continuing in main\n");
+    return ctx;
   } else {
-    ctx2 = ctx;
-    current_ctx = ctx1;
-    putstr("Switching to Task 1\n");
-    return ctx1;
+    // After task completes, just return current context
+    putstr("Staying in current context\n");
+    return ctx;
   }
 }
 
@@ -54,28 +51,32 @@ int main(const char *args) {
   putstr("Testing cooperative multitasking with kcontext...\n");
   
   // Initialize CTE
-  cte_init(scheduler);
+  cte_init(simple_scheduler);
   
-  // Create two kernel contexts
-  Area kstack1 = { .start = stack1, .end = stack1 + STACK_SIZE };
-  Area kstack2 = { .start = stack2, .end = stack2 + STACK_SIZE };
+  // Create a kernel context
+  Area kstack = { .start = stack1, .end = stack1 + STACK_SIZE };
+  task_ctx = kcontext(kstack, task_function, "hello_task");
   
-  ctx1 = kcontext(kstack1, task1, "task1");
-  ctx2 = kcontext(kstack2, task2, "task2");
-  
-  if (ctx1 != NULL && ctx2 != NULL) {
-    putstr("Created both contexts successfully\n");
+  if (task_ctx != NULL) {
+    putstr("Created context successfully\n");
     
-    // Set current context to task1 and start execution
-    current_ctx = ctx1;
-    putstr("Starting Task 1...\n");
+    putstr("Main: About to yield to start task\n");
+    yield();  // This should switch to the task
     
-    // Force a context switch to start the first task
-    yield();
+    putstr("Main: Back from first yield\n");
+    yield();  // This should switch to task again
+    
+    putstr("Main: Back from second yield\n");
+    yield();  // Task should yield back
+    
+    putstr("Main: Back from third yield\n");
+    yield();  // Final yield
+    
+    putstr("Main: All done!\n");
   } else {
-    putstr("Failed to create contexts\n");
+    putstr("Failed to create context\n");
   }
   
-  putstr("Main function completed\n");
+  putstr("Program completed\n");
   return 0;
 }
