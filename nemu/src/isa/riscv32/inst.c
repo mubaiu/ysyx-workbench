@@ -147,10 +147,35 @@ static int decode_exec(Decode *s) {
                                                                     }
                                                                 }
                                                             );
-  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
-                                                                s->dnpc = isa_raise_intr(ecall_code, s->pc);
-                                                                // nemu_state.state = NEMU_STOP;
-                                                                );
+  // 替换现有的ecall实现
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall, I, 
+          word_t ecall_code;
+          // 获取当前特权级别并设置相应的ecall_code
+          // RISC-V特权级别: 0=U-mode, 1=S-mode, 3=M-mode
+          uint32_t privilege_mode = BITS(cpu.csr.mstatus, 12, 11); // 从mstatus.MPP获取当前特权级别
+          
+          if (privilege_mode == 0) {
+            ecall_code = 8;  // 用户模式(U-mode)环境调用
+          } else if (privilege_mode == 1) {
+            ecall_code = 9;  // 监管者模式(S-mode)环境调用
+          } else {
+            ecall_code = 11; // 机器模式(M-mode)环境调用
+          }
+          
+          // 根据a7/a5寄存器检查是否是自定义yield调用
+          // 在AM中，yield()函数设置a7/a5为-1然后执行ecall
+          #ifdef __riscv_e
+          if (R(15) == (uint32_t)-1) { // a5寄存器
+            ecall_code = 11;  // 确保yield被识别为machine ecall
+          }
+          #else
+          if (R(17) == (uint32_t)-1) { // a7寄存器
+            ecall_code = 11;  // 确保yield被识别为machine ecall
+          }
+          #endif
+          
+          s->dnpc = isa_raise_intr(ecall_code, s->pc);
+          );
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;  // 直接返回到异常前的PC
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
