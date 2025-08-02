@@ -69,3 +69,26 @@ __am_asm_trap:
 
   addi sp, sp, CONTEXT_SIZE
   mret
+
+.globl __am_kcontext_start
+__am_kcontext_start:
+  # This function is called when a kernel context is first started
+  # At this point:
+  # - GPR1 (a7/a5) contains the arg
+  # - We need to jump to the entry function with arg as parameter
+  
+#ifdef __riscv_e
+  mv a0, a5      # Move arg from a5 to a0 (first parameter register)
+#else  
+  mv a0, a7      # Move arg from a7 to a0 (first parameter register)
+#endif
+
+  # We'll use t0 to hold the entry address
+  # The entry address should be stored in x1 (ra) by the context setup
+  mv t0, ra      # ra should contain the entry address
+  
+  # Set panic return address - if entry function returns, we panic
+  la ra, __am_panic_on_return
+  
+  # Jump to the entry function with arg in a0
+  jr t0

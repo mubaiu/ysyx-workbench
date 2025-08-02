@@ -7,7 +7,7 @@ Context *simple_trap(Event ev, Context *ctx) {
     case EVENT_IRQ_IODEV:
       putch('d'); break;
     case EVENT_YIELD:
-      // putch('y'); 
+      putch('y'); 
       break;
     default:
       panic("Unhandled event"); break;

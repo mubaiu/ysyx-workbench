@@ -15,9 +15,9 @@
 [1;34m[src/monitor/monitor.c:36 welcome] Ftrace: [1;31mOFF[0m[0m
 [1;34m[src/monitor/monitor.c:37 welcome] Mtrace: [1;31mOFF[0m[0m
 [1;34m[src/monitor/monitor.c:38 welcome] Dtrace: [1;31mOFF[0m[0m
-[1;34m[src/monitor/monitor.c:39 welcome] Etrace: [1;32mON[0m[0m
+[1;34m[src/monitor/monitor.c:39 welcome] Etrace: [1;31mOFF[0m[0m
 [1;34m[src/monitor/monitor.c:40 welcome] If trace is enabled, a log file will be generated to record the trace. This may lead to a large log file. If it is not necessary, you can disable it in menuconfig[0m
-[1;34m[src/monitor/monitor.c:43 welcome] Build time: 18:59:46, Aug  1 2025[0m
+[1;34m[src/monitor/monitor.c:43 welcome] Build time: 10:50:00, Aug  2 2025[0m
 0x80000000: 00 00 04 13 mv	s0, zero
 0x80000004: 00 09 e1 17 auipc	sp, 0x9e
 0x80000008: ff c1 01 13 addi	sp, sp, -4
