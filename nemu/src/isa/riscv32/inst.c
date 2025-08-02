@@ -147,17 +147,7 @@ static int decode_exec(Decode *s) {
                                                                     }
                                                                 }
                                                             );
-  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code;
-                                                                // 根据当前特权级别设置异常代码
-                                                                if (cpu.prv == 0) {
-                                                                    ecall_code = 8;  // U-mode environment call
-                                                                } else if (cpu.prv == 1) {
-                                                                    ecall_code = 9;  // S-mode environment call  
-                                                                } else if (cpu.prv == 3) {
-                                                                    ecall_code = 11; // M-mode environment call
-                                                                } else {
-                                                                    ecall_code = 11; // 默认M-mode
-                                                                }
+  INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code = 11;  // Machine环境调用异常码
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
                                                                 // nemu_state.state = NEMU_STOP;
                                                                 );

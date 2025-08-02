@@ -21,7 +21,6 @@
 typedef struct {
   word_t gpr[MUXDEF(CONFIG_RVE, 16, 32)];
   vaddr_t pc;
-  word_t prv;      // 当前特权级别 (0=User, 1=Supervisor, 3=Machine)
   // 添加CSR寄存器结构
   struct {
     word_t mepc;     // 机器异常程序计数器

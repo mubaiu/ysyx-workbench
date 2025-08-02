@@ -29,17 +29,17 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   cpu.csr.mcause = NO;
   
   // 简化的中断处理：在Machine-only模式下禁用中断
-  cpu.csr.mstatus &= ~(1 << 3);  // 清除MIE位，禁用中断
+  // cpu.csr.mstatus &= ~(1 << 3);  // 清除MIE位，禁用中断
   
-  // 根据mtvec模式计算异常处理程序入口地址
-  vaddr_t handler_addr = (cpu.csr.mtvec & 0x3) == 0 ? 
-    cpu.csr.mtvec & ~0x3 :                              // 直接模式
-    (cpu.csr.mtvec & ~0x3) + 4 * NO;                    // 向量模式
+  // // 根据mtvec模式计算异常处理程序入口地址
+  // vaddr_t handler_addr = (cpu.csr.mtvec & 0x3) == 0 ? 
+  //   cpu.csr.mtvec & ~0x3 :                              // 直接模式
+  //   (cpu.csr.mtvec & ~0x3) + 4 * NO;                    // 向量模式
   
   // 记录异常处理踪迹
   IFDEF(CONFIG_ETRACE, etrace_exception(NO, epc, handler_addr));
   
-  return handler_addr;
+  return cpu.csr.mtvec; // 返回异常处理程序入口地址
 }
 
 word_t isa_query_intr() {
