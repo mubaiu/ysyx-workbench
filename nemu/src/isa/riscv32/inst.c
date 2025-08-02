@@ -148,30 +148,18 @@ static int decode_exec(Decode *s) {
                                                                 }
                                                             );
   INSTPAT("0000000 00000 00000 000 00000 11100 11", ecall  , I, word_t ecall_code;
-                                                                // 检查当前特权级别来确定异常码
-                                                                // 从mstatus寄存器获取当前特权级别(MPP字段位于12-11位)
-                                                                uint32_t privilege_mode = BITS(cpu.csr.mstatus, 12, 11);
-                                                                
-                                                                if (privilege_mode == 0) {
-                                                                  ecall_code = 8;  // 用户模式环境调用
-                                                                } else if (privilege_mode == 1) {
-                                                                  ecall_code = 9;  // 监管者模式环境调用  
+                                                                // 根据当前特权级别设置异常代码
+                                                                if (cpu.prv == 0) {
+                                                                    ecall_code = 8;  // U-mode environment call
+                                                                } else if (cpu.prv == 1) {
+                                                                    ecall_code = 9;  // S-mode environment call  
+                                                                } else if (cpu.prv == 3) {
+                                                                    ecall_code = 11; // M-mode environment call
                                                                 } else {
-                                                                  ecall_code = 11; // 机器模式环境调用
+                                                                    ecall_code = 11; // 默认M-mode
                                                                 }
-                                                                
-                                                                // 检查是否是yield调用(AM中yield设置a7/a5为-1)
-                                                                #ifdef __riscv_e
-                                                                if (R(15) == (uint32_t)-1) { // a5寄存器
-                                                                  ecall_code = 11;  // 强制使用机器模式
-                                                                }
-                                                                #else
-                                                                if (R(17) == (uint32_t)-1) { // a7寄存器
-                                                                  ecall_code = 11;  // 强制使用机器模式
-                                                                }
-                                                                #endif
-                                                                
                                                                 s->dnpc = isa_raise_intr(ecall_code, s->pc);
+                                                                // nemu_state.state = NEMU_STOP;
                                                                 );
   INSTPAT("0011000 00010 00000 000 00000 11100 11", mret   , I, s->dnpc = cpu.csr.mepc;  // 直接返回到异常前的PC
                                                                 );
