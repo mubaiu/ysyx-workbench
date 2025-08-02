@@ -2,47 +2,80 @@
 #include <klib-macros.h>
 
 #define STACK_SIZE 4096
-static char stack[STACK_SIZE] __attribute__((aligned(16)));
+static char stack1[STACK_SIZE] __attribute__((aligned(16)));
+static char stack2[STACK_SIZE] __attribute__((aligned(16)));
 
-void test_function(void *arg) {
-  putstr("Hello from kernel context! arg = ");
-  putstr((char*)arg);
-  putch('\n');
-  // This should cause a panic since kernel contexts should not return
+static Context *ctx1, *ctx2;
+static Context *current_ctx = NULL;
+
+void task1(void *arg) {
+  for (int i = 0; i < 5; i++) {
+    putstr("Task 1 running, iteration ");
+    putch('0' + i);
+    putch('\n');
+    yield();  // Switch to other task
+  }
+  putstr("Task 1 completed\n");
+  while(1) yield();  // Keep yielding
 }
 
-Context *simple_handler(Event ev, Context *ctx) {
-  putstr("Event occurred\n");
-  return ctx;
+void task2(void *arg) {
+  for (int i = 0; i < 5; i++) {
+    putstr("Task 2 running, iteration ");
+    putch('0' + i);
+    putch('\n');
+    yield();  // Switch to other task
+  }
+  putstr("Task 2 completed\n");
+  while(1) yield();  // Keep yielding
+}
+
+Context *scheduler(Event ev, Context *ctx) {
+  putstr("Scheduler called, event: ");
+  putch('0' + ev.event);
+  putch('\n');
+  
+  // Save current context
+  if (current_ctx == ctx1) {
+    ctx1 = ctx;
+    current_ctx = ctx2;
+    putstr("Switching to Task 2\n");
+    return ctx2;
+  } else {
+    ctx2 = ctx;
+    current_ctx = ctx1;
+    putstr("Switching to Task 1\n");
+    return ctx1;
+  }
 }
 
 int main(const char *args) {
-  const char *fmt =
-    "Hello, AbstractMachine!\n"
-    "mainargs = '%'.\n"
-    "Testing kcontext implementation...\n";
-
-  for (const char *p = fmt; *p; p++) {
-    (*p == '%') ? putstr(args) : putch(*p);
-  }
+  putstr("Hello, AbstractMachine!\n");
+  putstr("Testing cooperative multitasking with kcontext...\n");
   
   // Initialize CTE
-  cte_init(simple_handler);
+  cte_init(scheduler);
   
-  // Create a kernel context
-  Area kstack = { .start = stack, .end = stack + STACK_SIZE };
-  Context *ctx = kcontext(kstack, test_function, "test_arg");
+  // Create two kernel contexts
+  Area kstack1 = { .start = stack1, .end = stack1 + STACK_SIZE };
+  Area kstack2 = { .start = stack2, .end = stack2 + STACK_SIZE };
   
-  putstr("Created context at: ");
-  // Print context address (simplified hex output)
-  putstr("0x"); 
-  // Note: We can't easily print hex without printf, so just indicate success
-  if (ctx != NULL) {
-    putstr("SUCCESS\n");
+  ctx1 = kcontext(kstack1, task1, "task1");
+  ctx2 = kcontext(kstack2, task2, "task2");
+  
+  if (ctx1 != NULL && ctx2 != NULL) {
+    putstr("Created both contexts successfully\n");
+    
+    // Set current context to task1 and start execution
+    current_ctx = ctx1;
+    putstr("Starting Task 1...\n");
+    
+    // Force a context switch to start the first task
+    yield();
   } else {
-    putstr("FAILED\n");
+    putstr("Failed to create contexts\n");
   }
   
-  putstr("Test completed\n");
+  putstr("Main function completed\n");
   return 0;
 }
