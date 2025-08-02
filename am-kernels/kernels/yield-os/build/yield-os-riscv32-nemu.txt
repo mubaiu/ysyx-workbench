@@ -57,7 +57,7 @@ Disassembly of section .text:
 800000b4:	00f12623          	sw	a5,12(sp)
 800000b8:	00c12783          	lw	a5,12(sp)
 800000bc:	fef458e3          	bge	s0,a5,800000ac <f+0x48>
-800000c0:	1d8000ef          	jal	80000298 <yield>
+800000c0:	1dc000ef          	jal	8000029c <yield>
 800000c4:	fd5ff06f          	j	80000098 <f+0x34>
 
 800000c8 <main>:
@@ -88,7 +88,7 @@ Disassembly of section .text:
 80000128:	00f4a023          	sw	a5,0(s1)
 8000012c:	154000ef          	jal	80000280 <kcontext>
 80000130:	00a42023          	sw	a0,0(s0)
-80000134:	164000ef          	jal	80000298 <yield>
+80000134:	168000ef          	jal	8000029c <yield>
 80000138:	00001417          	auipc	s0,0x1
 8000013c:	37c40413          	addi	s0,s0,892 # 800014b4 <_etext+0x4>
 80000140:	04100513          	li	a0,65
@@ -183,19 +183,18 @@ Disassembly of section .text:
 8000027c:	00008067          	ret
 
 80000280 <kcontext>:
-80000280:	ff010113          	addi	sp,sp,-16
-80000284:	fec5ac23          	sw	a2,-8(a1)
-80000288:	f8d5ac23          	sw	a3,-104(a1)
-8000028c:	f7058513          	addi	a0,a1,-144
-80000290:	01010113          	addi	sp,sp,16
-80000294:	00008067          	ret
+80000280:	ffc60613          	addi	a2,a2,-4
+80000284:	ff010113          	addi	sp,sp,-16
+80000288:	fec5ac23          	sw	a2,-8(a1)
+8000028c:	f8d5ac23          	sw	a3,-104(a1)
+80000290:	f7058513          	addi	a0,a1,-144
+80000294:	01010113          	addi	sp,sp,16
+80000298:	00008067          	ret
 
-80000298 <yield>:
-80000298:	fff00893          	li	a7,-1
-8000029c:	00000073          	ecall
-800002a0:	00008067          	ret
-800002a4:	0000                	.insn	2, 0x
-	...
+8000029c <yield>:
+8000029c:	fff00893          	li	a7,-1
+800002a0:	00000073          	ecall
+800002a4:	00008067          	ret
 
 800002a8 <__am_asm_trap>:
 800002a8:	f7410113          	addi	sp,sp,-140
