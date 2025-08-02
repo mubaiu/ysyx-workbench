@@ -84,15 +84,9 @@ __am_asm_trap:
 __am_kcontext_start:
   # This function is called when a kernel context is first started
   # At this point:
-  # - GPR1 (a7/a5) contains the arg
+  # - a0 contains the arg (already in the correct register)
   # - a1 contains the entry function address
   
-#ifdef __riscv_e
-  mv a0, a5      # Move arg from a5 to a0 (first parameter register)
-#else  
-  mv a0, a7      # Move arg from a7 to a0 (first parameter register)
-#endif
-
   # Set panic return address - if entry function returns, we panic
   la ra, __am_panic_on_return
   
