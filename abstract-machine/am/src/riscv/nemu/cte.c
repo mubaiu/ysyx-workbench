@@ -1,7 +1,6 @@
 #include <am.h>
 #include <riscv/riscv.h>
 #include <klib.h>
-#include <klib-macros.h>
 
 static Context* (*user_handler)(Event, Context*) = NULL;
 
@@ -21,7 +20,6 @@ Context* __am_irq_handle(Context *c) {
 }
 
 extern void __am_asm_trap(void);
-extern void __am_kcontext_start(void);
 
 bool cte_init(Context*(*handler)(Event, Context*)) {
   // initialize exception entry
@@ -34,27 +32,7 @@ bool cte_init(Context*(*handler)(Event, Context*)) {
 }
 
 Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
-  // Create context at the bottom of the stack
-  Context *ctx = (Context *)((char *)kstack.end - sizeof(Context));
-  
-  // Initialize the context to zeros
-  memset(ctx, 0, sizeof(Context));
-  
-  // Set up the program counter to start at __am_kcontext_start
-  extern void __am_kcontext_start(void);
-  ctx->mepc = (uintptr_t)__am_kcontext_start;
-  
-  // Set up argument in a0 register (gpr[8] maps to x10)
-  ctx->gpr[8] = (uintptr_t)arg;
-  
-  // Set up entry function address in a1 register (gpr[9] maps to x11)
-  // This matches the native RISC-V implementation which uses 'jalr a1'
-  ctx->gpr[9] = (uintptr_t)entry;
-  
-  // Set up machine status register for machine mode
-  ctx->mstatus = 0x1800; // MPP = 11 (machine mode), other bits 0
-  
-  return ctx;
+  return NULL;
 }
 
 void yield() {
@@ -70,8 +48,4 @@ bool ienabled() {
 }
 
 void iset(bool enable) {
-}
-
-void __am_panic_on_return() {
-  panic("kernel context returns");
 }

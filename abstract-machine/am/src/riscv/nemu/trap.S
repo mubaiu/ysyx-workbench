@@ -60,12 +60,6 @@ __am_asm_trap:
   mv a0, sp
   call __am_irq_handle
 
-  # __am_irq_handle() returns a pointer to the context to restore
-  # This might be different from the input context (for context switching)
-  # The returned context pointer is in a0
-  mv sp, a0  # Switch stack pointer to the new context
-
-  # Now restore from the new context
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)
   csrw mstatus, t1
@@ -73,23 +67,5 @@ __am_asm_trap:
 
   MAP(REGS, POP)
 
-  # For context switching, we need to restore the stack pointer correctly
-  # If this is a new kernel context, the stack should be at the top of the allocated area
-  # If this is a saved context, the stack should be where it was when saved
-  # The Context structure is at the bottom of the stack, so we move past it
   addi sp, sp, CONTEXT_SIZE
   mret
-
-.globl __am_kcontext_start
-__am_kcontext_start:
-  # This function is called when a kernel context is first started
-  # At this point:
-  # - a0 contains the arg (already in the correct register)
-  # - a1 contains the entry function address
-  
-  # Set panic return address - if entry function returns, we panic
-  la ra, __am_panic_on_return
-  
-  # Jump to the entry function with arg in a0
-  # a1 already contains the entry function address
-  jalr a1
