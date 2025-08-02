@@ -20,6 +20,14 @@
         "cpu.h": "c",
         "riscv.h": "c",
         "*.def": "c",
-        "limits": "c"
+        "limits": "c",
+        "deque": "c",
+        "forward_list": "c",
+        "list": "c",
+        "unordered_map": "c",
+        "unordered_set": "c",
+        "vector": "c",
+        "initializer_list": "c",
+        "regex": "c"
     }
 }
