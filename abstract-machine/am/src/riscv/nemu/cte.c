@@ -47,12 +47,9 @@ Context *kcontext(Area kstack, void (*entry)(void *), void *arg) {
   // Set up argument in GPR1 (a7 for RV32I/RV64I, a5 for RV32E)
   ctx->GPR1 = (uintptr_t)arg;
   
-  // Set up entry function address in x1 (ra register)
-  ctx->gpr[1] = (uintptr_t)entry;
-  
-  // Set up stack pointer - note x2 (sp) is not saved in gpr array,
-  // it's handled specially by the trap handler
-  // When context is restored, sp will be set to the context location
+  // Set up entry function address in a1 register (gpr[11])
+  // This matches the native RISC-V implementation which uses 'jalr a1'
+  ctx->gpr[11] = (uintptr_t)entry;
   
   // Set up machine status register for machine mode
   ctx->mstatus = 0x1800; // MPP = 11 (machine mode), other bits 0
