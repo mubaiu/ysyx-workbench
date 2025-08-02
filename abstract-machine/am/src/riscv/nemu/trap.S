@@ -73,6 +73,10 @@ __am_asm_trap:
 
   MAP(REGS, POP)
 
+  # For context switching, we need to restore the stack pointer correctly
+  # If this is a new kernel context, the stack should be at the top of the allocated area
+  # If this is a saved context, the stack should be where it was when saved
+  # The Context structure is at the bottom of the stack, so we move past it
   addi sp, sp, CONTEXT_SIZE
   mret
 
@@ -89,10 +93,6 @@ __am_kcontext_start:
   mv a0, a7      # Move arg from a7 to a0 (first parameter register)
 #endif
 
-  # Set up stack pointer alignment (RISC-V ABI requires 16-byte alignment)
-  addi sp, sp, -16
-  andi sp, sp, ~15
-  
   # Set panic return address - if entry function returns, we panic
   la ra, __am_panic_on_return
   
