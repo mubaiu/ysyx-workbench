@@ -28,40 +28,18 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   // 保存中断/异常原因到mcause CSR
   cpu.csr.mcause = NO;
   
-  // 实现特权级转换逻辑
-  word_t mstatus = cpu.csr.mstatus;
+  // 简化的中断处理：在Machine-only模式下禁用中断
+  // cpu.csr.mstatus &= ~(1 << 3);  // 清除MIE位，禁用中断
   
-  // 保存当前的MIE位到MPIE位
-  word_t mie = (mstatus >> 3) & 0x1;  // 提取MIE位
-  mstatus &= ~(1UL << 7);             // 清除MPIE位
-  mstatus |= (mie << 7);              // 设置MPIE位为原MIE值
-  
-  // 获取当前特权级
-  word_t current_priv = cpu.privilege_level;
-  
-  // 保存当前特权级到MPP字段
-  // MPP位于mstatus的[12:11]位
-  mstatus &= ~(0x3UL << 11);          // 清除MPP字段
-  mstatus |= (current_priv << 11);    // 设置MPP为当前特权级
-  
-  // 清除MIE位，禁用中断
-  mstatus &= ~(1UL << 3);             // 清除MIE位
-  
-  // 更新mstatus寄存器
-  cpu.csr.mstatus = mstatus;
-  
-  // 异常发生后，特权级提升到Machine模式
-  cpu.privilege_level = 3;
-  
-  // 根据mtvec模式计算异常处理程序入口地址
-  vaddr_t handler_addr = (cpu.csr.mtvec & 0x3) == 0 ? 
-    cpu.csr.mtvec & ~0x3 :                              // 直接模式
-    (cpu.csr.mtvec & ~0x3) + 4 * NO;                    // 向量模式
+  // // 根据mtvec模式计算异常处理程序入口地址
+  // vaddr_t handler_addr = (cpu.csr.mtvec & 0x3) == 0 ? 
+  //   cpu.csr.mtvec & ~0x3 :                              // 直接模式
+  //   (cpu.csr.mtvec & ~0x3) + 4 * NO;                    // 向量模式
   
   // 记录异常处理踪迹
   IFDEF(CONFIG_ETRACE, etrace_exception(NO, epc, handler_addr));
   
-  return handler_addr; // 返回异常处理程序入口地址
+  return cpu.csr.mtvec; // 返回异常处理程序入口地址
 }
 
 word_t isa_query_intr() {

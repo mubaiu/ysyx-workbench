@@ -29,8 +29,6 @@ typedef struct {
     word_t mtvec;    // 机器陷阱向量
     // 其他CSR寄存器...
   } csr;
-  // 当前特权级 (0=User, 1=Supervisor, 2=Reserved, 3=Machine)
-  word_t privilege_level;
 } MUXDEF(CONFIG_RV64, riscv64_CPU_state, riscv32_CPU_state);
 
 // decode
