@@ -63,7 +63,6 @@ __am_asm_trap:
   
   mv sp, a0
 //跳转到C函数处理异常然后返回
-  LOAD t0, OFFSET_CAUSE(sp)
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)
   csrw mstatus, t1
