@@ -8,8 +8,6 @@
 [1;34m[src/device/io/mmio.c:50 add_mmio_map] Add mmio map 'audio' at [0xa0000200, 0xa0000217][0m
 [1;34m[src/device/io/mmio.c:50 add_mmio_map] Add mmio map 'audio-sbuf' at [0xa1200000, 0xa120ffff][0m
 [1;34m[src/monitor/monitor.c:215 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/kernels/yield-os/build/yield-os-riscv32-nemu.bin, size = 104664[0m
-[1;34m[src/cpu/difftest/dut.c:84 init_difftest] Differential testing: [1;32mON[0m[0m
-[1;34m[src/cpu/difftest/dut.c:85 init_difftest] The result of every instruction will be compared with /home/mubai/ysyx-workbench/nemu/tools/spike-diff/build/riscv32-spike-so. This will help you a lot for debugging, but also significantly reduce the performance. If it is not necessary, you can turn it off in menuconfig.[0m
 [1;34m[src/monitor/monitor.c:34 welcome] Trace: [1;32mON[0m[0m
 [1;34m[src/monitor/monitor.c:35 welcome] Itrace: [1;32mON[0m[0m
 [1;34m[src/monitor/monitor.c:36 welcome] Ftrace: [1;31mOFF[0m[0m
