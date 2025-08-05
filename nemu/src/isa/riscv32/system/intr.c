@@ -39,7 +39,7 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   // 记录异常处理踪迹
   IFDEF(CONFIG_ETRACE, etrace_exception(NO, epc, handler_addr));
   
-  return cpu.csr.mtvec+4; // 返回异常处理程序入口地址
+  return cpu.csr.mtvec; // 返回异常处理程序入口地址
 }
 
 word_t isa_query_intr() {
