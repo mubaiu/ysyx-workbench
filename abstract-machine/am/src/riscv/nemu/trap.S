@@ -38,7 +38,6 @@ f(30) f(31)
 #define OFFSET_EPC    ((NR_REGS + 2) * XLEN)
 
 .align 3
-//系统调用的入口点,通过ecall指令触发，这个点在cteinit函数中设置,通过内联汇编实现
 .globl __am_asm_trap
 __am_asm_trap:
   addi sp, sp, -CONTEXT_SIZE
@@ -59,10 +58,8 @@ __am_asm_trap:
   csrw mstatus, t1
 
   mv a0, sp
-  jal __am_irq_handle
-  
-  mv sp, a0
-//跳转到C函数处理异常然后返回
+  call __am_irq_handle
+
   LOAD t1, OFFSET_STATUS(sp)
   LOAD t2, OFFSET_EPC(sp)
   csrw mstatus, t1
@@ -72,4 +69,3 @@ __am_asm_trap:
 
   addi sp, sp, CONTEXT_SIZE
   mret
-  //重复执行__am_asm_trap,因为ecall指令会导致mepc寄存器被设置为当前指令的地址

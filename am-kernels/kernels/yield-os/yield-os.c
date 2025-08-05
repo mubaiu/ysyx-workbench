@@ -3,7 +3,6 @@
 
 #define STACK_SIZE (4096 * 8)
 typedef union {
-
   uint8_t stack[STACK_SIZE];
   struct { Context *cp; };
 } PCB;
