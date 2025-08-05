@@ -3,6 +3,7 @@
 
 #define STACK_SIZE (4096 * 8)
 typedef union {
+
   uint8_t stack[STACK_SIZE];
   struct { Context *cp; };
 } PCB;
@@ -19,7 +20,6 @@ static void f(void *arg) {
 static Context *schedule(Event ev, Context *prev) {
   current->cp = prev;
   current = (current == &pcb[0] ? &pcb[1] : &pcb[0]);
-  // current->cp->mepc += 4;
   return current->cp;
 }
 
