@@ -110,7 +110,7 @@
 0x80000308: 07 f1 2e 23 sw	t6, 0x7c(sp)
 0x8000030c: 34 20 22 f3 csrr	t0, mcause
 0x80000310: 30 00 22 f3 csrr	t0, mstatus
-0x80000314: 34 10 23 f3 csrr	t2, mepc
+0x80000314: 34 10 22 f3 csrr	t0, mepc
 0x80000318: 08 51 20 23 sw	t0, 0x80(sp)
 0x8000031c: 08 61 22 23 sw	t1, 0x84(sp)
 0x80000320: 08 71 24 23 sw	t2, 0x88(sp)
