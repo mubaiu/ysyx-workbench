@@ -28,6 +28,9 @@
         "unordered_set": "c",
         "vector": "c",
         "initializer_list": "c",
-        "regex": "c"
+        "regex": "c",
+        "chrono": "c",
+        "format": "c",
+        "span": "c"
     }
 }
