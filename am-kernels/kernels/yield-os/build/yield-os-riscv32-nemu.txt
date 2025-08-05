@@ -234,10 +234,10 @@ Disassembly of section .text:
 8000032c:	30031073          	csrw	mstatus,t1
 80000330:	00010513          	mv	a0,sp
 80000334:	e81ff0ef          	jal	800001b4 <__am_irq_handle>
-80000338:	00050113          	mv	sp,a0
-8000033c:	08412303          	lw	t1,132(sp)
-80000340:	08812383          	lw	t2,136(sp)
-80000344:	30031073          	csrw	mstatus,t1
+80000338:	08412303          	lw	t1,132(sp)
+8000033c:	08812383          	lw	t2,136(sp)
+80000340:	30031073          	csrw	mstatus,t1
+80000344:	00438393          	addi	t2,t2,4
 80000348:	34139073          	csrw	mepc,t2
 8000034c:	00412083          	lw	ra,4(sp)
 80000350:	00c12183          	lw	gp,12(sp)
