@@ -23,7 +23,7 @@ word_t isa_raise_intr(word_t NO, vaddr_t epc) {
   /* 触发中断/异常，并返回中断/异常向量地址 */
   
   // 保存异常PC到mepc CSR
-  cpu.csr.mepc = epc+4;
+  cpu.csr.mepc = epc;
   
   // 保存中断/异常原因到mcause CSR
   cpu.csr.mcause = NO;
