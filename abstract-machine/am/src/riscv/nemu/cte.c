@@ -11,7 +11,7 @@ Context* __am_irq_handle(Context *c) {
       case 11: ev.event = EVENT_YIELD; break;  // Machine mode environment call (ecall)
       default: ev.event = EVENT_ERROR; break;
     }
-
+    c->mepc += 4;
     c = user_handler(ev, c);
     assert(c != NULL);
   }
