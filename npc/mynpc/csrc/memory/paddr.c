@@ -155,7 +155,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   }
   static int cnt = 0;
   // 处理串口输出
-  if(addr == SERIAL_PORT) {
+  if(addr >= SERIAL_PORT && addr <= (DEVICE_BASE + 0x00003ff)) {
     if(cnt==2){
     cnt = 0;
     putchar((char)data);
