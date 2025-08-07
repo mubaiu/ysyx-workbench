@@ -107,8 +107,8 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 static void out_of_bound(paddr_t addr) {
   // panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
   //     addr, PMEM_LEFT, PMEM_RIGHT, cpu.pc);
-  // panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
-  //     addr, PMEM_LEFT, PMEM_RIGHT, npc.pc);
+  panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
+      addr, PMEM_LEFT, PMEM_RIGHT, npc.pc);
 }
 
 void init_mem() {
@@ -155,7 +155,7 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   }
   static int cnt = 0;
   // 处理串口输出
-  if(addr >= SERIAL_PORT && addr <= 0xa00003fd) {
+  if(addr == SERIAL_PORT) {
     if(cnt==2){
     cnt = 0;
     putchar((char)data);
