@@ -940,7 +940,7 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
         break;
       }
       
-            // 在switch语句中添加以下代码：
+            // 替换浮点数格式化部分
       
       case 'f':
       case 'F':
@@ -964,6 +964,8 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
           
           // 提取指数和尾数
           uint32_t exp_bits = ((bits.u[1] >> 20) & 0x7FF);
+          uint32_t mantissa_high = (bits.u[1] & 0xFFFFF);
+          uint32_t mantissa_low = bits.u[0];
           
           // 特殊值处理
           if (exp_bits == 0x7FF) {
@@ -987,85 +989,195 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
               break;
           }
           
+          // 0值的特殊处理
+          if (exp_bits == 0 && mantissa_high == 0 && mantissa_low == 0) {
+              // 确定要使用的小数位数
+              int decimal_places = (precision >= 0) ? precision : 6;
+              
+              // 计算总长度
+              int total_len = 1 + (decimal_places > 0 ? decimal_places + 1 : 0) + (is_negative || flag_plus || flag_space ? 1 : 0);
+              
+              // 计算填充字符数量
+              int padding = width - total_len;
+              
+              // 更新总字符计数
+              total_chars += (padding > 0) ? total_len + padding : total_len;
+              
+              // 输出结果（考虑对齐）
+              if (!flag_left_align) {
+                  // 右对齐
+                  char pad_char = (flag_zero_padding) ? '0' : ' ';
+                  while (padding-- > 0) {
+                      if (outindex < n - 1) {
+                          out[outindex++] = pad_char;
+                      }
+                  }
+              }
+              
+              // 输出符号
+              if (is_negative) {
+                  if (outindex < n - 1) {
+                      out[outindex++] = '-';
+                  }
+              } else if (flag_plus) {
+                  if (outindex < n - 1) {
+                      out[outindex++] = '+';
+                  }
+              } else if (flag_space) {
+                  if (outindex < n - 1) {
+                      out[outindex++] = ' ';
+                  }
+              }
+              
+              // 输出0
+              if (outindex < n - 1) {
+                  out[outindex++] = '0';
+              }
+              
+              // 输出小数部分（如果需要）
+              if (decimal_places > 0) {
+                  if (outindex < n - 1) {
+                      out[outindex++] = '.';
+                  }
+                  
+                  for (int i = 0; i < decimal_places; i++) {
+                      if (outindex < n - 1) {
+                          out[outindex++] = '0';
+                      }
+                  }
+              }
+              
+              // 左对齐时添加右侧填充
+              if (flag_left_align) {
+                  while (padding-- > 0) {
+                      if (outindex < n - 1) {
+                          out[outindex++] = ' ';
+                      }
+                  }
+              }
+              break;
+          }
+          
           // 确定要使用的小数位数
           int decimal_places = (precision >= 0) ? precision : 6;
           
-          // 使用简单算法处理整数部分和小数部分
-          char int_buf[32]; // 存储整数部分
-          char frac_buf[32]; // 存储小数部分
+          // 使用改进的算法处理整数部分和小数部分
+          char int_buf[64]; // 存储整数部分
+          char frac_buf[64]; // 存储小数部分
           int int_len = 0;
           int frac_len = 0;
           
-          // 提取整数部分和小数部分
-          if (exp_bits == 0) {
-              // 非规格化数(很小的数)
-              int_buf[int_len++] = '0';
-              
-              // 简化处理小数部分 - 0或极小值
-              for (int i = 0; i < decimal_places; i++) {
-                  frac_buf[i] = '0';
-              }
-              frac_len = decimal_places;
+          // 计算实际值（使用整数算法避免浮点运算）
+          int32_t exponent = exp_bits - 1023; // IEEE 754偏移值
+          
+          // 更精确的整数部分计算
+          if (exponent < 0) {
+              // 小于1的数
+              int_buf[0] = '0';
+              int_len = 1;
           } else {
-              // 规格化数
-              int32_t exponent = exp_bits - 1023; // IEEE 754偏移值
+              // 计算整数部分 - 对于52位尾数和合理的指数
+              uint64_t int_part = 0;
               
-              if (exponent < 0) {
-                  // 小于1的数
-                  int_buf[int_len++] = '0';
-                  
-                  // 简化的小数部分处理
-                  // 对于非常小的数，返回近似值
-                  for (int i = 0; i < decimal_places; i++) {
-                      if (i == 0 && exponent > -5) {
-                          frac_buf[i] = '5'; // 简化处理
-                      } else {
-                          frac_buf[i] = '0';
-                      }
-                  }
-                  frac_len = decimal_places;
-              } else if (exponent < 20) {
-                  // 适中大小的数
-                  // 整数部分处理 - 使用整数算法
-                  uint32_t int_part = 1 << exponent; // 2^exponent
-                  
-                  if (int_part == 0) {
-                      int_buf[int_len++] = '0';
+              // 设置隐含的前导1
+              uint64_t value = 1ull << 52;
+              
+              // 添加尾数部分
+              value |= ((uint64_t)mantissa_high << 32) | mantissa_low;
+              
+              // 根据指数调整
+              if (exponent > 52) {
+                  // 大数处理 - 左移
+                  int shift = exponent - 52;
+                  if (shift < 64) { // 避免移位过多
+                      int_part = value << shift;
                   } else {
-                      while (int_part > 0) {
-                          int_buf[int_len++] = '0' + (int_part % 10);
-                          int_part /= 10;
+                      // 太大的数，简化处理
+                      int_buf[int_len++] = '1';
+                      for (int i = 0; i < 15; i++) { // 显示15位有效数字
+                          int_buf[int_len++] = '0';
                       }
-                      // 反转整数部分
-                      for (int i = 0, j = int_len - 1; i < j; i++, j--) {
-                          char tmp = int_buf[i];
-                          int_buf[i] = int_buf[j];
-                          int_buf[j] = tmp;
-                      }
+                      goto skip_conversion;
                   }
-                  
-                  // 简化的小数部分处理
-                  for (int i = 0; i < decimal_places; i++) {
-                      frac_buf[i] = (i % 9) + '0'; // 循环数字，近似值
-                  }
-                  frac_len = decimal_places;
               } else {
-                  // 大数 - 简化处理为科学计数法
-                  int_buf[int_len++] = '1';
-                  for (int i = 0; i < exponent; i++) {
-                      int_buf[int_len++] = '0';
+                  // 常规数处理 - 右移
+                  int_part = value >> (52 - exponent);
+              }
+              
+              // 转换为十进制字符串
+              if (int_part == 0) {
+                  int_buf[int_len++] = '0';
+              } else {
+                  // 使用除法将整数转为字符串
+                  uint64_t temp = int_part;
+                  while (temp > 0) {
+                      int_buf[int_len++] = '0' + (temp % 10);
+                      temp /= 10;
                   }
                   
-                  // 无小数部分
-                  if (decimal_places > 0) {
-                      for (int i = 0; i < decimal_places; i++) {
-                          frac_buf[i] = '0';
-                      }
-                      frac_len = decimal_places;
+                  // 反转整数部分
+                  for (int i = 0, j = int_len - 1; i < j; i++, j--) {
+                      char tmp = int_buf[i];
+                      int_buf[i] = int_buf[j];
+                      int_buf[j] = tmp;
                   }
               }
           }
           
+          // 更精确的小数部分计算
+          if (decimal_places > 0) {
+              if (exponent < 0) {
+                  // 小于1的数
+                  int abs_exp = -exponent;
+                  
+                  // 设置隐含的前导1
+                  uint64_t frac = 1ull << 52;
+                  
+                  // 添加尾数部分
+                  frac |= ((uint64_t)mantissa_high << 32) | mantissa_low;
+                  
+                  // 生成小数部分
+                  for (int i = 0; i < decimal_places; i++) {
+                      // 乘以10并取整数部分
+                      frac *= 10;
+                      if (abs_exp > 0) {
+                          frac >>= 1;
+                          abs_exp--;
+                      }
+                      
+                      uint8_t digit = (frac >> 52) & 0xF;
+                      frac &= ((1ull << 52) - 1); // 清除整数部分
+                      
+                      frac_buf[i] = '0' + digit;
+                  }
+                  frac_len = decimal_places;
+              } else if (exponent < 52) {
+                  // 有小数部分的常规数
+                  uint64_t mask = (1ull << (52 - exponent)) - 1;
+                  uint64_t frac = (((uint64_t)mantissa_high << 32) | mantissa_low) & mask;
+                  
+                  // 设置位的精度
+                  uint64_t bit_precision = 1ull << (52 - exponent);
+                  
+                  // 生成小数部分
+                  for (int i = 0; i < decimal_places; i++) {
+                      frac *= 10;
+                      uint8_t digit = frac / bit_precision;
+                      frac %= bit_precision;
+                      
+                      frac_buf[i] = '0' + digit;
+                  }
+                  frac_len = decimal_places;
+              } else {
+                  // 整数，小数部分全为0
+                  for (int i = 0; i < decimal_places; i++) {
+                      frac_buf[i] = '0';
+                  }
+                  frac_len = decimal_places;
+              }
+          }
+          
+      skip_conversion:
           // 计算总长度
           int total_len = int_len + (decimal_places > 0 ? decimal_places + 1 : 0) + (is_negative || flag_plus || flag_space ? 1 : 0);
           
