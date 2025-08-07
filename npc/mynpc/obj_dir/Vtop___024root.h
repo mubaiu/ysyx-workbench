@@ -27,9 +27,11 @@ class Vtop___024root final : public VerilatedModule {
     CData/*0:0*/ top__DOT__jalr_en;
     CData/*0:0*/ top__DOT__ebreak_en;
     CData/*0:0*/ top__DOT__ecall_en;
+    CData/*0:0*/ top__DOT__mret_en;
     CData/*0:0*/ top__DOT__auipc_flag;
     CData/*0:0*/ top__DOT__is_csr_op;
     CData/*0:0*/ top__DOT__ecall_taken;
+    CData/*0:0*/ top__DOT__mret_taken;
     CData/*0:0*/ top__DOT__exu__DOT____VdfgTmp_h826bb330__0;
     CData/*0:0*/ __Vtrigrprev__TOP__clk;
     CData/*0:0*/ __VactContinue;
@@ -43,6 +45,7 @@ class Vtop___024root final : public VerilatedModule {
     IData/*31:0*/ top__DOT__imm;
     IData/*31:0*/ top__DOT__alu_result;
     IData/*31:0*/ top__DOT__ecall_target;
+    IData/*31:0*/ top__DOT__mret_target;
     IData/*31:0*/ top__DOT__load_data;
     IData/*31:0*/ top__DOT__ifu__DOT__pc_ff;
     IData/*31:0*/ top__DOT__ifu__DOT__dnpc;
