@@ -1,3 +1,3 @@
-NAME = matrix-mul
-SRCS = tests/matrix-mul.c
+NAME = wanshu
+SRCS = tests/wanshu.c
 include /home/mubai/ysyx-workbench/abstract-machine/Makefile
