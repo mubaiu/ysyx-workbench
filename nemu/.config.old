@@ -48,7 +48,7 @@ CONFIG_TRACE_END=10000
 # CONFIG_MTRACE is not set
 # CONFIG_FTRACE is not set
 # CONFIG_DTRACE is not set
-CONFIG_ETRACE=y
+# CONFIG_ETRACE is not set
 CONFIG_DIFFTEST_REF_PATH="none"
 CONFIG_DIFFTEST_REF_NAME="none"
 # end of Testing and Debugging
