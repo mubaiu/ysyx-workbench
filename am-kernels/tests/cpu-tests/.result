@@ -22,3 +22,4 @@
 [          fact] [1;32mPASS[0m
 [         crc32] [1;32mPASS[0m
 [     leap-year] [1;32mPASS[0m
+[  sub-longlong] [1;32mPASS[0m
