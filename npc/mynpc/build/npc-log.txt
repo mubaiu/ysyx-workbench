@@ -1,6 +1,6 @@
 [1;34m[../csrc/utils/log.c:15 init_log] Log is written to /home/mubai/ysyx-workbench/npc/mynpc/build/npc-log.txt[0m
 [1;34m[../csrc/memory/paddr.c:120 init_mem] physical memory area [0x80000000, 0x87ffffff][0m
-[1;34m[../csrc/monitor.c:211 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/tests/cpu-tests/build/matrix-mul-riscv32e-npc.bin, size = 2040[0m
+[1;34m[../csrc/monitor.c:211 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/tests/cpu-tests/build/wanshu-riscv32e-npc.bin, size = 512[0m
 [1;34m[../csrc/monitor.c:19 welcome] Trace: [1;32mON[0m[0m
 [1;34m[../csrc/monitor.c:20 welcome] Itrace: [1;32mON[0m[0m
 [1;34m[../csrc/monitor.c:21 welcome] Ftrace: [1;31mOFF[0m[0m
