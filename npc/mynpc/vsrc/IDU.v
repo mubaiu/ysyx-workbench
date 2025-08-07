@@ -23,6 +23,7 @@ module IDU(
     output reg jalr_en,
     output reg ebreak_en, // EBREAK标志
     output reg ecall_en,  // ECALL使能信号
+    output reg mret_en,   // MRET使能信号
     // output wire [6:0] opcode
     output wire [2:0] funct3,
     output reg auipc_flag,
@@ -58,6 +59,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
         auipc_flag = 1'b0;
         ecall_en = 1'b0;
         ebreak_en = 1'b0; // EBREAK标志
+        mret_en = 1'b0;
         mem_to_reg = 1'b0;
         branch = 1'b0;
         jal_en = 1'b0;
@@ -180,6 +182,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
                         end
                         12'b000000000001: begin // EBREAK
                             ebreak_en = 1'b1; // 设置EBREAK标志
+                        end
+                        12'b001100000010: begin // MRET
+                            mret_en = 1'b1; // 设置MRET标志
                         end
                     default: begin
                         invalid_inst(pc);

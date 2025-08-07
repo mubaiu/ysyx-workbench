@@ -5,6 +5,7 @@ module EXU(
     input wire [3:0] alu_op,
     input wire ebreak_en, // EBREAK标志
     input wire ecall_en,  // ECALL使能信号
+    input wire mret_en,   // MRET使能信号
     
     // 操作数
     input wire [31:0] rs1_data,
@@ -30,6 +31,8 @@ module EXU(
     // ECALL导致的异常跳转
     output reg ecall_taken,         // ECALL跳转标志
     output reg [31:0] ecall_target,  // ECALL跳转目标地址
+    output reg mret_taken,       // MRET跳转标志
+    output reg [31:0] mret_target, // MRET跳转目标地址
     output wire branch_taken,
     output wire [31:0] branch_target
 );
@@ -101,6 +104,17 @@ import "DPI-C" function void ebreak();
     end
 
     //rt-thread
+    always @(*) begin
+        // 默认值
+        mret_taken = 1'b0;
+        mret_target = 32'h0;
+        
+        if (mret_en) begin
+            mret_taken = 1'b1;
+            mret_target = mepc;  // 跳转到mepc保存的地址
+        end
+    end
+
     always @(*) begin
         ecall_taken = 1'b0;
         ecall_target = 32'h0;

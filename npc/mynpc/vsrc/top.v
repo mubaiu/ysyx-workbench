@@ -26,7 +26,7 @@ module top(
     // 指令解码连线
     wire [31:0] imm;
     wire [3:0] alu_op;
-    wire mem_read, mem_write, alu_src, mem_to_reg, branch, jal_en, jalr_en, ebreak_en, ecall_en, auipc_flag, is_csr_op;
+    wire mem_read, mem_write, alu_src, mem_to_reg, branch, jal_en, jalr_en, ebreak_en, ecall_en, mret_en, auipc_flag, is_csr_op;
     
     // 执行单元连线
     wire [31:0] alu_result;
@@ -34,7 +34,9 @@ module top(
     wire [31:0] branch_target;
     wire ecall_taken;
     wire [31:0] ecall_target;
-    
+    wire mret_taken;
+    wire [31:0] mret_target;
+
     // 内存单元连线
     wire [31:0] load_data;
     wire [2:0] funct3;
@@ -43,6 +45,8 @@ module top(
     IFU ifu(
         .clk(clk),
         .rst(rst),
+        .mret_taken(mret_en),
+        .mret_target(mret_target),
         .ecall_taken(ecall_taken),
         .ecall_target(ecall_target),
         .branch_taken(branch_taken),
@@ -65,6 +69,7 @@ module top(
         .alu_op(alu_op),
         .ebreak_en(ebreak_en),
         .ecall_en(ecall_en),
+        .mret_en(mret_en),
         .mem_read(mem_read),
         .mem_write(mem_write),
         .reg_write(reg_write),
@@ -107,6 +112,9 @@ module top(
         .jalr_en(jalr_en),
         .ebreak_en(ebreak_en),
         .ecall_en(ecall_en),
+        .mret_en(mret_en),
+        .mret_taken(mret_taken),
+        .mret_target(mret_target),
         .ecall_taken(ecall_taken),
         .ecall_target(ecall_target),
         .auipc_flag(auipc_flag),

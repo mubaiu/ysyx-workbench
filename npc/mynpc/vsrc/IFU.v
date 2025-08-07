@@ -3,6 +3,8 @@ module IFU(
     input wire rst,
     
     // 分支控制信号
+    input wire mret_taken, // MRET跳转标志
+    input wire [31:0] mret_target, // MRET跳转目标地址
     input wire ecall_taken,
     input wire [31:0] ecall_target,
     input wire branch_taken,
@@ -27,9 +29,10 @@ module IFU(
     assign snpc = pc + 32'd4;
 
     // 动态PC（考虑分支/跳转的下一个PC）
-    assign dnpc = ecall_taken ? ecall_target : 
-                    branch_taken ? branch_target : 
-                    snpc;
+assign dnpc = mret_taken ? mret_target :  // MRET优先级最高
+                ecall_taken ? ecall_target : 
+                branch_taken ? branch_target : 
+                snpc;
 
     // 指令传递
     always @(*) begin
