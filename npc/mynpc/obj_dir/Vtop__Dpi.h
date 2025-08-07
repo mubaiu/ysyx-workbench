@@ -18,21 +18,21 @@ extern "C" {
     // DPI IMPORTS
     // DPI import at vsrc/REG.v:20:32
     extern void ebreak();
-    // DPI import at vsrc/IFU.v:16:33
+    // DPI import at vsrc/IFU.v:20:33
     extern int intake(int pc);
-    // DPI import at vsrc/IDU.v:31:30
+    // DPI import at vsrc/IDU.v:34:30
     extern void invalid_inst(int thispc);
-    // DPI import at vsrc/top.v:131:30
+    // DPI import at vsrc/top.v:151:30
     extern void set_callfunc();
-    // DPI import at vsrc/IFU.v:18:34
+    // DPI import at vsrc/IFU.v:22:34
     extern void set_dnpc(int pc);
-    // DPI import at vsrc/IFU.v:19:34
+    // DPI import at vsrc/IFU.v:23:34
     extern void set_pc(int pc);
     // DPI import at vsrc/REG.v:19:32
     extern void set_reg_value(int idx, int val);
-    // DPI import at vsrc/top.v:132:30
+    // DPI import at vsrc/top.v:152:30
     extern void set_retfunc();
-    // DPI import at vsrc/IFU.v:17:34
+    // DPI import at vsrc/IFU.v:21:34
     extern void set_snpc(int pc);
     // DPI import at vsrc/LSU.v:21:33
     extern int vaddr_read(int addr, int len);
