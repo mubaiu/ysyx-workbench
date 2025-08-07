@@ -94,6 +94,8 @@ module top(
     // 执行单元
     EXU exu(
         // .snpc(snpc),
+        .clk(clk),
+        .rst(rst),
         .alu_op(alu_op),
         .rs1_data(rs1_data),
         .rs2_data(rs2_data),

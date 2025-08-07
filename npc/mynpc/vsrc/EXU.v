@@ -1,4 +1,6 @@
 module EXU(
+    input wire clk,
+    input wire rst,
     // ALU控制信号
     input wire [3:0] alu_op,
     input wire ebreak_en, // EBREAK标志
