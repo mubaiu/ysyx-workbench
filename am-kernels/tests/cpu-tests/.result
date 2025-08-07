@@ -19,3 +19,4 @@
 [     hello-str] [1;32mPASS[0m
 [     recursion] [1;32mPASS[0m
 [       unalign] [1;32mPASS[0m
+[          fact] [1;32mPASS[0m
