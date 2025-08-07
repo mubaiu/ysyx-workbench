@@ -137,7 +137,7 @@ import "DPI-C" function void ebreak();
         mcause <= 32'h11;      // 设置mcause为ECALL异常码
         end
         else if (is_csr_op) begin
-            case (imm[11:0])
+            case (imm)
                 12'h300: mstatus <= rs1_data; // 写入mstatus
                 12'h341: mepc <= rs1_data;    // 写入mepc
                 12'h342: mcause <= rs1_data;  // 写入mcause

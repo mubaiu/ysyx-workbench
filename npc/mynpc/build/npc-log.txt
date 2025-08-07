@@ -80,4 +80,6 @@
 0x80000118: 00 a4 20 23 sw	a0, 0(s0)
 0x8000011c: 19 c0 00 ef jal	0x19c
 0x800002b8: ff f0 07 93 addi	a5, zero, -1
-0x800002bc: 00 00 00 73 ecall
+[1;34m[../csrc/cpu/cpu-exec.c:181 statistic] host time spent = 0 us[0m
+[1;34m[../csrc/cpu/cpu-exec.c:182 statistic] total guest instructions = 139[0m
+[1;34m[../csrc/cpu/cpu-exec.c:184 statistic] Finish running in less than 1 us and can not calculate the simulation frequency[0m

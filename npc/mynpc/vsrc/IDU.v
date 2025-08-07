@@ -199,7 +199,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     end 
                 else if (funct3 == 3'b010) begin // CSRRS
                         reg_write = 1'b1;
-                        is_csr_op = (rs1_addr != 5'h0); // 如果rs1_addr为0，则不写回
+                        is_csr_op = (rs1_addr != 5'h0) ? 1'b1 : 1'b0; // 如果rs1_addr为0，则不写回
                         alu_op = 4'b1100; // 直通操作
                         imm = {{20{1'b0}}, inst[31:20]};
                     end 
