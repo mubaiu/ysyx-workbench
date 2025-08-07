@@ -138,10 +138,10 @@ import "DPI-C" function void ebreak();
         end
         else if (is_csr_op) begin
             case (imm)
-                12'h300: mstatus <= rs1_data; // 写入mstatus
-                12'h341: mepc <= rs1_data;    // 写入mepc
-                12'h342: mcause <= rs1_data;  // 写入mcause
-                12'h305: mtvec <= rs1_data;   // 写入mtvec
+                32'h300: mstatus <= rs1_data; // 写入mstatus
+                32'h341: mepc <= rs1_data;    // 写入mepc
+                32'h342: mcause <= rs1_data;  // 写入mcause
+                32'h305: mtvec <= rs1_data;   // 写入mtvec
                 default: ; // 其他CSR寄存器忽略写操作
             endcase
         end

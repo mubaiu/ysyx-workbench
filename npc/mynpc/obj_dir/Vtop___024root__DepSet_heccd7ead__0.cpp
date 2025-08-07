@@ -703,14 +703,14 @@ VL_INLINE_OPT void Vtop___024root___nba_sequent__TOP__0(Vtop___024root* vlSelf) 
             vlSelf->top__DOT__exu__DOT__mcause = 0x11U;
             vlSelf->top__DOT__exu__DOT__mepc = vlSelf->pc;
         } else if (vlSelf->top__DOT__is_csr_op) {
-            if ((0x300U != (0xfffU & vlSelf->top__DOT__imm))) {
-                if ((0x341U != (0xfffU & vlSelf->top__DOT__imm))) {
-                    if ((0x342U == (0xfffU & vlSelf->top__DOT__imm))) {
+            if ((0x300U != vlSelf->top__DOT__imm)) {
+                if ((0x341U != vlSelf->top__DOT__imm)) {
+                    if ((0x342U == vlSelf->top__DOT__imm)) {
                         vlSelf->top__DOT__exu__DOT__mcause 
                             = vlSelf->top__DOT__rs1_data;
                     }
                 }
-                if ((0x341U == (0xfffU & vlSelf->top__DOT__imm))) {
+                if ((0x341U == vlSelf->top__DOT__imm)) {
                     vlSelf->top__DOT__exu__DOT__mepc 
                         = vlSelf->top__DOT__rs1_data;
                 }
@@ -718,15 +718,14 @@ VL_INLINE_OPT void Vtop___024root___nba_sequent__TOP__0(Vtop___024root* vlSelf) 
         }
         if ((1U & (~ (IData)(vlSelf->top__DOT__ecall_en)))) {
             if (vlSelf->top__DOT__is_csr_op) {
-                if ((0x300U == (0xfffU & vlSelf->top__DOT__imm))) {
+                if ((0x300U == vlSelf->top__DOT__imm)) {
                     vlSelf->top__DOT__exu__DOT__mstatus 
                         = vlSelf->top__DOT__rs1_data;
                 }
-                if ((0x300U != (0xfffU & vlSelf->top__DOT__imm))) {
-                    if ((0x341U != (0xfffU & vlSelf->top__DOT__imm))) {
-                        if ((0x342U != (0xfffU & vlSelf->top__DOT__imm))) {
-                            if ((0x305U == (0xfffU 
-                                            & vlSelf->top__DOT__imm))) {
+                if ((0x300U != vlSelf->top__DOT__imm)) {
+                    if ((0x341U != vlSelf->top__DOT__imm)) {
+                        if ((0x342U != vlSelf->top__DOT__imm)) {
+                            if ((0x305U == vlSelf->top__DOT__imm)) {
                                 vlSelf->top__DOT__exu__DOT__mtvec 
                                     = vlSelf->top__DOT__rs1_data;
                             }
