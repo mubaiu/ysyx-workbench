@@ -60,7 +60,7 @@ module top(
     // 指令解码单元
     IDU idu(
         .pc(pc),
-        // .rst(rst),
+        .rst(rst),
         .inst(inst_out),
         .rs1_addr(rs1_addr),
         .rs2_addr(rs2_addr),

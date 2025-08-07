@@ -1,7 +1,7 @@
 module IDU(
     input wire [31:0] inst,
     input wire [31:0] pc,
-    // input wire rst,
+    input wire rst,
 
     // 寄存器地址输出
     output wire [4:0] rs1_addr,
