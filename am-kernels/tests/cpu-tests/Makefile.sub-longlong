@@ -1,3 +1,3 @@
-NAME = leap-year
-SRCS = tests/leap-year.c
+NAME = sub-longlong
+SRCS = tests/sub-longlong.c
 include /home/mubai/ysyx-workbench/abstract-machine/Makefile
