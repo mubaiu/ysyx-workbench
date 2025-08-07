@@ -82,7 +82,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1000; // OR
                     3'b111: alu_op = 4'b1001; // AND
                     default: begin
-                    invalid_inst(pc);
+                    // invalid_inst(pc);
                 end
                 endcase
             end
@@ -102,7 +102,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1000; // ORI
                     3'b111: alu_op = 4'b1001; // ANDI
                     default: begin
-                    invalid_inst(pc);
+                    // invalid_inst(pc);
                 end
                 endcase
             end
@@ -135,7 +135,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1110; // BLTU
                     3'b111: alu_op = 4'b1111; // BGEU
                 default: begin
-                    invalid_inst(pc);
+                    // invalid_inst(pc);
                 end
                 endcase
                 imm = {{20{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0};
@@ -187,7 +187,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                             mret_en = 1'b1; // 设置MRET标志
                         end
                     default: begin
-                        invalid_inst(pc);
+                        // invalid_inst(pc);
                     end
                     endcase
                 end
@@ -204,7 +204,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                         imm = {{20{1'b0}}, inst[31:20]};
                     end 
                 else begin
-                        invalid_inst(pc);
+                        // invalid_inst(pc);
                     end
                 end
                 // 其他系统指令...
