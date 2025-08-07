@@ -25,8 +25,9 @@ module IFU(
     assign snpc = pc + 32'd4;
 
     // 动态PC（考虑分支/跳转的下一个PC）
-    assign dnpc = branch_taken ? branch_target : snpc;
-    
+    assign dnpc = ecall_taken ? ecall_target : 
+                    branch_taken ? branch_target : 
+                    snpc;
 
     // 指令传递
     always @(*) begin
