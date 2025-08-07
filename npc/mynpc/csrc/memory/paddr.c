@@ -148,7 +148,6 @@ word_t paddr_read(paddr_t addr, int len) {
 
 void paddr_write(paddr_t addr, int len, word_t data) {
   if (likely(in_pmem(addr))) { 
-    printf("write " FMT_PADDR ", len: %d, data: " FMT_WORD "\n", addr, len, data);
     #ifdef CONFIG_MTRACE 
       write_log(addr, len, data);
     #endif
@@ -168,5 +167,5 @@ void paddr_write(paddr_t addr, int len, word_t data) {
   }
   
   // IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
-  out_of_bound(addr);
+  // out_of_bound(addr);
 }
