@@ -1,6 +1,6 @@
 [1;34m[../csrc/utils/log.c:15 init_log] Log is written to /home/mubai/ysyx-workbench/npc/mynpc/build/npc-log.txt[0m
 [1;34m[../csrc/memory/paddr.c:120 init_mem] physical memory area [0x80000000, 0x87ffffff][0m
-[1;34m[../csrc/monitor.c:211 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/tests/am-tests/build/amtest-riscv32e-npc.bin, size = 614876[0m
+[1;34m[../csrc/monitor.c:211 load_img] The image is /home/mubai/ysyx-workbench/am-kernels/tests/am-tests/build/amtest-riscv32e-npc.bin, size = 614852[0m
 [1;34m[../csrc/monitor.c:19 welcome] Trace: [1;32mON[0m[0m
 [1;34m[../csrc/monitor.c:20 welcome] Itrace: [1;32mON[0m[0m
 [1;34m[../csrc/monitor.c:21 welcome] Ftrace: [1;31mOFF[0m[0m
@@ -9,5 +9,5 @@
 [1;34m[../csrc/monitor.c:24 welcome] If trace is enabled, a log file will be generated to record the trace. This may lead to a large log file. If it is not necessary, you can disable it in menuconfig[0m
 [1;34m[../csrc/monitor.c:27 welcome] Build time: 17:06:31, Aug  7 2025[0m
 [1;34m[../csrc/cpu/cpu-exec.c:181 statistic] host time spent = 0 us[0m
-[1;34m[../csrc/cpu/cpu-exec.c:182 statistic] total guest instructions = 2,565[0m
+[1;34m[../csrc/cpu/cpu-exec.c:182 statistic] total guest instructions = 4,981[0m
 [1;34m[../csrc/cpu/cpu-exec.c:184 statistic] Finish running in less than 1 us and can not calculate the simulation frequency[0m
