@@ -22,12 +22,9 @@ module IDU(
     output reg jal_en,
     output reg jalr_en,
     output reg ebreak_en, // EBREAK标志
-    output reg ecall_en,  // ECALL使能信号
-    output reg mret_en,   // MRET使能信号
     // output wire [6:0] opcode
     output wire [2:0] funct3,
-    output reg auipc_flag,
-    output wire is_csr_op
+    output reg auipc_flag
 );
 
 
@@ -57,15 +54,12 @@ import "DPI-C" function void invalid_inst(input int thispc);
         reg_write = 1'b0;
         alu_src = 1'b0;
         auipc_flag = 1'b0;
-        ecall_en = 1'b0;
         ebreak_en = 1'b0; // EBREAK标志
-        mret_en = 1'b0;
         mem_to_reg = 1'b0;
         branch = 1'b0;
         jal_en = 1'b0;
         jalr_en = 1'b0;
         imm = 32'h0;
-        is_csr_op = 1'b0;
 
         case (opcode)
             7'b0110011: begin // R-type
@@ -82,7 +76,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1000; // OR
                     3'b111: alu_op = 4'b1001; // AND
                     default: begin
-                    // invalid_inst(pc);
+                    invalid_inst(pc);
                 end
                 endcase
             end
@@ -102,7 +96,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1000; // ORI
                     3'b111: alu_op = 4'b1001; // ANDI
                     default: begin
-                    // invalid_inst(pc);
+                    invalid_inst(pc);
                 end
                 endcase
             end
@@ -135,7 +129,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1110; // BLTU
                     3'b111: alu_op = 4'b1111; // BGEU
                 default: begin
-                    // invalid_inst(pc);
+                    invalid_inst(pc);
                 end
                 endcase
                 imm = {{20{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0};
@@ -178,38 +172,22 @@ import "DPI-C" function void invalid_inst(input int thispc);
                 if (funct3 == 3'b000) begin
                     case (inst[31:20])
                         12'b000000000000: begin // ECALL
-                            ecall_en = 1'b1; // 设置ECALL标志
+                            // ECALL实现...
                         end
+                        
                         12'b000000000001: begin // EBREAK
                             ebreak_en = 1'b1; // 设置EBREAK标志
                         end
-                        12'b001100000010: begin // MRET
-                            mret_en = 1'b1; // 设置MRET标志
-                        end
                     default: begin
-                        // invalid_inst(pc);
+                        // if(!rst)begin
+                        //     invalid_inst(pc);
+                        // end
                     end
+                        // 其他SYSTEM指令...
                     endcase
                 end
-                if (funct3 == 3'b001) begin // CSRRW
-                        reg_write = 1'b1;
-                        is_csr_op = 1'b1;
-                        alu_op = 4'b1100; // 直通操作
-                        imm = {{20{1'b0}}, inst[31:20]};
-                    end 
-                else if (funct3 == 3'b010) begin // CSRRS
-                        reg_write = 1'b1;
-                        is_csr_op = (rs1_addr != 5'h0); // 如果rs1_addr为0，则不写回
-                        alu_op = 4'b1100; // 直通操作
-                        imm = {{20{1'b0}}, inst[31:20]};
-                    end 
-                else begin
-                        // invalid_inst(pc);
-                    end
-                end
                 // 其他系统指令...
-            
-            
+            end
             default: begin
                 // if(!rst)begin
                 //     invalid_inst(pc); // 调用DPI-C函数处理非法指令
