@@ -25,3 +25,4 @@
 [  sub-longlong] [1;32mPASS[0m
 [         hello] [1;31m***FAIL***[0m
 [    quick-sort] [1;32mPASS[0m
+[           sum] [1;32mPASS[0m
