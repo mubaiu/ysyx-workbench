@@ -1,3 +1,3 @@
-NAME = max
-SRCS = tests/max.c
+NAME = add
+SRCS = tests/add.c
 include /home/mubai/ysyx-workbench/abstract-machine/Makefile
