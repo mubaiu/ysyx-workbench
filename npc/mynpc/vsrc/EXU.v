@@ -102,11 +102,12 @@ import "DPI-C" function void ebreak();
 
     //rt-thread
     always @(*) begin
+        ecall_taken = 1'b0;
+        ecall_target = 32'h0;
+
         if (ecall_en) begin
             ecall_taken = 1'b1;
             ecall_target = mtvec; // 跳转到mtvec地址
-            mepc = pc;            // 保存当前PC到mepc
-            mcause = 32'h11;
         end
     end
 
@@ -117,12 +118,17 @@ import "DPI-C" function void ebreak();
             mcause <= 32'h0;
             mtvec <= 32'h0;
         end
-        if (is_csr_op) begin
+        else if (ecall_en) begin
+        mepc <= pc;            // 保存当前PC到mepc
+        mcause <= 32'h11;      // 设置mcause为ECALL异常码
+        end
+        else if (is_csr_op) begin
             case (imm[11:0])
                 12'h300: mstatus <= rs1_data; // 写入mstatus
                 12'h341: mepc <= rs1_data;    // 写入mepc
                 12'h342: mcause <= rs1_data;  // 写入mcause
                 12'h305: mtvec <= rs1_data;   // 写入mtvec
+                default: ; // 其他CSR寄存器忽略写操作
             endcase
         end
     end
