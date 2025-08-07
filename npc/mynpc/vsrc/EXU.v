@@ -38,6 +38,7 @@ import "DPI-C" function void ebreak();
     wire [31:0] operand_b;
     
     //rtthread相关
+    wire [31:0] csr_read_data;
     reg [31:0] mstatus;
     reg [31:0] mepc;
     reg [31:0] mcause;
