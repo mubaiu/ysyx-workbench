@@ -211,9 +211,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
             
             
             default: begin
-                // if(!rst)begin
-                //     invalid_inst(pc); // 调用DPI-C函数处理非法指令
-                // end
+                if(!rst)begin
+                    invalid_inst(pc); // 调用DPI-C函数处理非法指令
+                end
             end
         endcase
     end
