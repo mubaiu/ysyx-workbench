@@ -1,3 +1,0 @@
-NAME = hello
-SRCS = tests/hello.c
-include /home/mubai/ysyx-workbench/abstract-machine/Makefile
