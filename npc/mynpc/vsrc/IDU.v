@@ -187,11 +187,11 @@ import "DPI-C" function void invalid_inst(input int thispc);
                             mret_en = 1'b1; // 设置MRET标志
                         end
                     default: begin
-                        // invalid_inst(pc);
+                        invalid_inst(pc);
                     end
                     endcase
                 end
-                if (funct3 == 3'b001) begin // CSRRW
+                else if (funct3 == 3'b001) begin // CSRRW
                         reg_write = 1'b1;
                         is_csr_op = 1'b1;
                         alu_op = 4'b1100; // 直通操作
