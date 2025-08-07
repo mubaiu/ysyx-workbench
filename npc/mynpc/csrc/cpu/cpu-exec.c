@@ -161,7 +161,7 @@ static void execute(uint64_t n) {
     }
     
 
-    if(g_nr_guest_inst == 25){
+    if(g_nr_guest_inst == 50){
       break;
     }
     if (nemu_state.state != NEMU_RUNNING) break;
