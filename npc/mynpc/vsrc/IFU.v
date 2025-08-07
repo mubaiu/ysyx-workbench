@@ -3,6 +3,8 @@ module IFU(
     input wire rst,
     
     // 分支控制信号
+    input wire ecall_taken,
+    input wire [31:0] ecall_target,
     input wire branch_taken,
     input wire [31:0] branch_target,
     
