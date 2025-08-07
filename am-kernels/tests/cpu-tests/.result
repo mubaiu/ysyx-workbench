@@ -16,3 +16,4 @@
 [ to-lower-case] [1;32mPASS[0m
 [           max] [1;32mPASS[0m
 [           add] [1;32mPASS[0m
+[     hello-str] [1;32mPASS[0m
