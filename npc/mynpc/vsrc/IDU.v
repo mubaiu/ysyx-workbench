@@ -187,7 +187,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                             mret_en = 1'b1; // 设置MRET标志
                         end
                     default: begin
-                        invalid_inst(pc);
+                        // invalid_inst(pc);
                     end
                     endcase
                 end
