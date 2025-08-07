@@ -9,13 +9,16 @@
 
 
 
-
-// int putchar(int c) {
-//   putch((char)c);
-//   return c & 0xff;  // 返回写入的字符
+// int fputs(const char *str, FILE *stream) {
+//     if (stream == stdout) {
+//         // 实现将字符串写入标准输出的方法
+//         while (*str) {
+//             putch(*str++); // 自定义或直接实现 putchar
+//         }
+//         return 0; // 成功返回 0
+//     }
+//     return -1; // 错误
 // }
-
-
 
 
 int printf(const char *fmt, ...) {
@@ -451,11 +454,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
 int sprintf(char *out, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  
-  // 使用 vsnprintf 并传递一个足够大的大小值
-  // SIZE_MAX 在大多数系统上是 size_t 能表示的最大值
-  int ret = vsnprintf(out, (size_t)-1, fmt, args);
-  
+  int ret = vsprintf(out, fmt, args);
   va_end(args);
   return ret;
 }

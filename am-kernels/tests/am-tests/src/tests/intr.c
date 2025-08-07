@@ -7,7 +7,7 @@ Context *simple_trap(Event ev, Context *ctx) {
     case EVENT_IRQ_IODEV:
       putch('d'); break;
     case EVENT_YIELD:
-      // putch('y'); 
+      putch('y'); 
       break;
     default:
       panic("Unhandled event"); break;
@@ -21,7 +21,7 @@ void hello_intr() {
   io_read(AM_INPUT_CONFIG);
   iset(1);
   while (1) {
-    for (volatile int i = 0; i < 10000000; i++) ;
+    // for (volatile int i = 0; i < 10000000; i++) ;
     yield();
   }
 }
