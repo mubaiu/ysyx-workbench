@@ -1,3 +1,3 @@
-NAME = goldbach
-SRCS = tests/goldbach.c
+NAME = min3
+SRCS = tests/min3.c
 include /home/mubai/ysyx-workbench/abstract-machine/Makefile
