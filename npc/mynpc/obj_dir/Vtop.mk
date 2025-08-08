@@ -57,6 +57,7 @@ VM_USER_CLASSES = \
 	expr \
 	sdb \
 	watchpoint \
+	etrace \
 	init \
 	reg \
 	disasm \
@@ -109,6 +110,8 @@ expr.o: ./csrc/sdb/expr.c
 sdb.o: ./csrc/sdb/sdb.c
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
 watchpoint.o: ./csrc/sdb/watchpoint.c
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+etrace.o: ./csrc/system/etrace.c
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
 init.o: ./csrc/system/init.c
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<

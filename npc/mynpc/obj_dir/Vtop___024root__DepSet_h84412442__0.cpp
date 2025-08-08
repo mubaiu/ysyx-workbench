@@ -96,6 +96,20 @@ VL_INLINE_OPT void Vtop___024root____Vdpiimwrap_top__DOT__reg_file__DOT__ebreak_
     ebreak();
 }
 
+extern "C" void etrace_exception(int mcause, int epc, int mtvec);
+
+VL_INLINE_OPT void Vtop___024root____Vdpiimwrap_top__DOT__exu__DOT__etrace_exception_TOP(IData/*31:0*/ mcause, IData/*31:0*/ epc, IData/*31:0*/ mtvec) {
+    VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___024root____Vdpiimwrap_top__DOT__exu__DOT__etrace_exception_TOP\n"); );
+    // Body
+    int mcause__Vcvt;
+    for (size_t mcause__Vidx = 0; mcause__Vidx < 1; ++mcause__Vidx) mcause__Vcvt = mcause;
+    int epc__Vcvt;
+    for (size_t epc__Vidx = 0; epc__Vidx < 1; ++epc__Vidx) epc__Vcvt = epc;
+    int mtvec__Vcvt;
+    for (size_t mtvec__Vidx = 0; mtvec__Vidx < 1; ++mtvec__Vidx) mtvec__Vcvt = mtvec;
+    etrace_exception(mcause__Vcvt, epc__Vcvt, mtvec__Vcvt);
+}
+
 extern "C" void vaddr_write(int addr, int len, int data);
 
 VL_INLINE_OPT void Vtop___024root____Vdpiimwrap_top__DOT__lsu__DOT__vaddr_write_TOP(IData/*31:0*/ addr, IData/*31:0*/ len, IData/*31:0*/ data) {

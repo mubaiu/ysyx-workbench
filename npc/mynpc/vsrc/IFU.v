@@ -25,14 +25,18 @@ module IFU(
     reg [31:0] dnpc; // 动态下一个PC
     reg [31:0] msnpc;
     reg [31:0] mdnpc;
-    // // 静态PC（顺序执行的下一个PC）
-    assign snpc = pc + 32'd4;
+    // 静态PC（顺序执行的下一个PC）
+    always @(*) begin
+        snpc = pc + 32'd4;
+    end
 
     // 动态PC（考虑分支/跳转的下一个PC）
-assign dnpc = mret_taken ? mret_target :  // MRET优先级最高
-                ecall_taken ? ecall_target : 
-                branch_taken ? branch_target : 
-                snpc;
+    always @(*) begin
+        dnpc = mret_taken ? mret_target :  // MRET优先级最高
+                    ecall_taken ? ecall_target : 
+                    branch_taken ? branch_target : 
+                    snpc;
+    end
 
     // 指令传递
     always @(*) begin

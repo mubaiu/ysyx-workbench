@@ -32,18 +32,24 @@ module LSU(
         if (mem_read) begin
             temp_data = 32'h0; // 默认值
             case (funct3)
-                3'b100: begin
-                    load_data = vaddr_read(addr, 1);   //lbu
+                3'b000: begin  // lb - load byte (sign extended)
+                    temp_data = vaddr_read(addr, 1);
+                    load_data = {{24{temp_data[7]}}, temp_data[7:0]};
                 end
-                3'b101: begin
-                    load_data = vaddr_read(addr, 2);   //lhu
+                3'b100: begin  // lbu - load byte unsigned
+                    load_data = vaddr_read(addr, 1);
                 end
-                3'b001: begin
+                3'b001: begin  // lh - load halfword (sign extended)
                     temp_data = vaddr_read(addr, 2);
-                    load_data = {{16{temp_data[15]}}, temp_data[15:0]};   //lh
+                    load_data = {{16{temp_data[15]}}, temp_data[15:0]};
                 end
-                default: load_data = vaddr_read(addr, 4); // 从计算出的地址读取数据
-
+                3'b101: begin  // lhu - load halfword unsigned
+                    load_data = vaddr_read(addr, 2);
+                end
+                3'b010: begin  // lw - load word
+                    load_data = vaddr_read(addr, 4);
+                end
+                default: load_data = vaddr_read(addr, 4); // 默认按字读取
             endcase
         end 
         else if (mem_write) begin
@@ -51,7 +57,8 @@ module LSU(
             case (funct3) 
                 3'b000: vaddr_write(addr, 1, store_data); // sb
                 3'b001: vaddr_write(addr, 2, store_data); // sh
-                default: vaddr_write(addr, 4, store_data); // sw
+                3'b010: vaddr_write(addr, 4, store_data); // sw
+                default: vaddr_write(addr, 4, store_data); // 默认按字写入
             endcase
         end
         else begin

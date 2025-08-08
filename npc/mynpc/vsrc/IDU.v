@@ -186,27 +186,27 @@ import "DPI-C" function void invalid_inst(input int thispc);
                         12'b001100000010: begin // MRET
                             mret_en = 1'b1; // 设置MRET标志
                         end
-                    default: begin
-                        invalid_inst(pc);
-                    end
+                        default: begin
+                            invalid_inst(pc);
+                        end
                     endcase
                 end
                 else if (funct3 == 3'b001) begin // CSRRW
-                        reg_write = 1'b1;
-                        is_csr_op = 1'b1;
-                        alu_op = 4'b1100; // 直通操作
-                        imm = {{20{1'b0}}, inst[31:20]};
-                    end 
+                    reg_write = 1'b1;
+                    is_csr_op = 1'b1;
+                    alu_op = 4'b1100; // 直通操作
+                    imm = {{20{1'b0}}, inst[31:20]};
+                end 
                 else if (funct3 == 3'b010) begin // CSRRS
-                        reg_write = 1'b1;
-                        is_csr_op = (rs1_addr != 5'h0) ? 1'b1 : 1'b0; // 如果rs1_addr为0，则不写回
-                        alu_op = 4'b1100; // 直通操作
-                        imm = {{20{1'b0}}, inst[31:20]};
-                    end 
+                    reg_write = 1'b1;
+                    is_csr_op = (rs1_addr != 5'h0) ? 1'b1 : 1'b0; // 如果rs1_addr为0，则不写回
+                    alu_op = 4'b1100; // 直通操作
+                    imm = {{20{1'b0}}, inst[31:20]};
+                end 
                 else begin
-                        invalid_inst(pc);
-                    end
+                    invalid_inst(pc);
                 end
+            end
                 // 其他系统指令...
             
             

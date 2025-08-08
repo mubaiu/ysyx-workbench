@@ -45,7 +45,7 @@ module top(
     IFU ifu(
         .clk(clk),
         .rst(rst),
-        .mret_taken(mret_en),
+        .mret_taken(mret_taken),
         .mret_target(mret_target),
         .ecall_taken(ecall_taken),
         .ecall_target(ecall_target),

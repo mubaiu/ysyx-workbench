@@ -38,6 +38,7 @@ module EXU(
 );
 
 import "DPI-C" function void ebreak();
+import "DPI-C" function void etrace_exception(input int mcause, input int epc, input int mtvec);
 
     wire [31:0] operand_a;
     wire [31:0] operand_b;
@@ -126,15 +127,16 @@ import "DPI-C" function void ebreak();
     end
 
     always @(posedge clk) begin
-        if (rst) begin
+        if (!rst) begin
             mstatus <= 32'h1800;
             mepc <= 32'h0;
             mcause <= 32'h0;
-            mtvec <= 32'h0;
+            mtvec <= 32'h80000004;  // 设置默认异常处理地址
         end
         else if (ecall_en) begin
-        mepc <= pc;            // 保存当前PC到mepc
-        mcause <= 32'h11;      // 设置mcause为ECALL异常码
+            mepc <= pc;            // 保存当前PC到mepc
+            mcause <= 32'd11;      // 设置mcause为ECALL异常码
+            // etrace_exception(32'd11, pc, mtvec); 
         end
         else if (is_csr_op) begin
             case (imm)
@@ -150,5 +152,5 @@ import "DPI-C" function void ebreak();
     always @(*) begin
         if(ebreak_en)
             ebreak();
-end
+    end
 endmodule

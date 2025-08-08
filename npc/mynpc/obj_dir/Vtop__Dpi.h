@@ -18,6 +18,8 @@ extern "C" {
     // DPI IMPORTS
     // DPI import at vsrc/REG.v:20:32
     extern void ebreak();
+    // DPI import at vsrc/EXU.v:41:30
+    extern void etrace_exception(int mcause, int epc, int mtvec);
     // DPI import at vsrc/IFU.v:20:33
     extern int intake(int pc);
     // DPI import at vsrc/IDU.v:34:30

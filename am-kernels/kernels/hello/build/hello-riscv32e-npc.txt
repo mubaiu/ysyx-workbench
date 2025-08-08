@@ -8,7 +8,7 @@ Disassembly of section .text:
 80000000:	00000413          	li	s0,0
 80000004:	00009117          	auipc	sp,0x9
 80000008:	ffc10113          	addi	sp,sp,-4 # 80009000 <_end>
-8000000c:	09c000ef          	jal	800000a8 <_trm_init>
+8000000c:	088000ef          	jal	80000094 <_trm_init>
 
 80000010 <main>:
 80000010:	ff010113          	addi	sp,sp,-16
@@ -17,7 +17,7 @@ Disassembly of section .text:
 8000001c:	00112623          	sw	ra,12(sp)
 80000020:	00912223          	sw	s1,4(sp)
 80000024:	00000417          	auipc	s0,0x0
-80000028:	0a440413          	addi	s0,s0,164 # 800000c8 <_etext>
+80000028:	09040413          	addi	s0,s0,144 # 800000b4 <_etext>
 8000002c:	04800513          	li	a0,72
 80000030:	0140006f          	j	80000044 <main+0x34>
 80000034:	054000ef          	jal	80000088 <putch>
@@ -43,21 +43,16 @@ Disassembly of section .text:
 80000084:	00008067          	ret
 
 80000088 <putch>:
-80000088:	a0000737          	lui	a4,0xa0000
-8000008c:	3fd70713          	addi	a4,a4,1021 # a00003fd <_end+0x1fff73fd>
-80000090:	00074783          	lbu	a5,0(a4)
-80000094:	0207f793          	andi	a5,a5,32
-80000098:	fe078ce3          	beqz	a5,80000090 <putch+0x8>
-8000009c:	a00007b7          	lui	a5,0xa0000
-800000a0:	3ea78c23          	sb	a0,1016(a5) # a00003f8 <_end+0x1fff73f8>
-800000a4:	00008067          	ret
+80000088:	a00007b7          	lui	a5,0xa0000
+8000008c:	3ea78c23          	sb	a0,1016(a5) # a00003f8 <_end+0x1fff73f8>
+80000090:	00008067          	ret
 
-800000a8 <_trm_init>:
-800000a8:	ff410113          	addi	sp,sp,-12
-800000ac:	00000517          	auipc	a0,0x0
-800000b0:	04850513          	addi	a0,a0,72 # 800000f4 <mainargs>
-800000b4:	00112423          	sw	ra,8(sp)
-800000b8:	f59ff0ef          	jal	80000010 <main>
-800000bc:	00050513          	mv	a0,a0
-800000c0:	00100073          	ebreak
-800000c4:	0000006f          	j	800000c4 <_trm_init+0x1c>
+80000094 <_trm_init>:
+80000094:	ff410113          	addi	sp,sp,-12
+80000098:	00000517          	auipc	a0,0x0
+8000009c:	04850513          	addi	a0,a0,72 # 800000e0 <mainargs>
+800000a0:	00112423          	sw	ra,8(sp)
+800000a4:	f6dff0ef          	jal	80000010 <main>
+800000a8:	00050513          	mv	a0,a0
+800000ac:	00100073          	ebreak
+800000b0:	0000006f          	j	800000b0 <_trm_init+0x1c>
