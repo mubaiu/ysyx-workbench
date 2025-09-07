@@ -149,6 +149,8 @@ else if(retfunc){
 
   return 0;
 }
+#define FLASH_BASE 0x30000000
+extern uint8_t flash_mem[];
 
 int isa_exec_once(Decode *s) {
   s->isa.inst = inst_fetch(&s->pc, 4);

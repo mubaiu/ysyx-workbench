@@ -1,23 +1,25 @@
 module IDU(
     input wire [31:0] inst,
+    input wire inst_valid,
     input wire [31:0] pc,
-    input wire rst,
+    input wire reset,
 
     // 寄存器地址输出
-    output wire [4:0] rs1_addr,
-    output wire [4:0] rs2_addr,
-    output wire [4:0] rd_addr,
-    
+    output reg [4:0] rs1_addr,
+    output reg [4:0] rs2_addr,
+    output reg [4:0] rd_addr,
+
     // 立即数生成
     output reg [31:0] imm,
     
     // 控制信号
+    output reg [3:0] lsu_wmask,
     output reg [3:0] alu_op,
+    output reg lsu_reqValid,
     output reg mem_read,
     output reg mem_write,
     output reg reg_write,
     output reg alu_src,
-    output reg mem_to_reg,
     output reg branch,
     output reg jal_en,
     output reg jalr_en,
@@ -25,9 +27,10 @@ module IDU(
     output reg ecall_en,  // ECALL使能信号
     output reg mret_en,   // MRET使能信号
     // output wire [6:0] opcode
-    output wire [2:0] funct3,
+    output reg [2:0] funct3,
     output reg auipc_flag,
-    output wire is_csr_op
+    output reg is_csr_op,
+    output wire idu_ready
 );
 
 
@@ -35,23 +38,29 @@ import "DPI-C" function void invalid_inst(input int thispc);
 
 
     // 指令类型和操作码
-    wire [6:0] opcode;
+    reg [6:0] opcode;
     // wire [2:0] funct3;
-    wire [6:0] funct7;
-    
-    assign opcode = inst[6:0];
-    assign funct3 = inst[14:12];
-    assign funct7 = inst[31:25];
+    reg [6:0] funct7;
 
-    // 寄存器地址提取
-    assign rs1_addr = inst[19:15] & 5'hF; // RV32E只有16个寄存器
-    assign rs2_addr = inst[24:20] & 5'hF;
-    assign rd_addr = inst[11:7] & 5'hF;
+    reg idu_ready_reg;
+
+    assign idu_ready = idu_ready_reg;
+
+    // assign opcode = inst[6:0];
+    // assign funct3 = inst[14:12];
+    // assign funct7 = inst[31:25];
+
+    // // 寄存器地址提取
+    // assign rs1_addr = inst[19:15] & 5'hF; // RV32E只有16个寄存器
+    // assign rs2_addr = inst[24:20] & 5'hF;
+    // assign rd_addr = inst[11:7] & 5'hF;
 
     // 指令解码和控制信号生成
     always @(*) begin
         // 默认值
+        lsu_wmask = 4'b0;
         alu_op = 4'b0000;
+        lsu_reqValid = 1'b0;
         mem_read = 1'b0;
         mem_write = 1'b0;
         reg_write = 1'b0;
@@ -60,13 +69,19 @@ import "DPI-C" function void invalid_inst(input int thispc);
         ecall_en = 1'b0;
         ebreak_en = 1'b0; // EBREAK标志
         mret_en = 1'b0;
-        mem_to_reg = 1'b0;
         branch = 1'b0;
         jal_en = 1'b0;
         jalr_en = 1'b0;
         imm = 32'h0;
         is_csr_op = 1'b0;
-
+        idu_ready_reg = 1'b1;
+    if(inst_valid) begin
+        opcode = inst[6:0];
+        funct3 = inst[14:12];
+        funct7 = inst[31:25];
+        rs1_addr = inst[19:15] & 5'hF; // RV32E只有16个寄存器
+        rs2_addr = inst[24:20] & 5'hF;
+        rd_addr = inst[11:7] & 5'hF;
         case (opcode)
             7'b0110011: begin // R-type
                 reg_write = 1'b1;
@@ -108,19 +123,26 @@ import "DPI-C" function void invalid_inst(input int thispc);
             end
 
             7'b0000011: begin // Load
-                reg_write = 1'b1;
                 alu_src = 1'b1;
+                lsu_reqValid = 1'b1;
                 mem_read = 1'b1;
-                mem_to_reg = 1'b1;
                 alu_op = 4'b0000; // 加法计算地址
                 imm = {{20{inst[31]}}, inst[31:20]};
+
             end
 
             7'b0100011: begin // Store
                 alu_src = 1'b1;
+                lsu_reqValid = 1'b1;
                 mem_write = 1'b1;
                 alu_op = 4'b0000; // 加法计算地址
                 imm = {{20{inst[31]}}, inst[31:25], inst[11:7]};
+                case (funct3)
+                    3'b000: lsu_wmask = 4'b0001; // lb - load byte (sign extended)
+                    3'b001: lsu_wmask = 4'b0011; // lh - load halfword (sign extended)
+                    3'b010: lsu_wmask = 4'b1111; // lw
+                    default: lsu_wmask = 4'b1111; // 默认按字读取
+                endcase
                 // $display("imm: %h rs1_addr: %h\n", imm, rs1_addr);
             end
 
@@ -211,12 +233,14 @@ import "DPI-C" function void invalid_inst(input int thispc);
             
             
             default: begin
-                if(!rst)begin
+                if(reset)begin
                     invalid_inst(pc); // 调用DPI-C函数处理非法指令
                 end
             end
         endcase
+        idu_ready_reg = !inst_valid;
     end
+end
 
 endmodule
 

@@ -4,7 +4,7 @@
 #include <locale.h>
 #include <verilated.h>
 #include <verilated_fst_c.h>
-#include "Vtop.h"
+#include "VysyxSoCFull.h"
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
 
@@ -137,7 +137,7 @@ void exec_once(Decode *d, vaddr_t pc) {
 
 
 extern VerilatedContext* contextp;
-extern Vtop* top;
+extern VysyxSoCFull* ysyxSoCFull;
 extern VerilatedFstC* tfp;
 
 static void execute(uint64_t n) {
@@ -146,33 +146,36 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     g_nr_guest_inst ++;
     
-    top->clk = !top->clk;
+    
     #ifdef CONFIG_DIFFTEST
-    if(top->clk){
+    if(ysyxSoCFull->clock){
       trace_and_difftest(&d, d.dnpc);
     }
     #endif
-    
-    top->eval(); 
-    
-    IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
-    if(top->clk){
-      exec_once(&d, npc.pc);
+    // if(ysyxSoCFull->clock){
+    //   exec_once(&d, npc.pc);
+    // }
+    for (int i = 0; i < 2; i++) {
+        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->eval();
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+        if (nemu_state.state != NEMU_RUNNING) break;
     }
+    if (nemu_state.state != NEMU_RUNNING) break;
     
 
-    // if(g_nr_guest_inst == 1){
+    // if(g_nr_guest_inst == 10000000){
     //   break;
     // }
-    if (nemu_state.state != NEMU_RUNNING) break;
+    
     }
     // IFDEF(CONFIG_DEVICE, device_update());
     for (int i = 0; i < 2; i++) {
-        top->clk = !top->clk;
-        top->eval();
+        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
-    exec_once(&d, npc.pc);
+    // exec_once(&d, npc.pc);
 }
 
 static void statistic() {

@@ -1,4 +1,4 @@
-#include "Vtop.h"
+#include "VysyxSoCFull.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +24,7 @@ extern Decode d;
 
 extern "C" {
   VerilatedContext* contextp = nullptr;
-  Vtop* top = nullptr;
+  VysyxSoCFull* ysyxSoCFull = nullptr;
   VerilatedFstC* tfp = nullptr;
 }
 
@@ -37,13 +37,13 @@ int main(int argc, char** argv) {
     
     #if ENABLE_WAVE_TRACE
     contextp->traceEverOn(true);
-    top = new Vtop{contextp};
+    ysyxSoCFull = new VysyxSoCFull{contextp};
     tfp = new VerilatedFstC;
-    top->trace(tfp, 99);
+    ysyxSoCFull->trace(tfp, 99);
     tfp->open("wave.fst");
     #else
     contextp->traceEverOn(false);
-    top = new Vtop{contextp};
+    ysyxSoCFull = new VysyxSoCFull{contextp};
     #endif
     
     // 首先让顶层模块评估一次，确保内部信号初始化
@@ -65,22 +65,22 @@ int main(int argc, char** argv) {
      // 然后设置复位信号
     // top->rst = 1;
     // top->clk = !top->clk;
-    top->eval();
+    ysyxSoCFull->eval();
     // tfp->dump(sim_time++);
     
 
-    for (int i = 0; i < 2; i++) {
-        top->rst = 0;
-        top->clk = !top->clk;
-        top->eval();
+    for (int i = 0; i < 19; i++) {
+        ysyxSoCFull->reset = 1;
+        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
-    exec_once(&d, npc.pc);
+    // exec_once(&d, npc.pc);
     // 释放复位信号后，给予额外的时钟周期稳定系统
-    top->rst = 1;
+    ysyxSoCFull->reset = 0;
     for (int i = 0; i < 2; i++) {
-        top->clk = !top->clk;
-        top->eval();
+        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     
@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
     delete tfp;
     #endif
     
-    delete top;
+    delete ysyxSoCFull;
     delete contextp;
     return is_exit_status_bad();
 }
@@ -113,8 +113,6 @@ extern "C" void ebreak() {
     
     // 打印寄存器状态(可选)
     // isa_reg_display();
-    
-    // 不要在这里直接调用exit，让主循环处理终止
-    // 修改为设置标志，让cpu_exec函数退出循环
+
     // exit(0); 
 }

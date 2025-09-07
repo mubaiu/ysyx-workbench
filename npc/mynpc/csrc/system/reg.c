@@ -9,6 +9,10 @@ extern Decode d;
 extern bool callfunc;
 extern bool retfunc;
 
+extern uint8_t flash_mem[];
+#define FLASH_BASE 0x30000000
+#define FLASH_SIZE (16 * 1024 * 1024)
+
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
   "s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5",
@@ -102,4 +106,18 @@ extern  "C" uint32_t intake(uint32_t pc){
   // printf("intake inst = %08x, addr = 0x%08x\n ", inst_fetch(&vaddr, 4), vaddr);
   // d.isa.inst = inst_fetch(&vaddr, 4); // 获取指令
   return inst_fetch(&vaddr, 4); // 获取4字节的指令
+}
+
+extern "C" void flash_read(int32_t addr, int32_t *data) {
+  // 简单边界检查
+  if (addr + 3 >= FLASH_SIZE) {
+    *data = 0;
+    return;
+  }
+  // 按小端拼接4字节
+  *data = flash_mem[addr] |
+         (flash_mem[addr + 1] << 8) |
+         (flash_mem[addr + 2] << 16) |
+         (flash_mem[addr + 3] << 24);
+  return;
 }

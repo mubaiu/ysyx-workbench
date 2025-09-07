@@ -1,0 +1,6 @@
+[submodule "am-kernels/tests/cpu-tests/ysyxSoC"]
+	path = am-kernels/tests/cpu-tests/ysyxSoC
+	url = https://github.com/OSCPU/ysyxSoC.git
+[submodule "ysyxSoC"]
+	path = ysyxSoC
+	url = https://github.com/OSCPU/ysyxSoC.git
