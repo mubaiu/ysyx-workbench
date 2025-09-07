@@ -1,5 +1,6 @@
 module IDU(
     input wire [31:0] inst,
+    input wire inst_valid,
     input wire [31:0] pc,
     input wire rst,
 
@@ -12,12 +13,13 @@ module IDU(
     output reg [31:0] imm,
     
     // 控制信号
+    output reg [31:0] len,
     output reg [3:0] alu_op,
+    output reg reqValid,
     output reg mem_read,
     output reg mem_write,
     output reg reg_write,
     output reg alu_src,
-    output reg mem_to_reg,
     output reg branch,
     output reg jal_en,
     output reg jalr_en,
@@ -25,9 +27,10 @@ module IDU(
     output reg ecall_en,  // ECALL使能信号
     output reg mret_en,   // MRET使能信号
     // output wire [6:0] opcode
-    output wire [2:0] funct3,
+    output reg [2:0] funct3,
     output reg auipc_flag,
-    output wire is_csr_op
+    output reg is_csr_op,
+    output wire idu_ready
 );
 
 
@@ -38,7 +41,11 @@ import "DPI-C" function void invalid_inst(input int thispc);
     wire [6:0] opcode;
     // wire [2:0] funct3;
     wire [6:0] funct7;
-    
+
+    reg idu_ready_reg;
+
+    assign idu_ready = idu_ready_reg;
+
     assign opcode = inst[6:0];
     assign funct3 = inst[14:12];
     assign funct7 = inst[31:25];
@@ -51,7 +58,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
     // 指令解码和控制信号生成
     always @(*) begin
         // 默认值
+        len = 32'b0;
         alu_op = 4'b0000;
+        reqValid = 1'b0;
         mem_read = 1'b0;
         mem_write = 1'b0;
         reg_write = 1'b0;
@@ -60,13 +69,13 @@ import "DPI-C" function void invalid_inst(input int thispc);
         ecall_en = 1'b0;
         ebreak_en = 1'b0; // EBREAK标志
         mret_en = 1'b0;
-        mem_to_reg = 1'b0;
         branch = 1'b0;
         jal_en = 1'b0;
         jalr_en = 1'b0;
         imm = 32'h0;
         is_csr_op = 1'b0;
-
+        idu_ready_reg = 1'b1;
+    if(inst_valid) begin
         case (opcode)
             7'b0110011: begin // R-type
                 reg_write = 1'b1;
@@ -110,10 +119,19 @@ import "DPI-C" function void invalid_inst(input int thispc);
             7'b0000011: begin // Load
                 reg_write = 1'b1;
                 alu_src = 1'b1;
+                reqValid = 1'b1;
                 mem_read = 1'b1;
-                mem_to_reg = 1'b1;
                 alu_op = 4'b0000; // 加法计算地址
                 imm = {{20{inst[31]}}, inst[31:20]};
+
+                case (funct3)
+                    3'b000: len = 32'd1; // lb - load byte (sign extended)
+                    3'b100: len = 32'd1; // lbu - load byte unsigned
+                    3'b001: len = 32'd2; // lh - load halfword (sign extended)
+                    3'b101: len = 32'd2; // lhu - load halfword unsigned
+                    3'b010: len = 32'd4; // lw
+                    default: len = 32'd4; // 默认按字读取
+                endcase
             end
 
             7'b0100011: begin // Store
@@ -216,7 +234,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
                 end
             end
         endcase
+        idu_ready_reg = !inst_valid;
     end
+end
 
 endmodule
 

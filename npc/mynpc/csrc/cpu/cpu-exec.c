@@ -146,25 +146,28 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     g_nr_guest_inst ++;
     
-    top->clk = !top->clk;
+    
     #ifdef CONFIG_DIFFTEST
     if(top->clk){
       trace_and_difftest(&d, d.dnpc);
     }
     #endif
-    
-    top->eval(); 
-    
-    IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     if(top->clk){
       exec_once(&d, npc.pc);
     }
+    for (int i = 0; i < 2; i++) {
+        top->clk = !top->clk;
+        top->eval();
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+        if (nemu_state.state != NEMU_RUNNING) break;
+    }
+    if (nemu_state.state != NEMU_RUNNING) break;
     
 
-    // if(g_nr_guest_inst == 1){
+    // if(g_nr_guest_inst == 50){
     //   break;
     // }
-    if (nemu_state.state != NEMU_RUNNING) break;
+    
     }
     // IFDEF(CONFIG_DEVICE, device_update());
     for (int i = 0; i < 2; i++) {

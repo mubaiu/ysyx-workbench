@@ -2,6 +2,7 @@ module REG(
     input wire clk,
     input wire rst,
     
+    input wire mem_to_reg,
     // 读寄存器地址
     input wire [4:0] rs1_addr,
     input wire [4:0] rs2_addr,
@@ -42,7 +43,7 @@ module REG(
           for (i = 0; i < 16; i = i + 1) begin
               registers[i] <= 32'h0;
           end
-      end else if (rd_wen && rd_addr != 5'h0) begin
+      end else if ((rd_wen || mem_to_reg) && rd_addr != 5'h0) begin
           // x0不可写
           registers[rd_addr] <= rd_data;
           set_reg_value(32'(rd_addr), rd_data); // 更新DPI-C接口中的寄存器值

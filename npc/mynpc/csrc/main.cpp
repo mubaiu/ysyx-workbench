@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     // top->rst = 1;
     // top->clk = !top->clk;
     top->eval();
-    // tfp->dump(sim_time++);
+    tfp->dump(sim_time++);
     
 
     for (int i = 0; i < 2; i++) {
@@ -113,8 +113,6 @@ extern "C" void ebreak() {
     
     // 打印寄存器状态(可选)
     // isa_reg_display();
-    
-    // 不要在这里直接调用exit，让主循环处理终止
-    // 修改为设置标志，让cpu_exec函数退出循环
+
     // exit(0); 
 }

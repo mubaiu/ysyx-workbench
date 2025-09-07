@@ -15,6 +15,10 @@ module top(
 
     // 内部连线
     wire [31:0] inst_out;
+    wire inst_valid;
+    wire idu_ready;
+    wire lsu_ready;
+    wire wbu_ready;
     wire [31:0] snpc;  // 静态下一个PC
     // wire [31:0] dnpc;  // 动态下一个PC
     
@@ -26,8 +30,9 @@ module top(
     // 指令解码连线
     wire [31:0] imm;
     wire [3:0] alu_op;
-    wire mem_read, mem_write, alu_src, mem_to_reg, branch, jal_en, jalr_en, ebreak_en, ecall_en, mret_en, auipc_flag, is_csr_op;
-    
+    wire reqValid, mem_read, mem_write, alu_src, mem_to_reg, branch, jal_en, jalr_en, ebreak_en, ecall_en, mret_en, auipc_flag, is_csr_op;
+    wire [31:0] len;
+
     // 执行单元连线
     wire [31:0] alu_result;
     wire branch_taken;
@@ -40,11 +45,13 @@ module top(
     // 内存单元连线
     wire [31:0] load_data;
     wire [2:0] funct3;
+    wire respValid;
     
     // 指令获取单元
     IFU ifu(
         .clk(clk),
         .rst(rst),
+        .respValid(respValid),
         .mret_taken(mret_taken),
         .mret_target(mret_target),
         .ecall_taken(ecall_taken),
@@ -54,6 +61,10 @@ module top(
         .pc(pc),
         .snpc(snpc),
         // .dnpc(),
+        .inst_valid(inst_valid),
+        .idu_ready(idu_ready),
+        .wbu_ready(wbu_ready),
+        .mem_read(mem_read),
         .inst(inst_out)
     );
     
@@ -62,31 +73,35 @@ module top(
         .pc(pc),
         .rst(rst),
         .inst(inst_out),
+        .inst_valid(inst_valid),
         .rs1_addr(rs1_addr),
         .rs2_addr(rs2_addr),
         .rd_addr(rd_addr),
         .imm(imm),
+        .len(len),
         .alu_op(alu_op),
         .ebreak_en(ebreak_en),
         .ecall_en(ecall_en),
         .mret_en(mret_en),
+        .reqValid(reqValid),
         .mem_read(mem_read),
         .mem_write(mem_write),
         .reg_write(reg_write),
         .alu_src(alu_src),
-        .mem_to_reg(mem_to_reg),
         .funct3(funct3),
         .branch(branch),
         .jal_en(jal_en),
         .jalr_en(jalr_en),
         .auipc_flag(auipc_flag),
-        .is_csr_op(is_csr_op)
+        .is_csr_op(is_csr_op),
+        .idu_ready(idu_ready)
     );
     
     // 寄存器模块
     REG reg_file(
         .clk(clk),
         .rst(rst),
+        .mem_to_reg(mem_to_reg),
         .rs1_addr(rs1_addr),
         .rs2_addr(rs2_addr),
         .rd_addr(rd_addr),
@@ -101,6 +116,7 @@ module top(
         // .snpc(snpc),
         .clk(clk),
         .rst(rst),
+        .idu_ready(idu_ready),
         .alu_op(alu_op),
         .rs1_data(rs1_data),
         .rs2_data(rs2_data),
@@ -126,6 +142,10 @@ module top(
     
     // 加载/存储单元
     LSU lsu(
+        .clk(clk),
+        .rst(rst),
+        .len(len),
+        .reqValid(reqValid),
         .mem_read(mem_read),
         .mem_write(mem_write),
         .addr(alu_result),
@@ -134,18 +154,24 @@ module top(
         .load_data(load_data),
         .ram_we(ram_we),
         .ram_addr(ram_addr),
-        .ram_wdata(ram_wdata)
+        .ram_wdata(ram_wdata),
+        .lsu_ready(lsu_ready),
+        .mem_to_reg(mem_to_reg),
+        .respValid(respValid)
     );
     
     // 写回单元
     WBU wbu(
+        .idu_ready(idu_ready),
+        .lsu_ready(lsu_ready),
         .alu_result(alu_result),
         .load_data(load_data),
         .snpc(snpc),           // 使用snpc作为返回地址
         .mem_to_reg(mem_to_reg),
         .jal_en(jal_en),
         .jalr_en(jalr_en),
-        .wb_data(wb_data)
+        .wb_data(wb_data),
+        .wbu_ready(wbu_ready)
     );
 
 import "DPI-C" function void set_callfunc();
