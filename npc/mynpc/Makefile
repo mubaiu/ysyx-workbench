@@ -23,8 +23,8 @@ INCLUDES = $(addprefix -I, $(INC_PATH))
 CFLAGS += -D__GUEST_ISA__=riscv32  # 或者其他ISA
 CFLAGS += -DNPC_PROJECT
 CFLAGS_TRACE += -DITRACE_COND=$(if $(CONFIG_ITRACE_COND),$(call remove_quote,$(CONFIG_ITRACE_COND)),true)
-LDFLAGS+=-lreadline -lhistory
-
+LDFLAGS +=-lreadline -lhistory
+LDFLAGS += $(shell sdl2-config --libs)
 run: $(IMG)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@echo $(VSRC)

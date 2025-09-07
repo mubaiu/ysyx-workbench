@@ -258,12 +258,15 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
       case 'X': {
         // 获取无符号整数
         unsigned long long num;
+        unsigned long long orignal_num;
         if (length_modifier == 1) num = (unsigned short)va_arg(ap, unsigned int);
         else if (length_modifier == 2) num = (unsigned char)va_arg(ap, unsigned int);
         else if (length_modifier == 3) num = va_arg(ap, unsigned long);
         else if (length_modifier == 4) num = va_arg(ap, unsigned long long);
         else num = va_arg(ap, unsigned int);
         
+        orignal_num = num;
+
         // 确定使用的字符集 (大写或小写)
         const char *hex_chars = (fmt[fmtindex] == 'x') ? "0123456789abcdef" : "0123456789ABCDEF";
         
@@ -285,13 +288,6 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
           digits++;
         }
         
-        // 添加0x/0X前缀
-        if (flag_hash && temp_index > 0 && temp_buffer[0] != '0') {
-          char prefix_char = (fmt[fmtindex] == 'x') ? 'x' : 'X';
-          temp_buffer[temp_index++] = prefix_char;
-          temp_buffer[temp_index++] = '0';
-        }
-        
         // 计算填充字符数量
         int padding = width - temp_index;
         
@@ -299,8 +295,27 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
         if (!flag_left_align) {
           // 右对齐
           char pad_char = (flag_zero_padding && precision < 0) ? '0' : ' ';
-          while (padding-- > 0) {
-            out[outindex++] = pad_char;
+          if(pad_char == '0'){
+            while (padding-- > 0) {
+              temp_buffer[temp_index++] = pad_char;
+            }
+            // 添加0x/0X前缀
+            if (flag_hash && temp_index > 0 && orignal_num != 0) {
+              char prefix_char = (fmt[fmtindex] == 'x') ? 'x' : 'X';
+              temp_buffer[temp_index++] = prefix_char;
+              temp_buffer[temp_index++] = '0';
+            }
+          }
+          else{
+            // 添加0x/0X前缀
+            if (flag_hash && temp_index > 0 && orignal_num != 0) {
+              char prefix_char = (fmt[fmtindex] == 'x') ? 'x' : 'X';
+              temp_buffer[temp_index++] = prefix_char;
+              temp_buffer[temp_index++] = '0';
+            }
+            while (padding-- > 0) {
+              temp_buffer[temp_index++] = pad_char;
+            }
           }
         }
         
@@ -324,8 +339,8 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
         uintptr_t num = (uintptr_t)ptr;
         
         if (num == 0) {
-          // 空指针特殊处理为"(nil)"
-          const char *nil_str = "(nil)";
+          // 空指针特殊处理为"NULL"
+          const char *nil_str = "NULL";
           int nil_len = 0;
           while (nil_str[nil_len]) nil_len++;
           
@@ -333,21 +348,16 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
             out[outindex++] = nil_str[i];
           }
         } else {
+          // 转换为十六进制字符串（反序）
+          while (num > 0) {
+            temp_buffer[temp_index++] = "0123456789abcdef"[num & 0xF];
+            num >>= 4;
+          }
+          
           // 添加0x前缀
           temp_buffer[temp_index++] = 'x';
           temp_buffer[temp_index++] = '0';
-          
-          // 特殊情况：num为0
-          if (num == 0) {
-            temp_buffer[temp_index++] = '0';
-          } else {
-            // 转换为十六进制字符串（反序）
-            while (num > 0) {
-              temp_buffer[temp_index++] = "0123456789abcdef"[num & 0xF];
-              num >>= 4;
-            }
-          }
-          
+
           // 计算填充字符数量
           int padding = width - temp_index;
           
@@ -721,12 +731,15 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
       case 'X': {
         // 获取无符号整数
         unsigned long long num;
+        unsigned long long orignal_num;
         if (length_modifier == 1) num = (unsigned short)va_arg(ap, unsigned int);
         else if (length_modifier == 2) num = (unsigned char)va_arg(ap, unsigned int);
         else if (length_modifier == 3) num = va_arg(ap, unsigned long);
         else if (length_modifier == 4) num = va_arg(ap, unsigned long long);
         else num = va_arg(ap, unsigned int);
         
+        orignal_num = num;
+
         // 确定使用的字符集 (大写或小写)
         const char *hex_chars = (fmt[fmtindex] == 'x') ? "0123456789abcdef" : "0123456789ABCDEF";
         
@@ -747,31 +760,41 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
           temp_buffer[temp_index++] = '0';
           digits++;
         }
-        
-        // 添加0x/0X前缀
-        if (flag_hash && temp_index > 0 && temp_buffer[0] != '0') {
-          char prefix_char = (fmt[fmtindex] == 'x') ? 'x' : 'X';
-          temp_buffer[temp_index++] = prefix_char;
-          temp_buffer[temp_index++] = '0';
-        }
-        
+
         // 计算填充字符数量
         int padding = width - temp_index;
-        
-        // 更新总字符计数
-        total_chars += (padding > 0) ? temp_index + padding : temp_index;
-        
+                
         // 输出结果（考虑对齐）
         if (!flag_left_align) {
           // 右对齐
           char pad_char = (flag_zero_padding && precision < 0) ? '0' : ' ';
-          while (padding-- > 0) {
-            if (outindex < n - 1) {
-              out[outindex++] = pad_char;
+          if(pad_char == '0'){
+            while (padding-- > 0) {
+              temp_buffer[temp_index++] = pad_char;
+            }
+            // 添加0x/0X前缀
+            if (flag_hash && temp_index > 0 && orignal_num != 0) {
+              char prefix_char = (fmt[fmtindex] == 'x') ? 'x' : 'X';
+              temp_buffer[temp_index++] = prefix_char;
+              temp_buffer[temp_index++] = '0';
+            }
+          }
+          else{
+            // 添加0x/0X前缀
+            if (flag_hash && temp_index > 0 && orignal_num != 0) {
+              char prefix_char = (fmt[fmtindex] == 'x') ? 'x' : 'X';
+              temp_buffer[temp_index++] = prefix_char;
+              temp_buffer[temp_index++] = '0';
+            }
+            while (padding-- > 0) {
+              temp_buffer[temp_index++] = pad_char;
             }
           }
         }
         
+        // 更新总字符计数
+        total_chars += (padding > 0) ? temp_index + padding : temp_index;
+
         // 反向输出格式化后的数字
         while (temp_index > 0) {
           if (outindex < n - 1) {
@@ -798,8 +821,8 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
         uintptr_t num = (uintptr_t)ptr;
         
         if (num == 0) {
-          // 空指针特殊处理为"(nil)"
-          const char *nil_str = "(nil)";
+          // 空指针特殊处理为"NULL"
+          const char *nil_str = "NULL";
           int nil_len = 0;
           while (nil_str[nil_len]) nil_len++;
           
@@ -811,20 +834,16 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
             }
           }
         } else {
+          
+          // 转换为十六进制字符串（反序）
+          while (num > 0) {
+            temp_buffer[temp_index++] = "0123456789abcdef"[num & 0xF];
+            num >>= 4;
+          }
+          
           // 添加0x前缀
           temp_buffer[temp_index++] = 'x';
           temp_buffer[temp_index++] = '0';
-          
-          // 特殊情况：num为0
-          if (num == 0) {
-            temp_buffer[temp_index++] = '0';
-          } else {
-            // 转换为十六进制字符串（反序）
-            while (num > 0) {
-              temp_buffer[temp_index++] = "0123456789abcdef"[num & 0xF];
-              num >>= 4;
-            }
-          }
           
           // 计算填充字符数量
           int padding = width - temp_index;

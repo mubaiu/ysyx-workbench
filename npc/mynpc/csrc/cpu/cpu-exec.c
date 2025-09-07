@@ -165,6 +165,7 @@ static void execute(uint64_t n) {
     //   break;
     // }
     if (nemu_state.state != NEMU_RUNNING) break;
+    IFDEF(CONFIG_DEVICE, device_update());
     }
     // IFDEF(CONFIG_DEVICE, device_update());
     for (int i = 0; i < 2; i++) {
