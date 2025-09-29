@@ -1,0 +1,510 @@
+#include "/home/mubai/ysyx-workbench/abstract-machine/tools/minirv/inst-replace.h"
+	.file	"vrc3.cpp"
+	.option nopic
+	.attribute arch, "rv32i2p1_zicsr2p0"
+	.attribute unaligned_access, 0
+	.attribute stack_align, 16
+	.text
+	.section	.text._ZL8M73Closev,"ax",@progbits
+	.align	2
+	.type	_ZL8M73Closev, @function
+_ZL8M73Closev:
+.LFB10:
+	.cfi_startproc
+	la a0, _ZL4WRAM; lw a0, 0(a0);
+	beq	a0,zero,.L7
+	addi	sp,sp,-16
+	.cfi_def_cfa_offset 16
+	sw	ra,12(sp)
+	.cfi_offset 1, -4
+	call	_Z10FCEU_gfreePv
+	lw	ra,12(sp)
+	.cfi_restore 1
+	la a5, _ZL4WRAM; sw zero, 0(a5);
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	jr	ra
+.L7:
+	la a5, _ZL4WRAM; sw zero, 0(a5);
+	ret
+	.cfi_endproc
+.LFE10:
+	.size	_ZL8M73Closev, .-_ZL8M73Closev
+	.section	.text._ZL8M73Writejh,"ax",@progbits
+	.align	2
+	.type	_ZL8M73Writejh, @function
+_ZL8M73Writejh:
+.LFB7:
+	.cfi_startproc
+	li	a3,61440
+	and	a0,a0,a3
+	li	a4,45056
+	mv	a5,a1
+	beq	a0,a4,.L12
+	bgtu	a0,a4,.L13
+	li	a4,36864
+	beq	a0,a4,.L14
+	li	a4,40960
+	beq	a0,a4,.L15
+	li	a4,32768
+	bne	a0,a4,.L29
+	lla	a3,_ZL9IRQReload
+	lhu	a4,0(a3)
+	andi	a5,a1,15
+	andi	a4,a4,-16
+	or	a5,a4,a5
+	sh	a5,0(a3)
+	ret
+.L13:
+	addi	sp,sp,-16
+	.cfi_def_cfa_offset 16
+	sw	ra,12(sp)
+	li	a4,53248
+	.cfi_offset 1, -4
+	beq	a0,a4,.L18
+	beq	a0,a3,.L19
+	li	a4,49152
+	bne	a0,a4,.L11
+	andi	a3,a1,1
+	andi	a4,a1,4
+	andi	a5,a1,2
+	la a2, _ZL4IRQx; sb a3, 0(a2);
+	la a2, _ZL4IRQm; sb a4, 0(a2);
+	la a3, _ZL4IRQa; sb a5, 0(a3);
+	beq	a5,zero,.L21
+	la a5, _ZL9IRQReload; lhu a5, 0(a5);
+	beq	a4,zero,.L22
+	lla	a3,_ZL8IRQCount
+	lhu	a4,0(a3)
+	andi	a5,a5,255
+	or	a5,a4,a5
+	sh	a5,0(a3)
+.L21:
+	lw	ra,12(sp)
+	.cfi_remember_state
+	.cfi_restore 1
+	li	a0,1
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	tail	_Z12X6502_IRQEndi
+.L19:
+	.cfi_restore_state
+	sw	s0,8(sp)
+	.cfi_offset 8, -8
+	li	a2,0
+	lla	s0,_ZL4preg
+	li	a1,24576
+	li	a0,16
+	sb	a5,0(s0)
+	call	_Z8setprg8rijj
+	lbu	a1,0(s0)
+	li	a0,32768
+	call	_Z8setprg16jj
+	li	a0,49152
+	li	a1,-1
+	call	_Z8setprg16jj
+	lw	s0,8(sp)
+	.cfi_restore 8
+	lw	ra,12(sp)
+	.cfi_restore 1
+	li	a0,0
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	tail	_Z7setchr8j
+.L15:
+	lla	a1,_ZL9IRQReload
+	lhu	a4,0(a1)
+	li	a2,-4096
+	li	a3,4096
+	addi	a2,a2,255
+	slli	a5,a5,8
+	addi	a3,a3,-256
+	and	a4,a4,a2
+	and	a5,a5,a3
+	or	a5,a4,a5
+	sh	a5,0(a1)
+	ret
+.L18:
+	.cfi_def_cfa_offset 16
+	.cfi_offset 1, -4
+	li	a0,1
+	call	_Z12X6502_IRQEndi
+	la a5, _ZL4IRQx; lbu a5, 0(a5);
+	la a4, _ZL4IRQa; sb a5, 0(a4);
+.L11:
+	lw	ra,12(sp)
+	.cfi_restore 1
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	jr	ra
+.L14:
+	lla	a3,_ZL9IRQReload
+	lhu	a4,0(a3)
+	slli	a5,a1,4
+	andi	a5,a5,255
+	andi	a4,a4,-241
+	or	a5,a4,a5
+	sh	a5,0(a3)
+	ret
+.L12:
+	lla	a3,_ZL9IRQReload
+	lhu	a4,0(a3)
+	slli	a5,a1,12
+	slli	a4,a4,20
+	srli	a4,a4,20
+	or	a5,a4,a5
+	sh	a5,0(a3)
+	ret
+.L29:
+	ret
+.L22:
+	.cfi_def_cfa_offset 16
+	.cfi_offset 1, -4
+	la a4, _ZL8IRQCount; sh a5, 0(a4);
+	j	.L21
+	.cfi_endproc
+.LFE7:
+	.size	_ZL8M73Writejh, .-_ZL8M73Writejh
+	.section	.text._ZL10M73IRQHooki,"ax",@progbits
+	.align	2
+	.type	_ZL10M73IRQHooki, @function
+_ZL10M73IRQHooki:
+.LFB8:
+	.cfi_startproc
+	la a5, _ZL4IRQa; lbu a5, 0(a5);
+	beq	a5,zero,.L40
+	addi	sp,sp,-32
+	.cfi_def_cfa_offset 32
+	sw	s2,16(sp)
+	sw	ra,28(sp)
+	.cfi_offset 18, -16
+	.cfi_offset 1, -4
+	mv	s2,a0
+	ble	a0,zero,.L30
+	sw	s5,4(sp)
+	.cfi_offset 21, -28
+	li	s5,65536
+	sw	s0,24(sp)
+	sw	s1,20(sp)
+	sw	s3,12(sp)
+	sw	s4,8(sp)
+	sw	s6,0(sp)
+	.cfi_offset 8, -8
+	.cfi_offset 9, -12
+	.cfi_offset 19, -20
+	.cfi_offset 20, -24
+	.cfi_offset 22, -32
+	li	s0,0
+	lla	s1,_ZL8IRQCount
+	lla	s3,_ZL4IRQm
+	addi	s5,s5,-1
+	lla	s4,_ZL9IRQReload
+	li	s6,255
+	j	.L37
+.L44:
+	andi	a4,a5,0xff
+	andi	a5,a5,-256
+	slli	a5,a5,16
+	addi	a3,a4,1
+	srli	a5,a5,16
+	or	a5,a5,a3
+	beq	a4,s6,.L36
+	sh	a5,0(s1)
+.L35:
+	addi	s0,s0,1
+	beq	s2,s0,.L43
+.L37:
+	lbu	a4,0(s3)
+	lhu	a5,0(s1)
+	bne	a4,zero,.L44
+	addi	a4,a5,1
+	beq	a5,s5,.L36
+	sh	a4,0(s1)
+	addi	s0,s0,1
+	bne	s2,s0,.L37
+.L43:
+	lw	s0,24(sp)
+	.cfi_restore 8
+	lw	s1,20(sp)
+	.cfi_restore 9
+	lw	s3,12(sp)
+	.cfi_restore 19
+	lw	s4,8(sp)
+	.cfi_restore 20
+	lw	s5,4(sp)
+	.cfi_restore 21
+	lw	s6,0(sp)
+	.cfi_restore 22
+.L30:
+	lw	ra,28(sp)
+	.cfi_restore 1
+	lw	s2,16(sp)
+	.cfi_restore 18
+	addi	sp,sp,32
+	.cfi_def_cfa_offset 0
+	jr	ra
+.L36:
+	.cfi_def_cfa_offset 32
+	.cfi_offset 1, -4
+	.cfi_offset 8, -8
+	.cfi_offset 9, -12
+	.cfi_offset 18, -16
+	.cfi_offset 19, -20
+	.cfi_offset 20, -24
+	.cfi_offset 21, -28
+	.cfi_offset 22, -32
+	lhu	a5,0(s4)
+	li	a0,1
+	sh	a5,0(s1)
+	call	_Z14X6502_IRQBegini
+	j	.L35
+.L40:
+	.cfi_def_cfa_offset 0
+	.cfi_restore 1
+	.cfi_restore 8
+	.cfi_restore 9
+	.cfi_restore 18
+	.cfi_restore 19
+	.cfi_restore 20
+	.cfi_restore 21
+	.cfi_restore 22
+	ret
+	.cfi_endproc
+.LFE8:
+	.size	_ZL10M73IRQHooki, .-_ZL10M73IRQHooki
+	.section	.text._ZL12StateRestorei,"ax",@progbits
+	.align	2
+	.type	_ZL12StateRestorei, @function
+_ZL12StateRestorei:
+.LFB11:
+	.cfi_startproc
+	addi	sp,sp,-16
+	.cfi_def_cfa_offset 16
+	li	a2,0
+	li	a1,24576
+	li	a0,16
+	sw	ra,12(sp)
+	.cfi_offset 1, -4
+	call	_Z8setprg8rijj
+	la a1, _ZL4preg; lbu a1, 0(a1);
+	li	a0,32768
+	call	_Z8setprg16jj
+	li	a0,49152
+	li	a1,-1
+	call	_Z8setprg16jj
+	lw	ra,12(sp)
+	.cfi_restore 1
+	li	a0,0
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	tail	_Z7setchr8j
+	.cfi_endproc
+.LFE11:
+	.size	_ZL12StateRestorei, .-_ZL12StateRestorei
+	.section	.text._ZL8M73Powerv,"ax",@progbits
+	.align	2
+	.type	_ZL8M73Powerv, @function
+_ZL8M73Powerv:
+.LFB9:
+	.cfi_startproc
+	addi	sp,sp,-16
+	.cfi_def_cfa_offset 16
+	li	a2,0
+	li	a1,24576
+	li	a0,16
+	sw	ra,12(sp)
+	sw	s0,8(sp)
+	.cfi_offset 1, -4
+	.cfi_offset 8, -8
+	la a5, _ZL4IRQx; sb zero, 0(a5);
+	la a5, _ZL4IRQm; sb zero, 0(a5);
+	la a5, _ZL9IRQReload; sh zero, 0(a5);
+	call	_Z8setprg8rijj
+	la a1, _ZL4preg; lbu a1, 0(a1);
+	li	a0,32768
+	call	_Z8setprg16jj
+	li	a1,-1
+	li	a0,49152
+	call	_Z8setprg16jj
+	li	a0,0
+	call	_Z7setchr8j
+	li	s0,65536
+	addi	a1,s0,-1
+	lla	a2,_Z6CartBRj
+	li	a0,24576
+	call	_Z14SetReadHandleriiPFhjE
+	li	a1,32768
+	lla	a2,_Z6CartBWjh
+	addi	a1,a1,-1
+	li	a0,24576
+	call	_Z15SetWriteHandleriiPFvjhE
+	addi	a1,s0,-1
+	lla	a2,_ZL8M73Writejh
+	li	a0,32768
+	call	_Z15SetWriteHandleriiPFvjhE
+	lw	s0,8(sp)
+	.cfi_restore 8
+	lw	ra,12(sp)
+	.cfi_restore 1
+	la a0, _ZL8WRAMSIZE; lw a0, 0(a0);
+	la a2, _ZL4WRAM; lw a2, 0(a2);
+	li	a1,24576
+	srli	a0,a0,10
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	tail	_Z16FCEU_CheatAddRAMijPh
+	.cfi_endproc
+.LFE9:
+	.size	_ZL8M73Powerv, .-_ZL8M73Powerv
+	.section	.rodata._Z13Mapper73_InitP8CartInfo.str1.4,"aMS",@progbits,1
+	.align	2
+.LC0:
+	.string	"WRAM"
+	.section	.text._Z13Mapper73_InitP8CartInfo,"ax",@progbits
+	.align	2
+	.globl	_Z13Mapper73_InitP8CartInfo
+	.hidden	_Z13Mapper73_InitP8CartInfo
+	.type	_Z13Mapper73_InitP8CartInfo, @function
+_Z13Mapper73_InitP8CartInfo:
+.LFB12:
+	.cfi_startproc
+	addi	sp,sp,-16
+	.cfi_def_cfa_offset 16
+	sw	ra,12(sp)
+	sw	s0,8(sp)
+	sw	s1,4(sp)
+	.cfi_offset 1, -4
+	.cfi_offset 8, -8
+	.cfi_offset 9, -12
+	lla	a5,_ZL8M73Powerv
+	sw	a5,0(a0)
+	lla	a5,_ZL8M73Closev
+	sw	a5,8(a0)
+	lla	a5,_ZL10M73IRQHooki
+	lla	s0,_ZL8WRAMSIZE
+	la a4, MapIRQHook; sw a5, 0(a4);
+	li	a0,8192
+	li	a5,8192
+	sw	a5,0(s0)
+	call	_Z12FCEU_gmallocj
+	lw	a2,0(s0)
+	mv	a1,a0
+	lla	s1,_ZL4WRAM
+	li	a3,1
+	li	a0,16
+	sw	a1,0(s1)
+	call	_Z19SetupCartPRGMappingiPhji
+	lw	a1,0(s0)
+	lw	a0,0(s1)
+	lla	a3,.LC0
+	li	a2,0
+	call	_Z10AddExStatePvjiPKc
+	li	a3,0
+	li	a2,0
+	li	a1,-1
+	lla	a0,_ZL9StateRegs
+	call	_Z10AddExStatePvjiPKc
+	lw	ra,12(sp)
+	.cfi_restore 1
+	lw	s0,8(sp)
+	.cfi_restore 8
+	lla	a5,_ZL12StateRestorei
+	la a4, GameStateRestore; sw a5, 0(a4);
+	lw	s1,4(sp)
+	.cfi_restore 9
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	jr	ra
+	.cfi_endproc
+.LFE12:
+	.size	_Z13Mapper73_InitP8CartInfo, .-_Z13Mapper73_InitP8CartInfo
+	.section	.rodata.str1.4,"aMS",@progbits,1
+	.align	2
+.LC1:
+	.string	"PREG"
+	.align	2
+.LC2:
+	.string	"IRQA"
+	.align	2
+.LC3:
+	.string	"IRQX"
+	.align	2
+.LC4:
+	.string	"IRQM"
+	.align	2
+.LC5:
+	.string	"IRQR"
+	.align	2
+.LC6:
+	.string	"IRQC"
+	.section	.data._ZL9StateRegs,"aw"
+	.align	2
+	.type	_ZL9StateRegs, @object
+	.size	_ZL9StateRegs, 84
+_ZL9StateRegs:
+	.word	_ZL4preg
+	.word	1
+	.word	.LC1
+	.word	_ZL4IRQa
+	.word	1
+	.word	.LC2
+	.word	_ZL4IRQx
+	.word	1
+	.word	.LC3
+	.word	_ZL4IRQm
+	.word	1
+	.word	.LC4
+	.word	_ZL9IRQReload
+	.word	2
+	.word	.LC5
+	.word	_ZL8IRQCount
+	.word	2
+	.word	.LC6
+	.word	0
+	.zero	8
+	.section	.sbss._ZL8WRAMSIZE,"aw",@nobits
+	.align	2
+	.type	_ZL8WRAMSIZE, @object
+	.size	_ZL8WRAMSIZE, 4
+_ZL8WRAMSIZE:
+	.zero	4
+	.section	.sbss._ZL4WRAM,"aw",@nobits
+	.align	2
+	.type	_ZL4WRAM, @object
+	.size	_ZL4WRAM, 4
+_ZL4WRAM:
+	.zero	4
+	.section	.sbss._ZL8IRQCount,"aw",@nobits
+	.align	1
+	.type	_ZL8IRQCount, @object
+	.size	_ZL8IRQCount, 2
+_ZL8IRQCount:
+	.zero	2
+	.section	.sbss._ZL9IRQReload,"aw",@nobits
+	.align	1
+	.type	_ZL9IRQReload, @object
+	.size	_ZL9IRQReload, 2
+_ZL9IRQReload:
+	.zero	2
+	.section	.sbss._ZL4IRQa,"aw",@nobits
+	.type	_ZL4IRQa, @object
+	.size	_ZL4IRQa, 1
+_ZL4IRQa:
+	.zero	1
+	.section	.sbss._ZL4IRQm,"aw",@nobits
+	.type	_ZL4IRQm, @object
+	.size	_ZL4IRQm, 1
+_ZL4IRQm:
+	.zero	1
+	.section	.sbss._ZL4IRQx,"aw",@nobits
+	.type	_ZL4IRQx, @object
+	.size	_ZL4IRQx, 1
+_ZL4IRQx:
+	.zero	1
+	.section	.sbss._ZL4preg,"aw",@nobits
+	.type	_ZL4preg, @object
+	.size	_ZL4preg, 1
+_ZL4preg:
+	.zero	1
+	.ident	"GCC: (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+	.section	.note.GNU-stack,"",@progbits

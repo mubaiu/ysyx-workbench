@@ -1,15 +1,25 @@
 #include <am.h>
 #include <stdint.h>
+#include <stdio.h> 
+#include <time.h>
+
+#define CYCLE_PER_US 5  // 假设主频为50MHz
+
+static inline uint64_t read_mcycle() {
+  uint32_t hi, lo;
+  asm volatile ("csrr %0, mcycleh" : "=r"(hi));
+  asm volatile ("csrr %0, mcycle"  : "=r"(lo));
+  return ((uint64_t)hi << 32) | lo;
+}
 
 void __am_timer_init() {
 }
 
 void __am_timer_uptime(AM_TIMER_UPTIME_T *uptime) {
-  // uptime->us = 0;
-  uint32_t hi = *(volatile uint32_t*)(0xa0000000+0x000004c);
-  uint32_t lo = *(volatile uint32_t*)(0xa0000000+0x0000048);
-  uptime->us = ((uint64_t)hi << 32) | lo;
-  
+  uint32_t hi, lo;
+  asm volatile ("csrr %0, mcycleh" : "=r"(hi));
+  asm volatile ("csrr %0, mcycle"  : "=r"(lo));
+  uptime->us = ((((uint64_t)hi << 32) | lo) / CYCLE_PER_US);
 }
 
 void __am_timer_rtc(AM_TIMER_RTC_T *rtc) {

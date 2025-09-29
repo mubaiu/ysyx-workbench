@@ -1,0 +1,148 @@
+#include "/home/mubai/ysyx-workbench/abstract-machine/tools/minirv/inst-replace.h"
+	.file	"8in1.cpp"
+	.option nopic
+	.attribute arch, "rv32i2p1_zicsr2p0"
+	.attribute unaligned_access, 0
+	.attribute stack_align, 16
+	.text
+	.section	.text._ZL12BMC8IN1Powerv,"ax",@progbits
+	.align	2
+	.type	_ZL12BMC8IN1Powerv, @function
+_ZL12BMC8IN1Powerv:
+.LFB9:
+	.cfi_startproc
+	addi	sp,sp,-16
+	.cfi_def_cfa_offset 16
+	sw	ra,12(sp)
+	.cfi_offset 1, -4
+	la a5, EXPREGS; sb zero, 0(a5);
+	call	_Z12GenMMC3Powerv
+	lw	ra,12(sp)
+	.cfi_restore 1
+	li	a1,65536
+	lla	a2,_ZL12BMC8IN1Writejh
+	addi	a1,a1,-1
+	li	a0,32768
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	tail	_Z15SetWriteHandleriiPFvjhE
+	.cfi_endproc
+.LFE9:
+	.size	_ZL12BMC8IN1Powerv, .-_ZL12BMC8IN1Powerv
+	.section	.text._ZL9BMC8IN1PWjh,"ax",@progbits
+	.align	2
+	.type	_ZL9BMC8IN1PWjh, @function
+_ZL9BMC8IN1PWjh:
+.LFB7:
+	.cfi_startproc
+	la a5, EXPREGS; lbu a5, 0(a5);
+	andi	a4,a5,16
+	beq	a4,zero,.L5
+	slli	a5,a5,2
+	andi	a5,a5,48
+	andi	a1,a1,15
+	or	a1,a5,a1
+	tail	_Z7setprg8jj
+.L5:
+	andi	a1,a5,15
+	li	a0,32768
+	tail	_Z8setprg32jj
+	.cfi_endproc
+.LFE7:
+	.size	_ZL9BMC8IN1PWjh, .-_ZL9BMC8IN1PWjh
+	.section	.text._ZL9BMC8IN1CWjh,"ax",@progbits
+	.align	2
+	.type	_ZL9BMC8IN1CWjh, @function
+_ZL9BMC8IN1CWjh:
+.LFB6:
+	.cfi_startproc
+	la a5, EXPREGS; lbu a5, 0(a5);
+	slli	a5,a5,5
+	andi	a5,a5,384
+	andi	a1,a1,127
+	or	a1,a5,a1
+	tail	_Z7setchr1jj
+	.cfi_endproc
+.LFE6:
+	.size	_ZL9BMC8IN1CWjh, .-_ZL9BMC8IN1CWjh
+	.section	.text._ZL12BMC8IN1Writejh,"ax",@progbits
+	.align	2
+	.type	_ZL12BMC8IN1Writejh, @function
+_ZL12BMC8IN1Writejh:
+.LFB8:
+	.cfi_startproc
+	slli	a3,a0,19
+	blt	a3,zero,.L13
+	li	a4,49152
+	bgeu	a0,a4,.L9
+	tail	_Z13MMC3_CMDWritejh
+.L9:
+	tail	_Z13MMC3_IRQWritejh
+.L13:
+	addi	sp,sp,-16
+	.cfi_def_cfa_offset 16
+	sw	s0,8(sp)
+	sw	ra,12(sp)
+	.cfi_offset 8, -8
+	.cfi_offset 1, -4
+	lla	s0,MMC3_cmd
+	lbu	a0,0(s0)
+	la a5, EXPREGS; sb a1, 0(a5);
+	call	_Z10FixMMC3PRGi
+	lbu	a0,0(s0)
+	lw	s0,8(sp)
+	.cfi_restore 8
+	lw	ra,12(sp)
+	.cfi_restore 1
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	tail	_Z10FixMMC3CHRi
+	.cfi_endproc
+.LFE8:
+	.size	_ZL12BMC8IN1Writejh, .-_ZL12BMC8IN1Writejh
+	.section	.rodata._Z12BMC8IN1_InitP8CartInfo.str1.4,"aMS",@progbits,1
+	.align	2
+.LC0:
+	.string	"EXPR"
+	.section	.text._Z12BMC8IN1_InitP8CartInfo,"ax",@progbits
+	.align	2
+	.globl	_Z12BMC8IN1_InitP8CartInfo
+	.hidden	_Z12BMC8IN1_InitP8CartInfo
+	.type	_Z12BMC8IN1_InitP8CartInfo, @function
+_Z12BMC8IN1_InitP8CartInfo:
+.LFB10:
+	.cfi_startproc
+	addi	sp,sp,-16
+	.cfi_def_cfa_offset 16
+	li	a4,0
+	li	a3,0
+	li	a2,128
+	li	a1,128
+	sw	s0,8(sp)
+	sw	ra,12(sp)
+	.cfi_offset 8, -8
+	.cfi_offset 1, -4
+	mv	s0,a0
+	call	_Z12GenMMC3_InitP8CartInfoiiii
+	lla	a5,_ZL9BMC8IN1CWjh
+	la a4, cwrap; sw a5, 0(a4);
+	lla	a5,_ZL9BMC8IN1PWjh
+	la a4, pwrap; sw a5, 0(a4);
+	lla	a5,_ZL12BMC8IN1Powerv
+	sw	a5,0(s0)
+	lw	s0,8(sp)
+	.cfi_restore 8
+	lw	ra,12(sp)
+	.cfi_restore 1
+	lla	a3,.LC0
+	li	a2,0
+	li	a1,1
+	lla	a0,EXPREGS
+	addi	sp,sp,16
+	.cfi_def_cfa_offset 0
+	tail	_Z10AddExStatePvjiPKc
+	.cfi_endproc
+.LFE10:
+	.size	_Z12BMC8IN1_InitP8CartInfo, .-_Z12BMC8IN1_InitP8CartInfo
+	.ident	"GCC: (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0"
+	.section	.note.GNU-stack,"",@progbits

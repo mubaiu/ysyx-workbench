@@ -1,0 +1,34 @@
+
+/home/mubai/ysyx-workbench/am-kernels/tests/cpu-tests/build/dummy-minirv-npc.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+80000000 <_start>:
+80000000:	00000413          	li	s0,0
+80000004:	80009137          	lui	sp,0x80009
+80000008:	00010113          	mv	sp,sp
+8000000c:	800000b7          	lui	ra,0x80000
+80000010:	02008093          	addi	ra,ra,32 # 80000020 <_trm_init>
+80000014:	000080e7          	jalr	ra
+
+80000018 <main>:
+80000018:	00000513          	li	a0,0
+8000001c:	00008067          	ret
+
+80000020 <_trm_init>:
+80000020:	ff410113          	addi	sp,sp,-12 # 80008ff4 <_stack_top+0x7ff4>
+80000024:	00112423          	sw	ra,8(sp)
+80000028:	100007b7          	lui	a5,0x10000
+8000002c:	00100713          	li	a4,1
+80000030:	00e78023          	sb	a4,0(a5) # 10000000 <_entry_offset+0x10000000>
+80000034:	80000537          	lui	a0,0x80000
+80000038:	05c50513          	addi	a0,a0,92 # 8000005c <_etext>
+8000003c:	800000b7          	lui	ra,0x80000
+80000040:	01808093          	addi	ra,ra,24 # 80000018 <main>
+80000044:	000080e7          	jalr	ra
+80000048:	00050513          	mv	a0,a0
+8000004c:	00100073          	ebreak
+80000050:	80000237          	lui	tp,0x80000
+80000054:	05020213          	addi	tp,tp,80 # 80000050 <_trm_init+0x30>
+80000058:	00020067          	jr	tp # 0 <_entry_offset>
