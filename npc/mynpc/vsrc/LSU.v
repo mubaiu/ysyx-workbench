@@ -128,7 +128,14 @@ module LSU(
         load_data = 32'b0;
         if (io_lsu_respValid && load_flag) begin
             case(funct3)
-                3'b000: load_data = {{24{io_lsu_rdata[7]}}, io_lsu_rdata[7:0]}; // lb
+                3'b000: begin // lb
+                    case (addr_reg[1:0])
+                        2'b00: load_data = {{24{io_lsu_rdata[7]}}, io_lsu_rdata[7:0]};
+                        2'b01: load_data = {{24{io_lsu_rdata[15]}}, io_lsu_rdata[15:8]};
+                        2'b10: load_data = {{24{io_lsu_rdata[23]}}, io_lsu_rdata[23:16]};
+                        2'b11: load_data = {{24{io_lsu_rdata[31]}}, io_lsu_rdata[31:24]};
+                    endcase
+                end
                 3'b100: begin // lbu
                     case (addr_reg[1:0])
                         2'b00: load_data = {24'b0, io_lsu_rdata[7:0]};
@@ -137,7 +144,12 @@ module LSU(
                         2'b11: load_data = {24'b0, io_lsu_rdata[31:24]};
                     endcase
                 end
-                3'b001: load_data = {{16{io_lsu_rdata[15]}}, io_lsu_rdata[15:0]}; // lh
+                3'b001: begin // lh
+                    case (addr_reg[1])
+                        1'b0: load_data = {{16{io_lsu_rdata[15]}}, io_lsu_rdata[15:0]};
+                        1'b1: load_data = {{16{io_lsu_rdata[31]}}, io_lsu_rdata[31:16]};
+                    endcase
+                end
                 3'b101: begin // lhu
                     case (addr_reg[1])
                         1'b0: load_data = {16'b0, io_lsu_rdata[15:0]};
