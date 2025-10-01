@@ -4,7 +4,7 @@
 #include <locale.h>
 #include <verilated.h>
 #include <verilated_fst_c.h>
-#include "Vtop.h"
+#include "Vcomputer.h"
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
 
@@ -137,8 +137,10 @@ void exec_once(Decode *d, vaddr_t pc) {
 
 
 extern VerilatedContext* contextp;
-extern Vtop* top;
+extern Vcomputer* computer;
 extern VerilatedFstC* tfp;
+
+static uint32_t last_difftest_pc = 0x80000000;
 
 static void execute(uint64_t n) {
 
@@ -146,18 +148,18 @@ static void execute(uint64_t n) {
   for (;n > 0; n --) {
     g_nr_guest_inst ++;
     
-    
-    #ifdef CONFIG_DIFFTEST
-    if(top->clk){
-      trace_and_difftest(&d, d.dnpc);
-    }
-    #endif
-    if(top->clk){
+    if(last_difftest_pc != d.pc){
       exec_once(&d, npc.pc);
     }
+    #ifdef CONFIG_DIFFTEST
+    if(last_difftest_pc != d.pc){
+      trace_and_difftest(&d, d.dnpc);
+      last_difftest_pc = d.pc;
+    }
+    #endif
     for (int i = 0; i < 2; i++) {
-        top->clk = !top->clk;
-        top->eval();
+        computer->clock = !computer->clock;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
         if (nemu_state.state != NEMU_RUNNING) break;
     }
@@ -171,8 +173,8 @@ static void execute(uint64_t n) {
     }
     // IFDEF(CONFIG_DEVICE, device_update());
     for (int i = 0; i < 2; i++) {
-        top->clk = !top->clk;
-        top->eval();
+        computer->clock = !computer->clock;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     exec_once(&d, npc.pc);

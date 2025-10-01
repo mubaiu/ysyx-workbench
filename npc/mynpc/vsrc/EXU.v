@@ -1,40 +1,37 @@
 module EXU(
-    input wire clk,
-    input wire rst,
+    input  wire         clock,
+    input  wire         reset,
     // ALU控制信号
-    input wire [3:0] alu_op,
-    input wire ebreak_en, // EBREAK标志
-    input wire ecall_en,  // ECALL使能信号
-    input wire mret_en,   // MRET使能信号
-    input wire idu_ready,
+    input  wire [3:0]   alu_op,
+    input  wire         ebreak_en, // EBREAK标志
+    input  wire         ecall_en,  // ECALL使能信号
+    input  wire         mret_en,   // MRET使能信号
+    input  wire         idu_ready,
     // 操作数
-    input wire [31:0] rs1_data,
-    input wire [31:0] rs2_data,
-    input wire [31:0] imm,
-    input wire alu_src,
-    
-    // input wire [6:0] opcode,
+    input  wire [31:0]  rs1_data,
+    input  wire [31:0]  rs2_data,
+    input  wire [31:0]  imm,
+    input  wire         alu_src,
 
     // CSR相关
-    input wire is_csr_op,
+    input  wire         is_csr_op,
 
     // PC相关
-    input wire [31:0] pc,
-    // input wire [31:0] snpc,
-    input wire branch,
-    input wire jal_en,
-    input wire jalr_en,
-    input wire auipc_flag,
-    
+    input  wire [31:0]  pc,
+    input  wire         branch,
+    input  wire         jal_en,
+    input  wire         jalr_en,
+    input  wire         auipc_flag,
+
     // 输出
-    output reg [31:0] alu_result,
+    output reg  [31:0]  alu_result,
     // ECALL导致的异常跳转
-    output reg ecall_taken,         // ECALL跳转标志
-    output reg [31:0] ecall_target,  // ECALL跳转目标地址
-    output reg mret_taken,       // MRET跳转标志
-    output reg [31:0] mret_target, // MRET跳转目标地址
-    output wire branch_taken,
-    output wire [31:0] branch_target
+    output reg          ecall_taken,   // ECALL跳转标志
+    output reg  [31:0]  ecall_target,  // ECALL跳转目标地址
+    output reg          mret_taken,    // MRET跳转标志
+    output reg  [31:0]  mret_target,   // MRET跳转目标地址
+    output wire         branch_taken,
+    output wire [31:0]  branch_target
 );
 
 import "DPI-C" function void ebreak();
@@ -137,8 +134,8 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
         end
     end
 
-    always @(posedge clk) begin
-        if (!rst) begin
+    always @(posedge clock) begin
+        if (reset) begin
             mstatus <= 32'h1800;
             mepc <= 32'h0;
             mcause <= 32'h0;

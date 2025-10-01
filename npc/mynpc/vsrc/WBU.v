@@ -1,22 +1,21 @@
 module WBU(
     // 写回数据选择
-    input wire lsu_ready,
-    input wire idu_ready,
-    input wire [31:0] alu_result,
-    input wire [31:0] load_data,
-    input wire [31:0] snpc,     // 静态PC，替代pc_plus4
-    
-    input wire mem_to_reg,
-    input wire jal_en,
-    input wire jalr_en,
-    
+    input  wire        lsu_ready,
+    input  wire        idu_ready,
+    input  wire [31:0] alu_result,
+    input  wire [31:0] load_data,
+    input  wire [31:0] snpc,     // 静态PC，替代pc_plus4
+
+    input  wire        mem_to_reg,
+    input  wire        jal_en,
+    input  wire        jalr_en,
+
     // 输出写回数据
-    output reg wbu_ready,
-    output reg [31:0] wb_data
+    output reg         wbu_ready,
+    output reg  [31:0] wb_data
 );
 
 always @(*) begin
-    if(lsu_ready) begin
         if (jal_en || jalr_en) begin
             wb_data = snpc;     // JAL/JALR指令存储返回地址
         end 
@@ -26,10 +25,7 @@ always @(*) begin
         else begin
             wb_data = alu_result; // ALU操作
         end
-    end
-    else begin
-        wb_data = 32'b0; 
-    end
+
         wbu_ready = (lsu_ready && idu_ready) ? 1'b1 : 1'b0;
 end
 

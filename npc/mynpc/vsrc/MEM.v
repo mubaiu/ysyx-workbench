@@ -1,82 +1,94 @@
 module Memory (
-    input wire clk,            // 添加时钟输入
-    input wire we,             // 写使能
-    input wire re,             // 读使能
-    input wire [7:0] addr,     // 8位地址（256个位置）
-    input wire [1:0] byte_sel, // 字节选择
-    input wire [31:0] wdata,   // 写数据
-    input wire [2:0] funct3,   // 功能码
-    output reg [31:0] rdata    // 读数据
+    input  wire        clock,            // 添加时钟输入
+    input  wire        reset,            // 添加复位输入
+
+    //读地址/数据通道
+    input  wire [31:0] io_slave_araddr,
+    input  wire        io_slave_arvalid,
+    input  wire        io_slave_rready,
+    output reg         io_slave_arready,
+    output reg  [31:0] io_slave_rdata,
+    output reg  [1:0]  io_slave_rresp,
+    output reg         io_slave_rvalid, 
+
+    // 写地址/数据通道
+    input  wire [1:0]  io_slave_size,
+    
+    input  wire [31:0] io_slave_awaddr,
+    input  wire        io_slave_awvalid,
+    input  wire [31:0] io_slave_wdata,
+    input  wire [3:0]  io_slave_wstrb,
+    input  wire        io_slave_wvalid,
+    input  wire        io_slave_bready,
+
+    output reg         io_slave_awready,
+    output reg         io_slave_wready,
+    output reg  [1:0]  io_slave_bresp,
+    output reg         io_slave_bvalid
 );
-    // 256 x 32bit 存储器阵列
-    reg [31:0] mem [0:255];
-    
-    always @(*) begin
-        if (re) begin
-            case(funct3)
-                3'b000: begin // lb - 符号扩展
-                    case(byte_sel)
-                        2'b00: rdata = {{24{mem[addr][7]}}, mem[addr][7:0]};
-                        2'b01: rdata = {{24{mem[addr][15]}}, mem[addr][15:8]};
-                        2'b10: rdata = {{24{mem[addr][23]}}, mem[addr][23:16]};
-                        2'b11: rdata = {{24{mem[addr][31]}}, mem[addr][31:24]};
-                    endcase
-                end
-                3'b001: begin // lh - 符号扩展
-                    case(byte_sel[1])
-                        1'b0: rdata = {{16{mem[addr][15]}}, mem[addr][15:0]};
-                        1'b1: rdata = {{16{mem[addr][31]}}, mem[addr][31:16]};
-                    endcase
-                end
-                3'b010: begin // lw
-                    rdata = mem[addr];
-                end
-                3'b100: begin // lbu - 零扩展
-                    case(byte_sel)
-                        2'b00: rdata = {24'b0, mem[addr][7:0]};
-                        2'b01: rdata = {24'b0, mem[addr][15:8]};
-                        2'b10: rdata = {24'b0, mem[addr][23:16]};
-                        2'b11: rdata = {24'b0, mem[addr][31:24]};
-                    endcase
-                end
-                3'b101: begin // lhu - 零扩展
-                    case(byte_sel[1])
-                        1'b0: rdata = {16'b0, mem[addr][15:0]};
-                        1'b1: rdata = {16'b0, mem[addr][31:16]};
-                    endcase
-                end
-                default: rdata = mem[addr]; // 默认读字
-            endcase
-        end
-        else begin
-            rdata = 32'h0; 
-        end
+
+import "DPI-C" function int intake(input int pc);
+import "DPI-C" function void vaddr_write(input int addr, input int len, input int data);
+import "DPI-C" function int vaddr_read(input int addr, input int len);
+
+wire [31:0] len;
+wire [31:0] aligned_addr;
+
+wire ar_handshake = io_slave_arvalid && io_slave_arready;  // 读地址握手
+wire r_handshake  = io_slave_rvalid  && io_slave_rready ;  // 读数据握手
+wire aw_handshake = io_slave_awvalid && io_slave_awready;  // 写地址握手
+wire w_handshake  = io_slave_wvalid  && io_slave_wready ;  // 写数据握手
+wire b_handshake  = io_slave_bvalid  && io_slave_bready ;  // 写响应握手
+
+assign len = (io_slave_size == 2'b00) ? 32'd1 : // byte
+             (io_slave_size == 2'b01) ? 32'd2 : // half-word
+             (io_slave_size == 2'b10) ? 32'd4 : // word
+             32'd0; // default to byte for safety
+
+assign aligned_addr = {io_slave_araddr[31:2], 2'b00}; // 字对齐(4字节)
+
+//读地址/数据通道
+always @(posedge clock) begin
+    if (reset) begin
+        io_slave_arready <= 1'b1 ;
+        io_slave_rdata   <= 32'b0;
+        io_slave_rresp   <= 2'b0 ;
+        io_slave_rvalid  <= 1'b0 ;
+    end 
+    else if (ar_handshake) begin
+        io_slave_rvalid  <= 1'b1;
+        io_slave_arready <= 1'b0;
+        io_slave_rdata   <= vaddr_read(aligned_addr, 4);
+    end 
+    else if (r_handshake) begin
+        // 读数据握手完成
+        io_slave_rvalid  <= 1'b0;
+        io_slave_arready <= 1'b1;  // 恢复读地址 ready
     end
-    
-    // 写操作 - 时序逻辑
-    always @(posedge clk) begin
-        if (we) begin
-            case (funct3)
-                3'b000: begin // sb
-                    case(byte_sel)
-                        2'b00: mem[addr][7:0] <= wdata[7:0];
-                        2'b01: mem[addr][15:8] <= wdata[7:0];
-                        2'b10: mem[addr][23:16] <= wdata[7:0];
-                        2'b11: mem[addr][31:24] <= wdata[7:0];
-                    endcase
-                end
-                3'b001: begin // sh
-                    case(byte_sel[1])
-                        1'b0: mem[addr][15:0] <= wdata[15:0];
-                        1'b1: mem[addr][31:16] <= wdata[15:0];
-                    endcase
-                end
-                3'b010: begin // sw
-                    mem[addr] <= wdata;
-                end
-                default: mem[addr] <= wdata; // 默认写字
-            endcase
+end
+
+// 写地址/数据通道
+always @(posedge clock) begin
+    if (reset) begin
+        io_slave_awready <= 1'b1;
+        io_slave_wready  <= 1'b1;
+        io_slave_bresp   <= 2'b0;
+        io_slave_bvalid  <= 1'b0;
+    end else if (aw_handshake) begin
+        // 写操作握手
+        io_slave_awready <= 1'b0;  // 只拉低写地址 ready
+        if (w_handshake) begin
+            io_slave_wready <= 1'b0;  // 写地址和写数据都握手成功，拉低写数据 ready
+            vaddr_write(io_slave_awaddr, len, io_slave_wdata);
+            io_slave_bvalid <= 1'b1;  // 写响应
         end
+    end else if (b_handshake) begin
+        // 写响应完成
+        io_slave_bvalid  <= 1'b0;
+        io_slave_wready  <= 1'b1;  // 恢复写数据 ready
+        io_slave_awready <= 1'b1;  // 恢复写地址 ready
     end
+end
+
 
 endmodule

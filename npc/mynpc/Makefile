@@ -31,7 +31,7 @@ run: $(IMG)
 	@echo $(CSRC)
 	@bash -c 'ELF_FILE=$(basename $(IMG)).elf && \
 		echo "ELF file: $$ELF_FILE" && \
-		verilator --cc --exe --build --timing --trace-fst --top-module top --CFLAGS "$(INCLUDES) $(CFLAGS) $(CFLAGS_TRACE)" -LDFLAGS "$(LDFLAGS) -ldl" $(VSRC) $(CSRC) && \
-		./obj_dir/Vtop -e $$ELF_FILE $(NPC_ARGS) -d $(DIFFTEST_REF_SO) $(IMG) '
+		verilator --cc --exe --build --timing --trace-fst --top-module computer --CFLAGS "$(INCLUDES) $(CFLAGS) $(CFLAGS_TRACE)" -LDFLAGS "$(LDFLAGS) -ldl" $(VSRC) $(CSRC) && \
+		./obj_dir/Vcomputer -e $$ELF_FILE $(NPC_ARGS) -d $(DIFFTEST_REF_SO) $(IMG) '
 
 include ../Makefile

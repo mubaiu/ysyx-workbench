@@ -1,4 +1,4 @@
-#include "Vtop.h"
+#include "Vcomputer.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +24,7 @@ extern Decode d;
 
 extern "C" {
   VerilatedContext* contextp = nullptr;
-  Vtop* top = nullptr;
+  Vcomputer* computer = nullptr;
   VerilatedFstC* tfp = nullptr;
 }
 
@@ -37,13 +37,13 @@ int main(int argc, char** argv) {
     
     #if ENABLE_WAVE_TRACE
     contextp->traceEverOn(true);
-    top = new Vtop{contextp};
+    computer = new Vcomputer{contextp};
     tfp = new VerilatedFstC;
-    top->trace(tfp, 99);
+    computer->trace(tfp, 99);
     tfp->open("wave.fst");
     #else
     contextp->traceEverOn(false);
-    top = new Vtop{contextp};
+    computer = new Vcomputer{contextp};
     #endif
     
     // 首先让顶层模块评估一次，确保内部信号初始化
@@ -65,22 +65,22 @@ int main(int argc, char** argv) {
      // 然后设置复位信号
     // top->rst = 1;
     // top->clk = !top->clk;
-    top->eval();
-    tfp->dump(sim_time++);
+    computer->eval();
+    // tfp->dump(sim_time++);
     
 
     for (int i = 0; i < 2; i++) {
-        top->rst = 0;
-        top->clk = !top->clk;
-        top->eval();
+        computer->reset = 1;
+        computer->clock = !computer->clock;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
-    exec_once(&d, npc.pc);
+    // exec_once(&d, npc.pc);
     // 释放复位信号后，给予额外的时钟周期稳定系统
-    top->rst = 1;
+    computer->reset = 0;
     for (int i = 0; i < 2; i++) {
-        top->clk = !top->clk;
-        top->eval();
+        computer->clock = !computer->clock;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     
@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
     delete tfp;
     #endif
     
-    delete top;
+    delete computer;
     delete contextp;
     return is_exit_status_bad();
 }
@@ -109,7 +109,7 @@ extern "C" void ebreak() {
     nemu_state.halt_ret = a0;
     nemu_state.halt_pc = pc;
     
-    // printf("EBREAK: Simulation stopped with exit code 0x%08x at pc = 0x%08x.\n", a0, pc);
+    // printf("EBREAK: Simulation scomputerped with exit code 0x%08x at pc = 0x%08x.\n", a0, pc);
     
     // 打印寄存器状态(可选)
     // isa_reg_display();

@@ -1,20 +1,20 @@
 module REG(
-    input wire clk,
-    input wire rst,
+    input  wire        clock,
+    input  wire        reset,
     
-    input wire mem_to_reg,
+    input  wire        mem_to_reg,
     // 读寄存器地址
-    input wire [4:0] rs1_addr,
-    input wire [4:0] rs2_addr,
+    input  wire [4:0]  rs1_addr,
+    input  wire [4:0]  rs2_addr,
     
     // 写寄存器地址和数据
-    input wire [4:0] rd_addr,
-    input wire [31:0] rd_data,
-    input wire rd_wen,  // 写使能
+    input  wire [4:0]  rd_addr,
+    input  wire [31:0] rd_data,
+    input  wire        rd_wen,  // 写使能
     
     // 读出的寄存器数据
-    output reg [31:0] rs1_data,
-    output reg [31:0] rs2_data
+    output reg  [31:0] rs1_data,
+    output reg  [31:0] rs2_data
 );
   // DPI-C接口声明
   import "DPI-C" function void set_reg_value(input int idx, input int val);
@@ -27,7 +27,7 @@ module REG(
   
   // 寄存器读取逻辑
   always @(*) begin
-      if (!rst) begin
+      if (reset) begin
           rs1_data = 32'h0;
           rs2_data = 32'h0;
       end else begin
@@ -38,8 +38,8 @@ module REG(
   end
 
   // 寄存器写入逻辑
-  always @(posedge clk) begin
-      if (!rst) begin
+  always @(posedge clock) begin
+      if (reset) begin
           for (i = 0; i < 16; i = i + 1) begin
               registers[i] <= 32'h0;
           end
