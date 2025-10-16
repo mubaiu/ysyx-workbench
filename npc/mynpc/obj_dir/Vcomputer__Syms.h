@@ -19,7 +19,7 @@
 // DPI TYPES for DPI Export callbacks (Internal use)
 
 // SYMS CLASS (contains all model state)
-class Vcomputer__Syms final : public VerilatedSyms {
+class alignas(VL_CACHE_LINE_BYTES) Vcomputer__Syms final : public VerilatedSyms {
   public:
     // INTERNAL STATE
     Vcomputer* const __Vm_modelp;
@@ -37,6 +37,6 @@ class Vcomputer__Syms final : public VerilatedSyms {
 
     // METHODS
     const char* name() { return TOP.name(); }
-} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);
+};
 
 #endif  // guard

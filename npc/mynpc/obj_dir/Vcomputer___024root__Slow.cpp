@@ -2,9 +2,7 @@
 // DESCRIPTION: Verilator output: Design implementation internals
 // See Vcomputer.h for the primary calling header
 
-#include "verilated.h"
-#include "verilated_dpi.h"
-
+#include "Vcomputer__pch.h"
 #include "Vcomputer__Syms.h"
 #include "Vcomputer___024root.h"
 
@@ -19,7 +17,7 @@ Vcomputer___024root::Vcomputer___024root(Vcomputer__Syms* symsp, const char* v__
 }
 
 void Vcomputer___024root::__Vconfigure(bool first) {
-    if (false && first) {}  // Prevent unused
+    (void)first;  // Prevent unused variable warning
 }
 
 Vcomputer___024root::~Vcomputer___024root() {

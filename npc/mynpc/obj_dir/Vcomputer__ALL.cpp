@@ -11,3 +11,4 @@
 #include "Vcomputer___024root__DepSet_hc8fa58cb__0__Slow.cpp"
 #include "Vcomputer__Syms.cpp"
 #include "Vcomputer__Trace__0__Slow.cpp"
+#include "Vcomputer__TraceDecls__0__Slow.cpp"

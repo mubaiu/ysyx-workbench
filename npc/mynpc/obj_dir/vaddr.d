@@ -7,4 +7,4 @@ vaddr.o: ../csrc/memory/vaddr.c \
  /home/mubai/ysyx-workbench/npc/mynpc/include/debug.h \
  /home/mubai/ysyx-workbench/npc/mynpc/include/utils.h \
  /home/mubai/ysyx-workbench/npc/mynpc/include/memory/paddr.h \
- /usr/local/share/verilator/include/vltstd/svdpi.h
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/vltstd/svdpi.h

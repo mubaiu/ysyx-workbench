@@ -75,7 +75,7 @@ module ysyx_25010003(
     wire        io_ifu_wvalid;
     wire        io_ifu_bready;   //B
 
-    // ===== LSU Master 接口 =====
+    // ===== LSU Arbiter 接口 =====
     wire        io_lsu_arvalid;  //AR
     wire [31:0] io_lsu_araddr;
     wire        io_lsu_rready;   //R
@@ -91,12 +91,33 @@ module ysyx_25010003(
     wire [1:0]  io_lsu_bresp;
     wire        io_lsu_bvalid;
 
+    // ===== CLINT Arbiter 接口 =====
+    wire        io_clint_arready;
+    wire        io_clint_rvalid;
+    wire [31:0] io_clint_rdata;
+    wire [1:0]  io_clint_rresp;
+    wire        io_clint_arvalid;
+    wire [31:0] io_clint_araddr;
+    wire        io_clint_rready;
+    wire        io_clint_awready;
+    wire        io_clint_wready;
+    wire        io_clint_bvalid;
+    wire [1:0]  io_clint_bresp;
+    wire        io_clint_awvalid;
+    wire [31:0] io_clint_awaddr;
+    wire        io_clint_wvalid;
+    wire [31:0] io_clint_wdata;
+    wire [3:0]  io_clint_wstrb;
+    wire        io_clint_bready;
 
     // 指令获取单元
     IFU ysyx_25010003_IFU(
         .clock              (clock),
         .reset              (reset),
 
+        .io_clint_arvalid   (io_clint_arvalid),
+        .io_clint_arready   (io_clint_arready),
+        
         .io_master_arready  (io_master_arready),
         .io_master_awready  (io_master_awready),
         .io_master_wready   (io_master_wready),
@@ -176,6 +197,28 @@ module ysyx_25010003(
         .io_lsu_bresp       (io_lsu_bresp),
         .io_lsu_bvalid      (io_lsu_bvalid),
 
+        // ===== CLINT 接口 =====
+        .io_clint_arready   (io_clint_arready),
+        .io_clint_rvalid    (io_clint_rvalid),
+        .io_clint_rdata     (io_clint_rdata),
+        .io_clint_rresp     (io_clint_rresp),
+        
+        .io_clint_arvalid   (io_clint_arvalid),
+        .io_clint_araddr    (io_clint_araddr),
+        .io_clint_rready    (io_clint_rready),
+        
+        .io_clint_awready   (io_clint_awready),
+        .io_clint_wready    (io_clint_wready),
+        .io_clint_bvalid    (io_clint_bvalid),
+        .io_clint_bresp     (io_clint_bresp),
+        
+        .io_clint_awvalid   (io_clint_awvalid),
+        .io_clint_awaddr    (io_clint_awaddr),
+        .io_clint_wvalid    (io_clint_wvalid),
+        .io_clint_wdata     (io_clint_wdata),
+        .io_clint_wstrb     (io_clint_wstrb),
+        .io_clint_bready    (io_clint_bready),
+
         // ===== Slave 接口 =====
         .io_master_arready  (io_master_arready),
         .io_master_rvalid   (io_master_rvalid),
@@ -197,6 +240,33 @@ module ysyx_25010003(
         .io_master_wdata    (io_master_wdata),
         .io_master_wstrb    (io_master_wstrb),
         .io_master_bready   (io_master_bready)
+    );
+
+    CLINT ysyx_25010003_CLINT(
+        .clock              (clock),
+        .reset              (reset),
+
+        //读地址/数据通道
+        .io_slave_araddr    (io_clint_araddr),
+        .io_slave_arvalid   (io_clint_arvalid),
+        .io_slave_rready    (io_clint_rready),
+        .io_slave_arready   (io_clint_arready),
+        .io_slave_rdata     (io_clint_rdata),
+        .io_slave_rresp     (io_clint_rresp),
+        .io_slave_rvalid    (io_clint_rvalid),
+
+        // 写地址/数据通道
+        .io_slave_awaddr    (io_clint_awaddr),
+        .io_slave_awvalid   (io_clint_awvalid),
+        .io_slave_wdata     (io_clint_wdata),
+        .io_slave_wstrb     (io_clint_wstrb),
+        .io_slave_wvalid    (io_clint_wvalid),
+        .io_slave_bready    (io_clint_bready),
+
+        .io_slave_awready   (io_clint_awready),
+        .io_slave_wready    (io_clint_wready),
+        .io_slave_bresp     (io_clint_bresp),
+        .io_slave_bvalid    (io_clint_bvalid)
     );
 
     // 指令解码单元

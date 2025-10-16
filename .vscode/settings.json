@@ -8,7 +8,11 @@
     "isa.h": "c",
     "host.h": "c",
     "memory_resource": "cpp",
-    "ratio": "cpp"
+    "ratio": "cpp",
+    "stdint.h": "c",
+    "am.h": "c",
+    "compare": "c",
+    "format": "c"
   },
   "C_Cpp_Runner.msvcBatchPath": "",
   "C_Cpp_Runner.cCompilerPath": "gcc",

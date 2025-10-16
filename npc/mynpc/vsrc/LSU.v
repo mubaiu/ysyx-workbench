@@ -118,7 +118,7 @@ module LSU(
         load_data = 32'b0;
         if (io_lsu_rvalid && load_flag) begin
             case(funct3)
-                3'b000: begin // lbu
+                3'b000: begin // lb
                     case (addr_reg[1:0])
                         2'b00: load_data = {{24{io_lsu_rdata[7]}}, io_lsu_rdata[7:0]};
                         2'b01: load_data = {{24{io_lsu_rdata[15]}}, io_lsu_rdata[15:8]};

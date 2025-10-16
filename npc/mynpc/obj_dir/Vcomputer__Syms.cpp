@@ -1,7 +1,7 @@
 // Verilated -*- C++ -*-
 // DESCRIPTION: Verilator output: Symbol table implementation internals
 
-#include "Vcomputer__Syms.h"
+#include "Vcomputer__pch.h"
 #include "Vcomputer.h"
 #include "Vcomputer___024root.h"
 
@@ -17,6 +17,8 @@ Vcomputer__Syms::Vcomputer__Syms(VerilatedContext* contextp, const char* namep, 
     // Setup module instances
     , TOP{this, namep}
 {
+    // Check resources
+    Verilated::stackCheck(305);
     // Configure time unit / time precision
     _vm_contextp__->timeunit(-12);
     _vm_contextp__->timeprecision(-12);

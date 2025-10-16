@@ -129,17 +129,17 @@ word_t paddr_read(paddr_t addr, int len) {
     #endif
     return data;
   }
-  if(addr == RTC_ADDR || addr == RTC_ADDR + 4) {
-    // 获取当前时间戳
-    uint64_t rtc_val = get_time();
-    if(addr == RTC_ADDR) {
-      // 返回低32位
-      return (word_t)rtc_val;
-    } else {
-      // 返回高32位
-      return (word_t)(rtc_val >> 32);
-    }
-  }
+  // if(addr == RTC_ADDR || addr == RTC_ADDR + 4) {
+  //   // 获取当前时间戳
+  //   uint64_t rtc_val = get_time();
+  //   if(addr == RTC_ADDR) {
+  //     // 返回低32位
+  //     return (word_t)rtc_val;
+  //   } else {
+  //     // 返回高32位
+  //     return (word_t)(rtc_val >> 32);
+  //   }
+  // }
   // IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   

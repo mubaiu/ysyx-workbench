@@ -4,6 +4,9 @@ module IFU(
     input  wire mem_read, 
     input  wire mem_write,
 
+    input wire  io_clint_arvalid,
+    input wire  io_clint_arready,
+
     input  wire io_master_arvalid,
     input  wire io_master_arready,
 
@@ -72,8 +75,9 @@ module IFU(
     
     reg [2:0]  next_state;
     reg [2:0]  state;
-    
-    wire ar_handshake    = io_master_arvalid && io_master_arready;  // 读地址握手
+
+    wire ar_handshake    = (io_master_arvalid && io_master_arready) || 
+                            (io_clint_arvalid && io_clint_arready);  // 读地址握手
     wire ifu_r_handshake = io_ifu_rvalid     && io_ifu_rready    ;  // IFU读数据握手
     wire lsu_r_handshake = io_lsu_rvalid     && io_lsu_rready    ;  // LSU读数据握手
     wire aw_handshake    = io_master_awvalid && io_master_awready;  // 写地址握手

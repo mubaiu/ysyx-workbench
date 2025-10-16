@@ -20,21 +20,21 @@ extern "C" {
     extern void ebreak();
     // DPI import at vsrc/EXU.v:38:30
     extern void etrace_exception(int mcause, int epc, int mtvec);
-    // DPI import at vsrc/IFU.v:63:33
+    // DPI import at vsrc/IFU.v:66:33
     extern int intake(int pc);
     // DPI import at vsrc/IDU.v:35:30
     extern void invalid_inst(int thispc);
-    // DPI import at vsrc/ysyx_25010003.v:308:30
+    // DPI import at vsrc/ysyx_25010003.v:378:30
     extern void set_callfunc();
-    // DPI import at vsrc/IFU.v:65:34
+    // DPI import at vsrc/IFU.v:68:34
     extern void set_dnpc(int pc);
-    // DPI import at vsrc/IFU.v:66:34
+    // DPI import at vsrc/IFU.v:69:34
     extern void set_pc(int pc);
     // DPI import at vsrc/REG.v:20:32
     extern void set_reg_value(int idx, int val);
-    // DPI import at vsrc/ysyx_25010003.v:309:30
+    // DPI import at vsrc/ysyx_25010003.v:379:30
     extern void set_retfunc();
-    // DPI import at vsrc/IFU.v:64:34
+    // DPI import at vsrc/IFU.v:67:34
     extern void set_snpc(int pc);
     // DPI import at vsrc/LSU.v:26:33
     extern int vaddr_read(int addr, int len);

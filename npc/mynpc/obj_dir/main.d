@@ -1,15 +1,13 @@
 main.o: ../csrc/main.cpp Vcomputer.h \
- /usr/local/share/verilator/include/verilated.h \
- /usr/local/share/verilator/include/verilatedos.h \
- /usr/local/share/verilator/include/verilated_config.h \
- /usr/local/share/verilator/include/verilated_types.h \
- /usr/local/share/verilator/include/verilated_funcs.h \
- /usr/local/share/verilator/include/vltstd/svdpi.h \
- /usr/local/share/verilator/include/verilated_fst_c.h \
- /usr/local/share/verilator/include/verilated.h \
- /usr/local/share/verilator/include/verilated_trace.h \
- /usr/local/share/verilator/include/verilated_trace_defs.h \
- /usr/local/share/verilator/include/gtkwave/fstapi.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated_config.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilatedos.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated_types.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated_funcs.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/vltstd/svdpi.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated_fst_c.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated.h \
+ /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated_trace.h \
  /home/mubai/ysyx-workbench/npc/mynpc/include/cpu/cpu.h \
  /home/mubai/ysyx-workbench/npc/mynpc/include/common.h \
  /home/mubai/ysyx-workbench/npc/mynpc/include/generated/autoconf.h \

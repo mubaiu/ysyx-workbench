@@ -1,10 +1,8 @@
 // Verilated -*- C++ -*-
 // DESCRIPTION: Verilator output: Model implementation (design independent parts)
 
-#include "Vcomputer.h"
-#include "Vcomputer__Syms.h"
+#include "Vcomputer__pch.h"
 #include "verilated_fst_c.h"
-#include "verilated_dpi.h"
 
 //============================================================
 // Constructors
@@ -18,6 +16,8 @@ Vcomputer::Vcomputer(VerilatedContext* _vcontextp__, const char* _vcname__)
 {
     // Register model with the context
     contextp()->addModel(this);
+    contextp()->traceBaseModelCbAdd(
+        [this](VerilatedTraceBaseC* tfp, int levels, int options) { traceBaseModel(tfp, levels, options); });
 }
 
 Vcomputer::Vcomputer(const char* _vcname__)
@@ -58,13 +58,9 @@ void Vcomputer::eval_step() {
         Vcomputer___024root___eval_initial(&(vlSymsp->TOP));
         Vcomputer___024root___eval_settle(&(vlSymsp->TOP));
     }
-    // MTask 0 start
-    VL_DEBUG_IF(VL_DBG_MSGF("MTask0 starting\n"););
-    Verilated::mtaskId(0);
     VL_DEBUG_IF(VL_DBG_MSGF("+ Eval\n"););
     Vcomputer___024root___eval(&(vlSymsp->TOP));
     // Evaluate cleanup
-    Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);
     Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);
 }
 
@@ -73,7 +69,7 @@ void Vcomputer::eval_step() {
 bool Vcomputer::eventsPending() { return false; }
 
 uint64_t Vcomputer::nextTimeSlot() {
-    VL_FATAL_MT(__FILE__, __LINE__, "", "%Error: No delays in the design");
+    VL_FATAL_MT(__FILE__, __LINE__, "", "No delays in the design");
     return 0;
 }
 
@@ -99,12 +95,18 @@ VL_ATTR_COLD void Vcomputer::final() {
 const char* Vcomputer::hierName() const { return vlSymsp->name(); }
 const char* Vcomputer::modelName() const { return "Vcomputer"; }
 unsigned Vcomputer::threads() const { return 1; }
+void Vcomputer::prepareClone() const { contextp()->prepareClone(); }
+void Vcomputer::atClone() const {
+    contextp()->threadPoolpOnClone();
+}
 std::unique_ptr<VerilatedTraceConfig> Vcomputer::traceConfig() const {
     return std::unique_ptr<VerilatedTraceConfig>{new VerilatedTraceConfig{false, false, false}};
 };
 
 //============================================================
 // Trace configuration
+
+void Vcomputer___024root__trace_decl_types(VerilatedFst* tracep);
 
 void Vcomputer___024root__trace_init_top(Vcomputer___024root* vlSelf, VerilatedFst* tracep);
 
@@ -117,21 +119,22 @@ VL_ATTR_COLD static void trace_init(void* voidSelf, VerilatedFst* tracep, uint32
             "Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.");
     }
     vlSymsp->__Vm_baseCode = code;
-    tracep->scopeEscape(' ');
-    tracep->pushNamePrefix(std::string{vlSymsp->name()} + ' ');
+    tracep->pushPrefix(std::string{vlSymsp->name()}, VerilatedTracePrefixType::SCOPE_MODULE);
+    Vcomputer___024root__trace_decl_types(tracep);
     Vcomputer___024root__trace_init_top(vlSelf, tracep);
-    tracep->popNamePrefix();
-    tracep->scopeEscape('.');
+    tracep->popPrefix();
 }
 
 VL_ATTR_COLD void Vcomputer___024root__trace_register(Vcomputer___024root* vlSelf, VerilatedFst* tracep);
 
-VL_ATTR_COLD void Vcomputer::trace(VerilatedFstC* tfp, int levels, int options) {
-    if (tfp->isOpen()) {
-        vl_fatal(__FILE__, __LINE__, __FILE__,"'Vcomputer::trace()' shall not be called after 'VerilatedFstC::open()'.");
+VL_ATTR_COLD void Vcomputer::traceBaseModel(VerilatedTraceBaseC* tfp, int levels, int options) {
+    (void)levels; (void)options;
+    VerilatedFstC* const stfp = dynamic_cast<VerilatedFstC*>(tfp);
+    if (VL_UNLIKELY(!stfp)) {
+        vl_fatal(__FILE__, __LINE__, __FILE__,"'Vcomputer::trace()' called on non-VerilatedFstC object;"
+            " use --trace-fst with VerilatedFst object, and --trace-vcd with VerilatedVcd object");
     }
-    if (false && levels && options) {}  // Prevent unused
-    tfp->spTrace()->addModel(this);
-    tfp->spTrace()->addInitCb(&trace_init, &(vlSymsp->TOP));
-    Vcomputer___024root__trace_register(&(vlSymsp->TOP), tfp->spTrace());
+    stfp->spTrace()->addModel(this);
+    stfp->spTrace()->addInitCb(&trace_init, &(vlSymsp->TOP));
+    Vcomputer___024root__trace_register(&(vlSymsp->TOP), stfp->spTrace());
 }
