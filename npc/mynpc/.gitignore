@@ -1,0 +1,3 @@
+*.fst
+build/
+obj_dir/

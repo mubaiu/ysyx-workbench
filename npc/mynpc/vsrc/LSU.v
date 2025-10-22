@@ -17,7 +17,8 @@ module LSU(
     output wire [31:0] io_lsu_araddr,
     output wire [31:0] io_lsu_awaddr,
     output wire [31:0] io_lsu_wdata,
-    output reg  [1:0]  io_lsu_size,
+    output reg  [2:0]  io_lsu_arsize,
+    output reg  [2:0]  io_lsu_awsize,
     output wire [3:0]  io_lsu_wstrb,
     output wire        lsu_ready
 );
@@ -66,14 +67,14 @@ module LSU(
     always @(*) begin
         if (mem_read) begin
             // temp_data = vaddr_read(addr, len);
-            io_lsu_size = (funct3 == 3'b000 || funct3 == 3'b100) ? 2'b00 : // byte
-                      (funct3 == 3'b001 || funct3 == 3'b101) ? 2'b01 : // halfword
-                      2'b10; // word
+            io_lsu_arsize = (funct3 == 3'b000 || funct3 == 3'b100) ? 3'b000 : // byte
+                      (funct3 == 3'b001 || funct3 == 3'b101) ? 3'b001 : // halfword
+                      3'b010; // word
         end
         else if (mem_write) begin
-            io_lsu_size = (lsu_wmask == 4'b0001) ? 2'b00 : // byte
-                      (lsu_wmask == 4'b0011) ? 2'b01 : // halfword
-                      2'b10; // word
+            io_lsu_awsize = (lsu_wmask == 4'b0001) ? 3'b000 : // byte
+                      (lsu_wmask == 4'b0011) ? 3'b001 : // halfword
+                      3'b010; // word
             case (lsu_wmask) 
                 4'b0001: begin //SB
                     case (addr[1:0])

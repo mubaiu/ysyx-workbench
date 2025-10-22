@@ -18,5 +18,5 @@ cpu-exec.o: ../csrc/cpu/cpu-exec.c \
  /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated_fst_c.h \
  /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated.h \
  /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated_trace.h \
- Vcomputer.h \
+ VysyxSoCFull.h \
  /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/vltstd/svdpi.h

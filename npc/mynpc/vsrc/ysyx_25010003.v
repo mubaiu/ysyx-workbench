@@ -1,31 +1,98 @@
 module ysyx_25010003(
     input wire clock,
     input wire reset,
+    input wire io_interrupt,
 
-    // ===== Slave 接口 =====
+    // ===== Master 接口 =====
     input wire        io_master_arready,
     input wire        io_master_rvalid,
     input wire [31:0] io_master_rdata,
+    input wire        io_master_rlast,
+    input wire [3:0]  io_master_rid,
     input wire [1:0]  io_master_rresp,
 
     output wire       io_master_arvalid,
     output wire[31:0] io_master_araddr,
+    output wire[3:0]  io_master_arid,
+    output wire[7:0]  io_master_arlen,
+    output wire[2:0]  io_master_arsize,
+    output wire[1:0]  io_master_arburst,
     output wire       io_master_rready,
-    
-    output wire [1:0] io_master_size,
-    
+        
     input wire        io_master_awready,
     input wire        io_master_wready,
     input wire        io_master_bvalid,
     input wire [1:0]  io_master_bresp,
+    input wire [3:0]  io_master_bid,
 
     output wire       io_master_awvalid,
-    output wire[31:0] io_master_awaddr,
+    output wire [31:0]io_master_awaddr,
+    output wire [3:0] io_master_awid,
+    output wire [7:0] io_master_awlen,
+    output wire [2:0] io_master_awsize,
+    output wire [1:0] io_master_awburst,
     output wire       io_master_wvalid,
-    output wire[31:0] io_master_wdata,
-    output wire[3:0]  io_master_wstrb,
-    output wire       io_master_bready
+    output wire [31:0]io_master_wdata,
+    output wire [3:0] io_master_wstrb,
+    output wire       io_master_wlast,
+    output wire       io_master_bready,
+
+    // ===== Slave 接口 =====
+    output wire       io_slave_arready,
+    output wire       io_slave_rvalid,
+    output wire [31:0]io_slave_rdata,
+    output wire       io_slave_rlast,
+    output wire [3:0] io_slave_rid,
+    output wire [1:0] io_slave_rresp,
+
+    input wire        io_slave_arvalid,
+    input wire[31:0]  io_slave_araddr,
+    input wire[3:0]   io_slave_arid,
+    input wire[7:0]   io_slave_arlen,
+    input wire[2:0]   io_slave_arsize,
+    input wire[1:0]   io_slave_arburst,
+    input wire        io_slave_rready,
+    
+    output wire       io_slave_awready,
+    output wire       io_slave_wready,
+    output wire       io_slave_bvalid,
+    output wire [1:0] io_slave_bresp,
+    output wire [3:0] io_slave_bid,
+
+    input wire        io_slave_awvalid,
+    input wire [31:0] io_slave_awaddr,
+    input wire [3:0]  io_slave_awid,
+    input wire [7:0]  io_slave_awlen,
+    input wire [2:0]  io_slave_awsize,
+    input wire [1:0]  io_slave_awburst,
+    input wire        io_slave_wvalid,
+    input wire [31:0] io_slave_wdata,
+    input wire [3:0]  io_slave_wstrb,
+    input wire        io_slave_wlast,
+    input wire        io_slave_bready
 );
+
+    assign io_master_awid = 4'd0;
+    assign io_master_awlen = 8'd0;
+    assign io_master_awsize = 3'b000;
+    assign io_master_awburst = 2'b00;
+    assign io_master_wlast = 1'b0;
+    assign io_master_arid = 4'd0;
+    assign io_master_arlen = 8'd0;
+    assign io_master_arsize = 3'b000;
+    assign io_master_arburst = 2'b00;
+
+    assign io_slave_arready = 1'b0;
+    assign io_slave_rvalid = 1'b0;
+    assign io_slave_rdata = 32'd0;
+    assign io_slave_rlast = 1'b0;
+    assign io_slave_rid = 4'd0;
+    assign io_slave_rresp = 2'b00;
+    assign io_slave_awready = 1'b0;
+    assign io_slave_wready = 1'b0;
+    assign io_slave_bvalid = 1'b0;
+    assign io_slave_bresp = 2'b00;
+    assign io_slave_bid = 4'd0;
 
     // 内部连线
     wire [31:0] pc;
@@ -357,7 +424,8 @@ module ysyx_25010003(
         .io_lsu_wdata       (io_lsu_wdata),
         .lsu_ready          (lsu_ready),
         .mem_to_reg         (mem_to_reg),
-        .io_lsu_size        (io_master_size),
+        .io_lsu_arsize      (),
+        .io_lsu_awsize      (),
         .io_lsu_wstrb       (io_lsu_wstrb)
     );
     

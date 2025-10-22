@@ -1,7 +1,7 @@
 ENTRY(_start)
 
 SECTIONS {
-  . = 0x80000000;
+  . = 0x20000000;
   .text : {
     *(entry)
     *(.text*)
@@ -15,6 +15,7 @@ SECTIONS {
     PROVIDE(__htif_base = . );
     *(.htif)
   }
+  . = 0x0f000000;
   .data : {
     *(.data)
   }

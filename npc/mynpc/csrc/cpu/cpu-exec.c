@@ -4,7 +4,7 @@
 #include <locale.h>
 #include <verilated.h>
 #include <verilated_fst_c.h>
-#include "Vcomputer.h"
+#include "VysyxSoCFull.h"
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
 
@@ -137,7 +137,7 @@ void exec_once(Decode *d, vaddr_t pc) {
 
 
 extern VerilatedContext* contextp;
-extern Vcomputer* computer;
+extern VysyxSoCFull* ysyxSoCFull;
 extern VerilatedFstC* tfp;
 
 static uint32_t last_difftest_pc = 0x80000000;
@@ -158,8 +158,8 @@ static void execute(uint64_t n) {
     }
     #endif
     for (int i = 0; i < 2; i++) {
-        computer->clock = !computer->clock;
-        computer->eval();
+        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
         if (nemu_state.state != NEMU_RUNNING) break;
     }
@@ -173,8 +173,8 @@ static void execute(uint64_t n) {
     }
     // IFDEF(CONFIG_DEVICE, device_update());
     for (int i = 0; i < 2; i++) {
-        computer->clock = !computer->clock;
-        computer->eval();
+        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     exec_once(&d, npc.pc);

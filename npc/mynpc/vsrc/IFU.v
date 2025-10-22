@@ -120,13 +120,13 @@ module IFU(
     // PC更新逻辑
     always @(posedge clock) begin
         if (reset) begin
-            pc <= 32'h80000000;
+            pc <= 32'h20000000;
             inst_reg <= 32'b0;
             inst_valid <= 1'b0;
             io_ifu_arvalid <= 1'b0;
             io_ifu_rready <= 1'b0;
             next_state <= FETCH;
-            dnpc_reg <= 32'h80000004;
+            dnpc_reg <= 32'h20000004;
         end 
         else begin
             case(state)

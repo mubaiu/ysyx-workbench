@@ -1,4 +1,4 @@
-main.o: ../csrc/main.cpp Vcomputer.h \
+main.o: ../csrc/main.cpp VysyxSoCFull.h \
  /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated.h \
  /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilated_config.h \
  /home/mubai/yosys-sta/oss-cad-suite/share/verilator/include/verilatedos.h \

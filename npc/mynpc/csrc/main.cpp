@@ -1,4 +1,4 @@
-#include "Vcomputer.h"
+#include "VysyxSoCFull.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,22 +24,20 @@ extern Decode d;
 
 extern "C" {
   VerilatedContext* contextp = nullptr;
-  Vcomputer* computer = nullptr;
+  VysyxSoCFull* ysyxSoCFull = nullptr;
   VerilatedFstC* tfp = nullptr;
 }
 
 uint64_t sim_time = 0;
 int main(int argc, char** argv) {
-    // 初始化CPU状态 - 修改初始化顺序
-        // 初始化CPU状态 - 修改初始化顺序
     contextp = new VerilatedContext;
     contextp->commandArgs(argc, argv);
     
     #if ENABLE_WAVE_TRACE
     contextp->traceEverOn(true);
-    computer = new Vcomputer{contextp};
+    ysyxSoCFull = new VysyxSoCFull{contextp};
     tfp = new VerilatedFstC;
-    computer->trace(tfp, 99);
+    ysyxSoCFull->trace(tfp, 99);
     tfp->open("wave.fst");
     #else
     contextp->traceEverOn(false);
@@ -65,22 +63,22 @@ int main(int argc, char** argv) {
      // 然后设置复位信号
     // top->rst = 1;
     // top->clk = !top->clk;
-    computer->eval();
+    ysyxSoCFull->eval();
     // tfp->dump(sim_time++);
     
 
-    for (int i = 0; i < 2; i++) {
-        computer->reset = 1;
-        computer->clock = !computer->clock;
-        computer->eval();
+    for (int i = 0; i < 18; i++) {
+        ysyxSoCFull->reset = 1;
+        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     // exec_once(&d, npc.pc);
     // 释放复位信号后，给予额外的时钟周期稳定系统
-    computer->reset = 0;
+    ysyxSoCFull->reset = 0;
     for (int i = 0; i < 2; i++) {
-        computer->clock = !computer->clock;
-        computer->eval();
+        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     
@@ -94,7 +92,7 @@ int main(int argc, char** argv) {
     delete tfp;
     #endif
     
-    delete computer;
+    delete ysyxSoCFull;
     delete contextp;
     return is_exit_status_bad();
 }

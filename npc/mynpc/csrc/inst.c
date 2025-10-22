@@ -151,7 +151,7 @@ else if(retfunc){
 }
 
 int isa_exec_once(Decode *s) {
-  s->isa.inst = inst_fetch(&s->pc, 4);
+  // s->isa.inst = inst_fetch(&s->pc, 4);
   // printf("inst: %08x\n", s->isa.inst);
   return decode_exec(s);
 }
