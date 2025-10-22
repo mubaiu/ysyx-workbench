@@ -14,3 +14,4 @@
 #include "VysyxSoCFull___024unit__DepSet_h460a3d32__0__Slow.cpp"
 #include "VysyxSoCFull__Syms.cpp"
 #include "VysyxSoCFull__Trace__0__Slow.cpp"
+#include "VysyxSoCFull__TraceDecls__0__Slow.cpp"

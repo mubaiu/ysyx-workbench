@@ -2,9 +2,7 @@
 // DESCRIPTION: Verilator output: Design implementation internals
 // See VysyxSoCFull.h for the primary calling header
 
-#include "verilated.h"
-#include "verilated_dpi.h"
-
+#include "VysyxSoCFull__pch.h"
 #include "VysyxSoCFull__Syms.h"
 #include "VysyxSoCFull___024unit.h"
 
@@ -19,7 +17,7 @@ VysyxSoCFull___024unit::VysyxSoCFull___024unit(VysyxSoCFull__Syms* symsp, const 
 }
 
 void VysyxSoCFull___024unit::__Vconfigure(bool first) {
-    if (false && first) {}  // Prevent unused
+    (void)first;  // Prevent unused variable warning
 }
 
 VysyxSoCFull___024unit::~VysyxSoCFull___024unit() {

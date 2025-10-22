@@ -7,9 +7,10 @@
 
 #include "verilated.h"
 
+
 class VysyxSoCFull__Syms;
 
-class VysyxSoCFull___024unit final : public VerilatedModule {
+class alignas(VL_CACHE_LINE_BYTES) VysyxSoCFull___024unit final : public VerilatedModule {
   public:
 
     // INTERNAL VARIABLES
@@ -22,7 +23,7 @@ class VysyxSoCFull___024unit final : public VerilatedModule {
 
     // INTERNAL METHODS
     void __Vconfigure(bool first);
-} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);
+};
 
 
 #endif  // guard
