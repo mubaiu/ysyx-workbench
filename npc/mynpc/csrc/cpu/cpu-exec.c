@@ -9,7 +9,8 @@
 #define MAX_iring 20
 
 extern uint64_t sim_time;
-Decode d = {d.pc = 0x80000000};
+Decode d = {d.pc = 0x20000000};
+static uint32_t last_difftest_pc = 0x20000000;
 
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 // 在cpu-exec.c中初始化CPU
@@ -140,7 +141,6 @@ extern VerilatedContext* contextp;
 extern VysyxSoCFull* ysyxSoCFull;
 extern VerilatedFstC* tfp;
 
-static uint32_t last_difftest_pc = 0x80000000;
 
 static void execute(uint64_t n) {
 

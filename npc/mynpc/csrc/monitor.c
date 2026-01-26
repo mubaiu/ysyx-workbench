@@ -192,8 +192,10 @@ static char *diff_so_file = NULL;
 static char *img_file = NULL;
 static char *elf_file = NULL;
 static int difftest_port = 1234;
-#define FLASH_SIZE (16 * 1024 * 1024)
-uint8_t flash_mem[FLASH_SIZE] PG_ALIGN = {};
+
+#define MROM_SIZE (4 * 1024)
+// uint8_t mrom_mem[MROM_SIZE] PG_ALIGN = {};
+
 int i = 0; // global variable to track memory index
 
 static int is_batch_mode = false;
@@ -212,15 +214,14 @@ static int is_batch_mode = false;
 
   Log("The image is %s, size = %ld", img_file, size);
 
-  fseek(fp, 0, SEEK_SET);
-  // int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
-  // int ret = fread(flash_mem, size, 1, fp);
-  for (long i = 0; i < size; i++) {
-  int ch = fgetc(fp);
-  if (ch == EOF) break;
-  flash_mem[i] = (uint8_t)ch;
+    // Check if image size exceeds MROM capacity
+  if (size > MROM_SIZE) {
+    Assert(0, "Image too large for MROM (max %d bytes, got %ld bytes)", MROM_SIZE, size);
   }
-  // assert(ret == 1);
+
+  fseek(fp, 0, SEEK_SET);
+  int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
+  assert(ret == 1);
 
   fclose(fp);
   return size;

@@ -200,6 +200,10 @@ static char *img_file = NULL;
 static char *elf_file = NULL;
 static int difftest_port = 1234;
 
+// MROM for SoC
+#define MROM_SIZE 0x1000  // 4KB (0x20000000 - 0x20000fff)
+// MROM is now part of pmem array, use get_mrom_ptr() to access it
+
 static long load_img() {
   if (img_file == NULL) {
     Log("No image is given. Use the default build-in image.");
@@ -213,6 +217,11 @@ static long load_img() {
   long size = ftell(fp); //返回当前指针的位置，即文件大小
 
   Log("The image is %s, size = %ld", img_file, size);
+
+  // Check if image size exceeds MROM capacity
+  if (size > MROM_SIZE) {
+    Assert(0, "Image too large for MROM (max %d bytes, got %ld bytes)", MROM_SIZE, size);
+  }
 
   fseek(fp, 0, SEEK_SET);
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);

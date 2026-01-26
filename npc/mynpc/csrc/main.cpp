@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     tfp->open("wave.fst");
     #else
     contextp->traceEverOn(false);
-    computer = new Vcomputer{contextp};
+    ysyxSoCFull = new VysyxSoCFull{contextp};
     #endif
     
     // 首先让顶层模块评估一次，确保内部信号初始化

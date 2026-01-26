@@ -23,7 +23,7 @@ __EXPORT void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction)
     // 从DUT(NPC)复制内存到REF(NEMU)
     void *p = guest_to_host(addr);
     memcpy(p, buf, n);
-  } else {
+  } else if (direction == DIFFTEST_TO_DUT) {
     // 从REF(NEMU)复制内存到DUT(NPC)
     void *p = guest_to_host(addr);
     memcpy(buf, p, n);
@@ -35,7 +35,7 @@ __EXPORT void difftest_regcpy(void *dut, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
     // 从DUT(NPC)复制寄存器到REF(NEMU)
     memcpy(&cpu, dut, DIFFTEST_REG_SIZE);
-  } else {
+  } else if (direction == DIFFTEST_TO_DUT) {
     // 从REF(NEMU)复制寄存器到DUT(NPC)
     memcpy(dut, &cpu, DIFFTEST_REG_SIZE);
   }

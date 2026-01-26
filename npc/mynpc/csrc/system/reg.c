@@ -9,8 +9,7 @@ extern Decode d;
 extern bool callfunc;
 extern bool retfunc;
 
-extern uint8_t flash_mem[];
-#define FLASH_SIZE (16 * 1024 * 1024)
+// extern uint8_t mrom_mem[];
 
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -109,11 +108,10 @@ extern  "C" uint32_t intake(uint32_t pc){
 
 extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
 extern "C" void mrom_read(int32_t addr, int32_t *data) { 
-  addr=addr-0x20000000;
   // 按小端拼接4字节
-  *data = flash_mem[addr] |
-         (flash_mem[addr + 1] << 8) |
-         (flash_mem[addr + 2] << 16) |
-         (flash_mem[addr + 3] << 24);
+  *data = vaddr_read(addr,1) |
+         (vaddr_read(addr + 1,1) << 8) |
+         (vaddr_read(addr + 2,1) << 16) |
+         (vaddr_read(addr + 3,1) << 24);
   return;
 }

@@ -30,7 +30,7 @@ CFLAGS += -DNPC_PROJECT
 CFLAGS_TRACE += -DITRACE_COND=$(if $(CONFIG_ITRACE_COND),$(call remove_quote,$(CONFIG_ITRACE_COND)),true)
 LDFLAGS+=-lreadline -lhistory
 
-IMG := /home/mubai/ysyx-workbench/char-test.bin
+# IMG := /home/mubai/ysyx-workbench/char-test.bin
 
 run: $(IMG)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!

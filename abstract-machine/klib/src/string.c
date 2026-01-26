@@ -14,7 +14,7 @@ size_t strlen(const char *s) {
 
 char *strcpy(char *dst, const char *src) {
   char *p = dst;
-  while ((*p++ = *src++) != '\0') ;
+  while ((*p++ = *src++));
   return dst;
 }
 
@@ -86,19 +86,30 @@ void *memmove(void *dst, const void *src, size_t n) {
 }
 
 void *memcpy(void *out, const void *in, size_t n) {
-  unsigned int *p = out;
-  const unsigned int *q = in;
-  while (n >= 4) {
-    *p++ = *q++;
-    n -= 4;
-  }
-  if (n > 0) {
-    unsigned char *r = (unsigned char *)p;
-    const unsigned char *s = (const unsigned char *)q;
-    while (n--) {
-      *r++ = *s++;
+  // 长度为0时直接返回,避免访问内存
+  if (n == 0) return out;
+
+  unsigned char *d = out;
+  const unsigned char *s = in;
+
+  // 检查是否都是4字节对齐
+  if (((uintptr_t)d & 3) == 0 && ((uintptr_t)s & 3) == 0 && n >= 4) {
+    // 都对齐,使用字(word)复制
+    unsigned int *dp = (unsigned int *)d;
+    const unsigned int *sp = (const unsigned int *)s;
+    while (n >= 4) {
+      *dp++ = *sp++;
+      n -= 4;
     }
+    d = (unsigned char *)dp;
+    s = (const unsigned char *)sp;
   }
+
+  // 复制剩余字节
+  while (n--) {
+    *d++ = *s++;
+  }
+
   return out;
 }
 

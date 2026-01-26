@@ -24,6 +24,14 @@ static uint8_t *pmem = NULL;
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
 
+// MROM and SRAM for SoC
+#define MROM_BASE 0x20000000
+#define MROM_SIZE 0x1000  // 4KB (0x20000000 - 0x20000fff)
+#define SRAM_BASE 0x0f000000
+#define SRAM_SIZE 0x1000000  // 16MB (0x0f000000 - 0x0fffffff)
+
+// MROM is now part of pmem array (at the beginning, index 0 to MROM_SIZE-1)
+
 #define MAX_NUM 100
 typedef struct mem_log{
     bool type;

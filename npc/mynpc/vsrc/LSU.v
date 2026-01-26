@@ -25,10 +25,13 @@ module LSU(
 
     import "DPI-C" function void vaddr_write(input int addr, input int len, input int data);
     import "DPI-C" function int vaddr_read(input int addr, input int len);
+                               
+    // wire [31:0] aligned_araddr = {addr_reg[31:2],  2'b00};               
+    // wire [31:0] aligned_awaddr = {addr_reg[31:2],  2'b00};        
 
     // RAM控制信号
-    assign io_lsu_araddr = addr_reg;
-    assign io_lsu_awaddr = addr_reg;
+    assign io_lsu_araddr = {addr_reg[31:2],  2'b00}; //aligned_araddr
+    assign io_lsu_awaddr = {addr_reg[31:2],  2'b00}; //aligned_awaddr
     assign io_lsu_wdata  = store_data_reg; 
     assign lsu_ready     = lsu_ready_reg;
     assign mem_to_reg    = (io_lsu_rvalid && load_flag) ? 1'b1 : 1'b0;
@@ -46,7 +49,7 @@ module LSU(
         if (mem_read)
             load_flag <= 1'b1;
         else if (mem_write) begin
-            store_data_reg <= store_data;
+            store_data_reg <= io_lsu_wdata_reg;
         end
         else if (io_lsu_rvalid)
             load_flag <= 1'b0;

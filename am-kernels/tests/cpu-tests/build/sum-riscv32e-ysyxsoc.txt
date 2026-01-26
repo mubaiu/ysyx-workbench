@@ -1,0 +1,110 @@
+
+/home/mubai/ysyx-workbench/am-kernels/tests/cpu-tests/build/sum-riscv32e-ysyxsoc.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+20000000 <_start>:
+20000000:	00000413          	li	s0,0
+20000004:	ef002117          	auipc	sp,0xef002
+20000008:	ffc10113          	addi	sp,sp,-4 # f002000 <_stack_bottom>
+2000000c:	078000ef          	jal	20000084 <_trm_init>
+
+20000010 <check>:
+20000010:	00050463          	beqz	a0,20000018 <check+0x8>
+20000014:	00008067          	ret
+20000018:	ff410113          	addi	sp,sp,-12
+2000001c:	00100513          	li	a0,1
+20000020:	00112423          	sw	ra,8(sp)
+20000024:	054000ef          	jal	20000078 <halt>
+
+20000028 <main>:
+20000028:	ff010113          	addi	sp,sp,-16
+2000002c:	00112623          	sw	ra,12(sp)
+20000030:	00012023          	sw	zero,0(sp)
+20000034:	00100793          	li	a5,1
+20000038:	06500693          	li	a3,101
+2000003c:	00012703          	lw	a4,0(sp)
+20000040:	00f70733          	add	a4,a4,a5
+20000044:	00e12023          	sw	a4,0(sp)
+20000048:	00178793          	addi	a5,a5,1
+2000004c:	fed798e3          	bne	a5,a3,2000003c <main+0x14>
+20000050:	00012503          	lw	a0,0(sp)
+20000054:	fffff7b7          	lui	a5,0xfffff
+20000058:	c4678793          	addi	a5,a5,-954 # ffffec46 <_data_lma+0xdfffea9a>
+2000005c:	00f50533          	add	a0,a0,a5
+20000060:	00153513          	seqz	a0,a0
+20000064:	fadff0ef          	jal	20000010 <check>
+20000068:	00c12083          	lw	ra,12(sp)
+2000006c:	00000513          	li	a0,0
+20000070:	01010113          	addi	sp,sp,16
+20000074:	00008067          	ret
+
+20000078 <halt>:
+20000078:	00050513          	mv	a0,a0
+2000007c:	00100073          	ebreak
+20000080:	0000006f          	j	20000080 <halt+0x8>
+
+20000084 <_trm_init>:
+20000084:	ff410113          	addi	sp,sp,-12
+20000088:	00000613          	li	a2,0
+2000008c:	00000597          	auipc	a1,0x0
+20000090:	12058593          	addi	a1,a1,288 # 200001ac <_data_lma>
+20000094:	ef000517          	auipc	a0,0xef000
+20000098:	f6c50513          	addi	a0,a0,-148 # f000000 <_bss_end>
+2000009c:	00112423          	sw	ra,8(sp)
+200000a0:	058000ef          	jal	200000f8 <memcpy>
+200000a4:	ef000517          	auipc	a0,0xef000
+200000a8:	f5c50513          	addi	a0,a0,-164 # f000000 <_bss_end>
+200000ac:	ef000617          	auipc	a2,0xef000
+200000b0:	f5460613          	addi	a2,a2,-172 # f000000 <_bss_end>
+200000b4:	40a60633          	sub	a2,a2,a0
+200000b8:	00000593          	li	a1,0
+200000bc:	01c000ef          	jal	200000d8 <memset>
+200000c0:	00000517          	auipc	a0,0x0
+200000c4:	0ac50513          	addi	a0,a0,172 # 2000016c <_etext>
+200000c8:	f61ff0ef          	jal	20000028 <main>
+200000cc:	00050513          	mv	a0,a0
+200000d0:	00100073          	ebreak
+200000d4:	0000006f          	j	200000d4 <_trm_init+0x50>
+
+200000d8 <memset>:
+200000d8:	0ff5f593          	zext.b	a1,a1
+200000dc:	00c50733          	add	a4,a0,a2
+200000e0:	00050793          	mv	a5,a0
+200000e4:	00060863          	beqz	a2,200000f4 <memset+0x1c>
+200000e8:	00178793          	addi	a5,a5,1
+200000ec:	feb78fa3          	sb	a1,-1(a5)
+200000f0:	fef71ce3          	bne	a4,a5,200000e8 <memset+0x10>
+200000f4:	00008067          	ret
+
+200000f8 <memcpy>:
+200000f8:	02060663          	beqz	a2,20000124 <memcpy+0x2c>
+200000fc:	00a5e733          	or	a4,a1,a0
+20000100:	00377713          	andi	a4,a4,3
+20000104:	00050793          	mv	a5,a0
+20000108:	02070063          	beqz	a4,20000128 <memcpy+0x30>
+2000010c:	00c78633          	add	a2,a5,a2
+20000110:	0005c703          	lbu	a4,0(a1)
+20000114:	00178793          	addi	a5,a5,1
+20000118:	00158593          	addi	a1,a1,1
+2000011c:	fee78fa3          	sb	a4,-1(a5)
+20000120:	fef618e3          	bne	a2,a5,20000110 <memcpy+0x18>
+20000124:	00008067          	ret
+20000128:	00300713          	li	a4,3
+2000012c:	fec770e3          	bgeu	a4,a2,2000010c <memcpy+0x14>
+20000130:	ffc60293          	addi	t0,a2,-4
+20000134:	ffc2f293          	andi	t0,t0,-4
+20000138:	00428293          	addi	t0,t0,4
+2000013c:	005507b3          	add	a5,a0,t0
+20000140:	00058693          	mv	a3,a1
+20000144:	00050713          	mv	a4,a0
+20000148:	0006a303          	lw	t1,0(a3)
+2000014c:	00470713          	addi	a4,a4,4
+20000150:	00468693          	addi	a3,a3,4
+20000154:	fe672e23          	sw	t1,-4(a4)
+20000158:	fef718e3          	bne	a4,a5,20000148 <memcpy+0x50>
+2000015c:	00367613          	andi	a2,a2,3
+20000160:	005585b3          	add	a1,a1,t0
+20000164:	fa0614e3          	bnez	a2,2000010c <memcpy+0x14>
+20000168:	00008067          	ret

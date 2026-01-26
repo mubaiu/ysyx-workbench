@@ -102,7 +102,7 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
                 4'b0110: alu_result = operand_a >> operand_b[4:0]; // SRL
                 4'b0111: alu_result = $signed(operand_a) >>> operand_b[4:0]; // SRA
                 4'b1000: alu_result = operand_a | operand_b;      // OR
-                4'b1001: alu_result = operand_a & operand_b;      // AND
+                4'b1001: alu_result = alu_src ? (operand_a & $signed(operand_b)) : (operand_a & operand_b);      // AND
                 4'b1010: alu_result = operand_b;                  // 直通(用于LUI)
                 4'b1011: alu_result = {31'b0, operand_a == 0}; //SEQZ
                 4'b1100: alu_result = csr_read_data;

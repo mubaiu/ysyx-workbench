@@ -1,0 +1,79 @@
+
+/home/mubai/ysyx-workbench/am-kernels/tests/cpu-tests/build/dummy-riscv32e-ysyxsoc.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+20000000 <_start>:
+20000000:	00000413          	li	s0,0
+20000004:	ef002117          	auipc	sp,0xef002
+20000008:	ffc10113          	addi	sp,sp,-4 # f002000 <_stack_bottom>
+2000000c:	00c000ef          	jal	20000018 <_trm_init>
+
+20000010 <main>:
+20000010:	00000513          	li	a0,0
+20000014:	00008067          	ret
+
+20000018 <_trm_init>:
+20000018:	ff410113          	addi	sp,sp,-12
+2000001c:	00000613          	li	a2,0
+20000020:	00000597          	auipc	a1,0x0
+20000024:	12058593          	addi	a1,a1,288 # 20000140 <_data_lma>
+20000028:	ef000517          	auipc	a0,0xef000
+2000002c:	fd850513          	addi	a0,a0,-40 # f000000 <_bss_end>
+20000030:	00112423          	sw	ra,8(sp)
+20000034:	058000ef          	jal	2000008c <memcpy>
+20000038:	ef000517          	auipc	a0,0xef000
+2000003c:	fc850513          	addi	a0,a0,-56 # f000000 <_bss_end>
+20000040:	ef000617          	auipc	a2,0xef000
+20000044:	fc060613          	addi	a2,a2,-64 # f000000 <_bss_end>
+20000048:	40a60633          	sub	a2,a2,a0
+2000004c:	00000593          	li	a1,0
+20000050:	01c000ef          	jal	2000006c <memset>
+20000054:	00000517          	auipc	a0,0x0
+20000058:	0ac50513          	addi	a0,a0,172 # 20000100 <_etext>
+2000005c:	fb5ff0ef          	jal	20000010 <main>
+20000060:	00050513          	mv	a0,a0
+20000064:	00100073          	ebreak
+20000068:	0000006f          	j	20000068 <_trm_init+0x50>
+
+2000006c <memset>:
+2000006c:	0ff5f593          	zext.b	a1,a1
+20000070:	00c50733          	add	a4,a0,a2
+20000074:	00050793          	mv	a5,a0
+20000078:	00060863          	beqz	a2,20000088 <memset+0x1c>
+2000007c:	00178793          	addi	a5,a5,1
+20000080:	feb78fa3          	sb	a1,-1(a5)
+20000084:	fef71ce3          	bne	a4,a5,2000007c <memset+0x10>
+20000088:	00008067          	ret
+
+2000008c <memcpy>:
+2000008c:	02060663          	beqz	a2,200000b8 <memcpy+0x2c>
+20000090:	00a5e733          	or	a4,a1,a0
+20000094:	00377713          	andi	a4,a4,3
+20000098:	00050793          	mv	a5,a0
+2000009c:	02070063          	beqz	a4,200000bc <memcpy+0x30>
+200000a0:	00c78633          	add	a2,a5,a2
+200000a4:	0005c703          	lbu	a4,0(a1)
+200000a8:	00178793          	addi	a5,a5,1
+200000ac:	00158593          	addi	a1,a1,1
+200000b0:	fee78fa3          	sb	a4,-1(a5)
+200000b4:	fef618e3          	bne	a2,a5,200000a4 <memcpy+0x18>
+200000b8:	00008067          	ret
+200000bc:	00300713          	li	a4,3
+200000c0:	fec770e3          	bgeu	a4,a2,200000a0 <memcpy+0x14>
+200000c4:	ffc60293          	addi	t0,a2,-4
+200000c8:	ffc2f293          	andi	t0,t0,-4
+200000cc:	00428293          	addi	t0,t0,4
+200000d0:	005507b3          	add	a5,a0,t0
+200000d4:	00058693          	mv	a3,a1
+200000d8:	00050713          	mv	a4,a0
+200000dc:	0006a303          	lw	t1,0(a3)
+200000e0:	00470713          	addi	a4,a4,4
+200000e4:	00468693          	addi	a3,a3,4
+200000e8:	fe672e23          	sw	t1,-4(a4)
+200000ec:	fef718e3          	bne	a4,a5,200000dc <memcpy+0x50>
+200000f0:	00367613          	andi	a2,a2,3
+200000f4:	005585b3          	add	a1,a1,t0
+200000f8:	fa0614e3          	bnez	a2,200000a0 <memcpy+0x14>
+200000fc:	00008067          	ret
