@@ -11,6 +11,9 @@ void (*ref_difftest_regcpy)(void *dut, bool direction) = NULL;
 void (*ref_difftest_exec)(uint64_t n) = NULL;
 void (*ref_difftest_raise_intr)(uint64_t NO) = NULL;
 
+#define FLASH_SIZE (16 * 1024 * 1024)  // 16MB
+#define FLASH_BASE 0x30000000
+
 #ifdef CONFIG_DIFFTEST
 
 static bool is_skip_ref = false;
@@ -73,6 +76,7 @@ void init_difftest(char *ref_so_file, long img_size, int port) {
       "If it is not necessary, you can turn it off in menuconfig.", ref_so_file);
 
   ref_difftest_init(port);
+  // ref_difftest_memcpy(FLASH_BASE, guest_to_host(FLASH_BASE), FLASH_SIZE, DIFFTEST_TO_REF); //copy flash memory to ref design
   ref_difftest_memcpy(RESET_VECTOR, guest_to_host(RESET_VECTOR), img_size, DIFFTEST_TO_REF);
   ref_difftest_regcpy(&npc, DIFFTEST_TO_REF);
 }

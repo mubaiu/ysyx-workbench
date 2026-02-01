@@ -26,12 +26,16 @@ module LSU(
     import "DPI-C" function void vaddr_write(input int addr, input int len, input int data);
     import "DPI-C" function int vaddr_read(input int addr, input int len);
                                
-    // wire [31:0] aligned_araddr = {addr_reg[31:2],  2'b00};               
-    // wire [31:0] aligned_awaddr = {addr_reg[31:2],  2'b00};        
+    // 检测字节访问：lb/lbu/sb 指令不需要对齐
+    wire is_mrom_access = (addr_reg >= 32'h2000_0000 && addr_reg <= 32'h2000_0fff);
+    wire is_uart_access = (addr_reg >= 32'h1000_0000 && addr_reg <= 32'h1000_0fff);
+    // wire is_byte_read  = mem_read && (funct3 == 3'b000 || funct3 == 3'b100);  // lb/lbu
+    // wire is_byte_write = mem_write && (lsu_wmask == 4'b0001);                 // sb
+    // wire is_byte_access = is_byte_read || is_byte_write;
 
-    // RAM控制信号
-    assign io_lsu_araddr = {addr_reg[31:2],  2'b00}; //aligned_araddr
-    assign io_lsu_awaddr = {addr_reg[31:2],  2'b00}; //aligned_awaddr
+    // RAM控制信号：字节访问不对齐，字/半字访问对齐到4字节边界
+    assign io_lsu_araddr = is_uart_access ? addr_reg : {addr_reg[31:2], 2'b00};
+    assign io_lsu_awaddr = is_uart_access ? addr_reg : {addr_reg[31:2], 2'b00};
     assign io_lsu_wdata  = store_data_reg; 
     assign lsu_ready     = lsu_ready_reg;
     assign mem_to_reg    = (io_lsu_rvalid && load_flag) ? 1'b1 : 1'b0;

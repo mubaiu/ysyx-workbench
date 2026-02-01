@@ -5,12 +5,13 @@
 #include <verilated.h>
 #include <verilated_fst_c.h>
 #include "VysyxSoCFull.h"
+#include "VysyxSoCFull___024root.h"
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
 
 extern uint64_t sim_time;
-Decode d = {d.pc = 0x20000000};
-static uint32_t last_difftest_pc = 0x20000000;
+Decode d = {d.pc = 0x30000000};
+static uint32_t last_difftest_pc = 0x30000000;
 
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 // 在cpu-exec.c中初始化CPU
@@ -141,6 +142,14 @@ extern VerilatedContext* contextp;
 extern VysyxSoCFull* ysyxSoCFull;
 extern VerilatedFstC* tfp;
 
+bool is_device_access() 
+{
+  uint32_t araddr = ysyxSoCFull->rootp->ysyxSoCFull__DOT__asic__DOT__axi42apb__DOT__araddr_reg_r;                                                 
+  if (araddr >= 0x10000000 && araddr <= 0x10000FFF) return true;// UART 范围   
+  if (araddr >= 0x10001000 && araddr <= 0x10001FFF) return true;// SPI 范围
+
+  return false;                             
+}  
 
 static void execute(uint64_t n) {
 
@@ -153,12 +162,20 @@ static void execute(uint64_t n) {
     }
     #ifdef CONFIG_DIFFTEST
     if(last_difftest_pc != d.pc){
+      
+      if(is_device_access()){
+        difftest_skip_ref();
+      }
       trace_and_difftest(&d, d.dnpc);
       last_difftest_pc = d.pc;
     }
     #endif
     for (int i = 0; i < 2; i++) {
-        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->clock = 0;
+        ysyxSoCFull->eval();
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+
+        ysyxSoCFull->clock = 1;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
         if (nemu_state.state != NEMU_RUNNING) break;
@@ -173,7 +190,11 @@ static void execute(uint64_t n) {
     }
     // IFDEF(CONFIG_DEVICE, device_update());
     for (int i = 0; i < 2; i++) {
-        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->clock = 0;
+        ysyxSoCFull->eval();
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+
+        ysyxSoCFull->clock = 1;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }

@@ -9,7 +9,48 @@ extern Decode d;
 extern bool callfunc;
 extern bool retfunc;
 
-// extern uint8_t mrom_mem[];
+
+// Flash memory simulation (16MB)
+#define FLASH_SIZE (16 * 1024 * 1024)  // 16MB
+#define FLASH_BASE 0x30000000
+uint8_t* guest_to_host(paddr_t paddr);
+
+// Initialize flash memory with test data
+void init_flash() {
+  // Get flash memory pointer
+  uint8_t *flash_mem = (uint8_t *)(guest_to_host(FLASH_BASE));
+
+  // Clear flash memory
+  memset(flash_mem, 0, FLASH_SIZE);
+
+  // Load char-test.bin into flash
+  // const char *bin_file = "/home/mubai/ysyx-workbench/am-kernels/tests/cpu-tests/build/char-test-riscv32e-ysyxsoc.bin";
+  // FILE *fp = fopen(bin_file, "rb");
+
+  // if (fp == NULL) {
+    // Log("Warning: Cannot open %s, using default test data\n", bin_file);
+    // Fallback to test data
+    uint32_t *flash_words = (uint32_t *)flash_mem;
+    flash_words[0] = 0x12345678;
+    flash_words[1] = 0xABCDEF00;
+    flash_words[2] = 0xDEADBEEF;
+    flash_words[3] = 0xCAFEBABE;
+  // } else {
+  //   // Read file size
+  //   fseek(fp, 0, SEEK_END);
+  //   long file_size = ftell(fp);
+  //   fseek(fp, 0, SEEK_SET);
+
+  //   // Read file content into flash
+  //   int ret = fread(guest_to_host(FLASH_BASE), file_size, 1, fp);
+  //   assert(ret == 1);
+
+  //   fclose(fp);
+  //   Log("Flash memory loaded: %ld bytes from %s\n", file_size, bin_file);
+  // }
+
+  Log("Flash memory initialized: %d bytes at 0x%08x\n", FLASH_SIZE, FLASH_BASE);
+}
 
 const char *regs[] = {
   "$0", "ra", "sp", "gp", "tp", "t0", "t1", "t2",
@@ -101,17 +142,23 @@ extern "C" void set_retfunc() {
 
 extern  "C" uint32_t intake(uint32_t pc){
   vaddr_t vaddr = pc;
-  // printf("intake inst = %08x, addr = 0x%08x\n ", inst_fetch(&vaddr, 4), vaddr);
-  // d.isa.inst = inst_fetch(&vaddr, 4); // 获取指令
-  return inst_fetch(&vaddr, 4); // 获取4字节的指令
+  return inst_fetch(&vaddr, 4); 
 }
 
-extern "C" void flash_read(int32_t addr, int32_t *data) { assert(0); }
+extern "C" void flash_read(int32_t addr, int32_t *data) {
+  uint32_t offset = addr + FLASH_BASE;
+
+  if (addr >= FLASH_SIZE) {
+    printf("Warning: flash_read out of range: addr=0x%08x , offset = 0x%08x\n", addr, offset);
+    *data = 0;
+    return;
+  }
+
+  *data = *(uint32_t *)(guest_to_host(offset));
+  return;
+}
+
 extern "C" void mrom_read(int32_t addr, int32_t *data) { 
-  // 按小端拼接4字节
-  *data = vaddr_read(addr,1) |
-         (vaddr_read(addr + 1,1) << 8) |
-         (vaddr_read(addr + 2,1) << 16) |
-         (vaddr_read(addr + 3,1) << 24);
+  *data = vaddr_read(addr,4); 
   return;
 }

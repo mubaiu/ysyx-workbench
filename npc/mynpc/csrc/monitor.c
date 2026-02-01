@@ -14,6 +14,7 @@ void init_sdb();
 void init_disasm();
 void init_iringbuf();
 void init_memlog();
+void init_flash();
 
 static void welcome() {
   Log("Trace: %s", MUXDEF(CONFIG_TRACE, ANSI_FMT("ON", ANSI_FG_GREEN), ANSI_FMT("OFF", ANSI_FG_RED)));
@@ -220,7 +221,7 @@ static int is_batch_mode = false;
   }
 
   fseek(fp, 0, SEEK_SET);
-  int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);
+  int ret = fread(guest_to_host(0x30000000), size, 1, fp);
   assert(ret == 1);
 
   fclose(fp);
@@ -284,6 +285,9 @@ void init_monitor(int argc, char *argv[]) {
 
   /* Initialize memory. */
   init_mem();
+
+  /* Initialize flash memory. */
+  // init_flash();
 
   /* Initialize devices. */
   IFDEF(CONFIG_DEVICE, init_device());

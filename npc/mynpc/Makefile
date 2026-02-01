@@ -38,7 +38,7 @@ run: $(IMG)
 	@echo $(CSRC)
 	@bash -c 'ELF_FILE=$(basename $(IMG)).elf && \
 		echo "ELF file: $$ELF_FILE" && \
-		verilator $(VERILOG_INCLUDES) --cc --exe --build --timing --trace-fst --top-module ysyxSoCFull \
+		verilator $(VERILOG_INCLUDES) --cc --exe --build --trace-fst --top-module ysyxSoCFull \
 		--timescale "1ns/1ns" --no-timing --autoflush\
 		--CFLAGS "$(INCLUDES) $(CFLAGS) $(CFLAGS_TRACE)" -LDFLAGS "$(LDFLAGS) -ldl" $(VSRC) $(CSRC) && \
 		./obj_dir/VysyxSoCFull -e $$ELF_FILE $(NPC_ARGS) -d $(DIFFTEST_REF_SO) $(IMG) '

@@ -13,7 +13,6 @@ int main() {
   putch('l'); 
   putch('o');
   putch(',');
-  putch(' ');
   putch('W');
   putch('o');
   putch('r');
@@ -24,6 +23,7 @@ int main() {
   putch('s');
   putch('y');
   putch('x');
+  putch('_');
   putch('\n');
   return 0;
 }

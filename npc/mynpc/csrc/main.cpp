@@ -61,15 +61,19 @@ int main(int argc, char** argv) {
     init_monitor(argc, argv);
     #endif
      // 然后设置复位信号
-    // top->rst = 1;
-    // top->clk = !top->clk;
+    ysyxSoCFull->reset = 1;
+    ysyxSoCFull->clock = 1;
     ysyxSoCFull->eval();
-    // tfp->dump(sim_time++);
+    IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     
 
     for (int i = 0; i < 18; i++) {
-        ysyxSoCFull->reset = 1;
-        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        
+        ysyxSoCFull->clock = 0;
+        ysyxSoCFull->eval();
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+
+        ysyxSoCFull->clock = 1;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
@@ -77,7 +81,11 @@ int main(int argc, char** argv) {
     // 释放复位信号后，给予额外的时钟周期稳定系统
     ysyxSoCFull->reset = 0;
     for (int i = 0; i < 2; i++) {
-        ysyxSoCFull->clock = !ysyxSoCFull->clock;
+        ysyxSoCFull->clock = 0;
+        ysyxSoCFull->eval();
+        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+
+        ysyxSoCFull->clock = 1;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
