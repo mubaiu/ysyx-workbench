@@ -29,13 +29,15 @@ module LSU(
     // 检测字节访问：lb/lbu/sb 指令不需要对齐
     wire is_mrom_access = (addr_reg >= 32'h2000_0000 && addr_reg <= 32'h2000_0fff);
     wire is_uart_access = (addr_reg >= 32'h1000_0000 && addr_reg <= 32'h1000_0fff);
+    wire is_psram_access = (addr_reg >= 32'h8000_0000 && addr_reg <= 32'h8fff_ffff);
+    wire need_align = (is_uart_access || is_psram_access);
     // wire is_byte_read  = mem_read && (funct3 == 3'b000 || funct3 == 3'b100);  // lb/lbu
     // wire is_byte_write = mem_write && (lsu_wmask == 4'b0001);                 // sb
     // wire is_byte_access = is_byte_read || is_byte_write;
 
     // RAM控制信号：字节访问不对齐，字/半字访问对齐到4字节边界
-    assign io_lsu_araddr = is_uart_access ? addr_reg : {addr_reg[31:2], 2'b00};
-    assign io_lsu_awaddr = is_uart_access ? addr_reg : {addr_reg[31:2], 2'b00};
+    assign io_lsu_araddr = need_align ? addr_reg : {addr_reg[31:2], 2'b00};
+    assign io_lsu_awaddr = need_align ? addr_reg : {addr_reg[31:2], 2'b00};
     assign io_lsu_wdata  = store_data_reg; 
     assign lsu_ready     = lsu_ready_reg;
     assign mem_to_reg    = (io_lsu_rvalid && load_flag) ? 1'b1 : 1'b0;

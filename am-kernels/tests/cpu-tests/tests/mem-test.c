@@ -127,58 +127,62 @@ void sram_test64() {
 //   }
 // }
 
-// void psram_test8() {
-//   uint8_t *mem = (uint8_t *)PSRAM_BASE;
-//   for (int i = 0; i < PSRAM_LEN; i++) {
-//     mem[i] = i & MASK8;
-//   }
-//   for (int i = 0; i < PSRAM_LEN; i++) {
-//     check(mem[i] == (i & MASK8));
-//   }
-// }
+void psram_test8() {
+  printf("Testing PSRAM 8-bit access...\n");
+  uint8_t *mem = (uint8_t *)PSRAM_BASE;
+  for (int i = 0; i < PSRAM_LEN; i++) {
+    mem[i] = i & MASK8;
+    if (i % 1024 == 0) printf("  Write progress: %d/%d\n", i, PSRAM_LEN);
+  }
+  for (int i = 0; i < PSRAM_LEN; i++) {
+    check(mem[i] == (i & MASK8));
+    if (i % 1024 == 0) printf("  Read progress: %d/%d\n", i, PSRAM_LEN);
+  }
+  printf("PSRAM 8-bit test PASS\n");
+}
 
-// void psram_test16() {
-//   uint16_t *mem = (uint16_t *)PSRAM_BASE;
-//   for (int i = 0; i < PSRAM_LEN / 2; i++) {
-//     mem[i] = (i * 2) & MASK16;
-//   }
-//   for (int i = 0; i < PSRAM_LEN / 2; i++) {
-//     check(mem[i] == ((i * 2) & MASK16));
-//   }
-// }
+void psram_test16() {
+  uint16_t *mem = (uint16_t *)PSRAM_BASE;
+  for (int i = 0; i < PSRAM_LEN / 2; i++) {
+    mem[i] = (i * 2) & MASK16;
+  }
+  for (int i = 0; i < PSRAM_LEN / 2; i++) {
+    check(mem[i] == ((i * 2) & MASK16));
+  }
+}
 
-// void psram_test32() {
-//   uint32_t *mem = (uint32_t *)PSRAM_BASE;
-//   for (int i = 0; i < PSRAM_LEN / 4; i++) {
-//     mem[i] = (i * 4) & MASK32;
-//   }
-//   for (int i = 0; i < PSRAM_LEN / 4; i++) {
-//     check(mem[i] == ((i * 4) & MASK32));
-//   }
-// }
+void psram_test32() {
+  uint32_t *mem = (uint32_t *)PSRAM_BASE;
+  for (int i = 0; i < PSRAM_LEN / 4; i++) {
+    mem[i] = (i * 4) & MASK32;
+  }
+  for (int i = 0; i < PSRAM_LEN / 4; i++) {
+    check(mem[i] == ((i * 4) & MASK32));
+  }
+}
 
-// void psram_test64() {
-//   uint64_t *mem = (uint64_t *)PSRAM_BASE;
-//   for (int i = 0; i < PSRAM_LEN / 8; i++) {
-//     mem[i] = ((uint64_t)(i * 8)) & MASK64;
-//   }
-//   for (int i = 0; i < PSRAM_LEN / 8; i++) {
-//     check(mem[i] == (((uint64_t)(i * 8)) & MASK64));
-//   }
-// }
+void psram_test64() {
+  uint64_t *mem = (uint64_t *)PSRAM_BASE;
+  for (int i = 0; i < PSRAM_LEN / 8; i++) {
+    mem[i] = ((uint64_t)(i * 8)) & MASK64;
+  }
+  for (int i = 0; i < PSRAM_LEN / 8; i++) {
+    check(mem[i] == (((uint64_t)(i * 8)) & MASK64));
+  }
+}
 
 int main() {
-    sram_test8();
-    sram_test16();
-    sram_test32();
-    sram_test64();
+    // sram_test8();
+    // sram_test16();
+    // sram_test32();
+    // sram_test64();
     // printf("SRAM PASS\n");
 
-//   psram_test8();
-//   psram_test16();
-//   psram_test32();
-//   psram_test64();
-//   printf("PSRAM PASS\n");
+  // psram_test8();
+  // psram_test16();
+  // psram_test32();
+  // psram_test64();
+  // printf("PSRAM PASS\n");
 //   sdram_test8();
 //   sdram_test16();
 //   sdram_test32();

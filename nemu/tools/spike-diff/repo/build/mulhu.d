@@ -1,5 +1,0 @@
-mulhu.o: mulhu.cc \
- /home/mubai/ysyx-workbench/nemu/tools/spike-diff/repo/riscv/insn_macros.h \
- /home/mubai/ysyx-workbench/nemu/tools/spike-diff/repo/riscv/insns/mulhu.h
-/home/mubai/ysyx-workbench/nemu/tools/spike-diff/repo/riscv/insn_macros.h:
-/home/mubai/ysyx-workbench/nemu/tools/spike-diff/repo/riscv/insns/mulhu.h:

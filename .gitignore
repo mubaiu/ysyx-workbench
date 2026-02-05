@@ -1,0 +1,9 @@
+*.fst
+*.o
+*.d
+*.a
+*.bin
+*.elf
+*.txt
+build/
+obj_dir/

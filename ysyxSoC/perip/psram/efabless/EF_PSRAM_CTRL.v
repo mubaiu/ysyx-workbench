@@ -41,12 +41,91 @@
 `timescale              1ns/1ps
 `default_nettype        none
 
+// PSRAM Initialization Module - Sends 0x35 command to enter QPI mode
+module PSRAM_INIT (
+    input   wire            clk,
+    input   wire            rst_n,
+    output  reg             init_done,
+
+    output  reg             sck,
+    output  reg             ce_n,
+    output  wire [3:0]      dout,
+    output  wire            douten
+);
+    localparam  IDLE = 2'd0,
+                INIT = 2'd1,
+                DONE = 2'd2;
+
+    reg [1:0]   state;
+    reg [7:0]   counter;
+
+    wire [7:0]  CMD_35H = 8'h35;  // Enter QPI mode command
+
+    // State machine
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= IDLE;
+        end else begin
+            case (state)
+                IDLE: state <= INIT;
+                INIT: if (counter >= 13) state <= DONE;
+                DONE: state <= DONE;
+                default: state <= IDLE;  // Handle undefined states
+            endcase
+        end
+    end
+
+    // Init done flag
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            init_done <= 1'b0;
+        else if (state == DONE)
+            init_done <= 1'b1;
+    end
+
+    // Generate sck @ clk/2
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            sck <= 1'b0;
+        else if (state == INIT)
+            sck <= ~sck;
+        else
+            sck <= 1'b0;
+    end
+
+    // ce_n control
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            ce_n <= 1'b1;
+        else if (state == INIT)
+            ce_n <= 1'b0;
+        else
+            ce_n <= 1'b1;
+    end
+
+    // Counter
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            counter <= 8'b0;
+        else if (state == INIT && sck)
+            counter <= counter + 1'b1;
+        else if (state == IDLE)
+            counter <= 8'b0;
+    end
+
+    // Command output (serial mode, 1 bit at a time)
+    assign dout = (counter < 8) ? {3'b0, CMD_35H[7 - counter]} : 4'h0;
+    assign douten = (counter < 8);
+
+endmodule
+
 module PSRAM_READER (
     input   wire            clk,
     input   wire            rst_n,
     input   wire [23:0]     addr,
     input   wire            rd,
     input   wire [2:0]      size,
+    input   wire            qpi_mode,  // QPI mode flag
     output  wire            done,
     output  wire [31:0]     line,
 
@@ -97,11 +176,17 @@ module PSRAM_READER (
         else
             ce_n <= 1'b1;
 
+    // Counter - in QPI mode, increment by 4 during command phase
     always @ (posedge clk or negedge rst_n)
         if(!rst_n)
             counter <= 8'b0;
-        else if(sck & ~done)
-            counter <= counter + 1'b1;
+        else if(sck & ~done) begin
+            // In QPI mode, command phase uses 4-bit parallel transfer
+            if(qpi_mode && counter < 8)
+                counter <= counter + 4;
+            else
+                counter <= counter + 1'b1;
+        end
         else if(state == IDLE)
             counter <= 8'b0;
 
@@ -119,7 +204,10 @@ module PSRAM_READER (
             if(sck)
                 data[byte_index] <= {data[byte_index][3:0], din}; // Optimize!
 
-    assign dout     =   (counter < 8)   ?   {3'b0, CMD_EBH[7 - counter]}:
+    // Command and address output - QPI mode: 4-bit parallel, SPI mode: 1-bit serial
+    assign dout     =   (counter < 8)   ?   (qpi_mode ?
+                                                (counter == 0 ? CMD_EBH[7:4] : CMD_EBH[3:0]) :
+                                                {3'b0, CMD_EBH[7 - counter]}) :
                         (counter == 8)  ?   saddr[23:20]        :
                         (counter == 9)  ?   saddr[19:16]        :
                         (counter == 10) ?   saddr[15:12]        :
@@ -149,6 +237,7 @@ module PSRAM_WRITER (
     input   wire [31: 0]    line,
     input   wire [2:0]      size,
     input   wire            wr,
+    input   wire            qpi_mode,  // QPI mode flag
     output  wire            done,
 
     output  reg             sck,
@@ -198,11 +287,17 @@ module PSRAM_WRITER (
         else
             ce_n <= 1'b1;
 
+    // Counter - in QPI mode, increment by 4 during command phase
     always @ (posedge clk or negedge rst_n)
         if(!rst_n)
             counter <= 8'b0;
-        else if(sck & ~done)
-            counter <= counter + 1'b1;
+        else if(sck & ~done) begin
+            // In QPI mode, command phase uses 4-bit parallel transfer
+            if(qpi_mode && counter < 8)
+                counter <= counter + 4;
+            else
+                counter <= counter + 1'b1;
+        end
         else if(state == IDLE)
             counter <= 8'b0;
 
@@ -212,7 +307,10 @@ module PSRAM_WRITER (
         else if((state == IDLE) && wr)
             saddr <= addr;
 
-    assign dout     =   (counter < 8)   ?   {3'b0, CMD_38H[7 - counter]}:
+    // Command and address output - QPI mode: 4-bit parallel, SPI mode: 1-bit serial
+    assign dout     =   (counter < 8)   ?   (qpi_mode ?
+                                                (counter == 0 ? CMD_38H[7:4] : CMD_38H[3:0]) :
+                                                {3'b0, CMD_38H[7 - counter]}) :
                         (counter == 8)  ?   saddr[23:20]        :
                         (counter == 9)  ?   saddr[19:16]        :
                         (counter == 10) ?   saddr[15:12]        :

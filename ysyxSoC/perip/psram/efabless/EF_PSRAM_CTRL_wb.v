@@ -42,6 +42,13 @@ module EF_PSRAM_CTRL_wb (
     localparam  ST_IDLE = 1'b0,
                 ST_WAIT = 1'b1;
 
+    // PSRAM Init wires
+    wire        init_done;
+    wire        init_sck;
+    wire        init_ce_n;
+    wire [3:0]  init_dout;
+    wire        init_douten;
+
     wire        mr_sck;
     wire        mr_ce_n;
     wire [3:0]  mr_din;
@@ -79,7 +86,8 @@ module EF_PSRAM_CTRL_wb (
     always @* begin
         case(state)
             ST_IDLE :
-                if(wb_valid)
+                // Only enter WAIT state after initialization is complete
+                if(wb_valid & init_done)
                     nstate = ST_WAIT;
                 else
                     nstate = ST_IDLE;
@@ -127,8 +135,19 @@ module EF_PSRAM_CTRL_wb (
                         2'b00;
                       */
 
-    assign mr_rd    = ( (state==ST_IDLE ) & wb_re );
-    assign mw_wr    = ( (state==ST_IDLE ) & wb_we );
+    assign mr_rd    = ( (state==ST_IDLE ) & wb_re & init_done );
+    assign mw_wr    = ( (state==ST_IDLE ) & wb_we & init_done );
+
+    // PSRAM Initialization - Send 0x35 command to enter QPI mode
+    PSRAM_INIT INIT (
+        .clk(clk_i),
+        .rst_n(~rst_i),
+        .init_done(init_done),
+        .sck(init_sck),
+        .ce_n(init_ce_n),
+        .dout(init_dout),
+        .douten(init_douten)
+    );
 
     PSRAM_READER MR (
         .clk(clk_i),
@@ -137,6 +156,7 @@ module EF_PSRAM_CTRL_wb (
         .rd(mr_rd),
         //.size(size), Always read a word
         .size(3'd4),
+        .qpi_mode(init_done),  // Use QPI mode after initialization
         .done(mr_done),
         .line(dat_o),
         .sck(mr_sck),
@@ -152,6 +172,7 @@ module EF_PSRAM_CTRL_wb (
         .addr({adr_i[23:0]}),
         .wr(mw_wr),
         .size(size),
+        .qpi_mode(init_done),  // Use QPI mode after initialization
         .done(mw_done),
         .line(wdata),
         .sck(mw_sck),
@@ -161,10 +182,11 @@ module EF_PSRAM_CTRL_wb (
         .douten(mw_doe)
     );
 
-    assign sck  = wb_we ? mw_sck  : mr_sck;
-    assign ce_n = wb_we ? mw_ce_n : mr_ce_n;
-    assign dout = wb_we ? mw_dout : mr_dout;
-    assign douten  = wb_we ? {4{mw_doe}}  : {4{mr_doe}};
+    // Output signal multiplexing: init -> read/write
+    assign sck  = !init_done ? init_sck  : (wb_we ? mw_sck  : mr_sck);
+    assign ce_n = !init_done ? init_ce_n : (wb_we ? mw_ce_n : mr_ce_n);
+    assign dout = !init_done ? init_dout : (wb_we ? mw_dout : mr_dout);
+    assign douten  = !init_done ? {4{init_douten}} : (wb_we ? {4{mw_doe}}  : {4{mr_doe}});
 
     assign mw_din = din;
     assign mr_din = din;

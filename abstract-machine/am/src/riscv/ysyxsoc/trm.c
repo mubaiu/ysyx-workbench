@@ -18,9 +18,15 @@
 
 extern char _heap_start;
 extern char _heap_end;
-extern char _data_lma;      // LMA地址
-extern char _data_vma;      // VMA地址
-extern char data_lenth;     // 长度
+extern char _text_lma;      // .text段LMA地址(Flash)
+extern char _text_vma;      // .text段VMA地址(SRAM)
+extern char text_length;    // .text段长度
+extern char _rodata_lma;    // .rodata段LMA地址(Flash)
+extern char _rodata_vma;    // .rodata段VMA地址(SRAM)
+extern char rodata_length;  // .rodata段长度
+extern char _data_lma;      // .data段LMA地址(Flash)
+extern char _data_vma;      // .data段VMA地址(SRAM)
+extern char data_length;    // .data段长度
 extern char _bss_start;     // .bss起始地址
 extern char _bss_end;       // .bss结束地址
 int main(const char *args);
@@ -56,11 +62,8 @@ void uart_init(uint32_t base, uint16_t divisor) {
 }
 
 void _trm_init() {
-  // 复制.data段: ROM → RAM
-  memcpy(&_data_vma, &_data_lma, (size_t)&data_lenth);
-  // 清零.bss段
-  memset(&_bss_start, 0, (size_t)(&_bss_end - &_bss_start));
-  uart_init(UART_BASE, 1); 
+  // 所有段的复制和.bss清零已在start.S中完成
+  uart_init(UART_BASE, 1);
   int ret = main(mainargs);
   halt(ret);
 }
