@@ -12,7 +12,7 @@ MEMORY {
   flash (r x) : ORIGIN = 0x30000000, LENGTH = 16M
   sram  (rwx) : ORIGIN = 0x0f000000, LENGTH = 8K
   psram (rwx) : ORIGIN = 0x80000000, LENGTH = 4M
-  /* sdram (rwx) : ORIGIN = 0xa0000000, LENGTH = 64M */
+  sdram (rwx) : ORIGIN = 0xa0000000, LENGTH = 32M
 }
 
 SECTIONS {
@@ -114,11 +114,11 @@ SECTIONS {
 
   _bss_end = .;
 
-  _stack_bottom = 0x80400000; /* PSRAM_END */
+  _stack_bottom = 0x0f002000; /* PSRAM_END */
   _stack_pointer = _stack_bottom;
   _stack_top = _stack_bottom - 0x800; 
 
-  _heap_start = _bss_end;
+  _heap_start = 0x0f000000; /* PSRAM_START */
   _heap_end = _stack_top;
   end = .;
   _end = .;

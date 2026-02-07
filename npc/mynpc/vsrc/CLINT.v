@@ -28,8 +28,8 @@ module CLINT(
     // 64位mtime计数器
     reg [63:0] mtime;
     
-    localparam [31:0] CLINT_BASE = 32'ha0000048;
-    localparam [31:0] CLINT_END  = 32'ha000004c;
+    localparam [31:0] CLINT_BASE = 32'h02000000;
+    localparam [31:0] CLINT_END  = 32'h0200ffff;
 
     wire ar_handshake = io_slave_arvalid && io_slave_arready;  // 读地址握手
     wire r_handshake  = io_slave_rvalid  && io_slave_rready ;  // 读数据握手
@@ -62,8 +62,8 @@ module CLINT(
 
             // 根据地址返回不同的mtime部分
             case (io_slave_araddr)
-                32'ha0000048: io_slave_rdata <= mtime[31:0];   // 低32位
-                32'ha000004c: io_slave_rdata <= mtime[63:32];  // 高32位
+                32'h02000000: io_slave_rdata <= mtime[31:0];   // 低32位
+                32'h02000004: io_slave_rdata <= mtime[63:32];  // 高32位
                 default:      io_slave_rdata <= 32'h0;         // 无效地址返回0
             endcase
         end 

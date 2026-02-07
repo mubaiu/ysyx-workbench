@@ -112,8 +112,8 @@ module Arbiter (
     // =========================================================================
     // CLINT 地址范围定义
     // =========================================================================
-    localparam [31:0] CLINT_BASE = 32'ha0000048;
-    localparam [31:0] CLINT_END  = 32'ha000004c;
+    localparam [31:0] CLINT_BASE = 32'h02000000;
+    localparam [31:0] CLINT_END  = 32'h02000004;
 
     wire is_clint_access;
     assign is_clint_access = (io_lsu_araddr >= CLINT_BASE) && (io_lsu_araddr <= CLINT_END);

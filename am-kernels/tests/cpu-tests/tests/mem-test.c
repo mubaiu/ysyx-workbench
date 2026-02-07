@@ -37,9 +37,10 @@
 #define PSRAM_BASE 0x80000000
 //#define PSRAM_LEN  4 * 1024 * 1024//4MB（跑到天昏地暗都没结束）
 #define PSRAM_LEN  4 * 1024
-#define SDRAM_BASE 0xa0002000
-//#define SDRAM_LEN  512 * 1024 * 1024//512MB(明天起床能看到它跑完吗）
-#define SDRAM_LEN  16
+#define SDRAM_BASE 0xa0000000
+// #define SDRAM_LEN  512 * 1024 * 1024//512MB(明天起床能看到它跑完吗）
+#define SDRAM_LEN  4 * 1024  //4KB
+// #define SDRAM_LEN  16
 //#define LEN 0x10
 
 #define MASK8  0xff
@@ -87,45 +88,50 @@ void sram_test64() {
   }
 }
 
-// void sdram_test8() {
-//   uint8_t *mem = (uint8_t *)SDRAM_BASE;
-//   for (int i = 0; i < SDRAM_LEN; i++) {
-//     mem[i] = i & MASK8;
-//   }
-//   for (int i = 0; i < SDRAM_LEN; i++) {
-//     check(mem[i] == (i & MASK8));
-//   }
-// }
+void sdram_test8() {
+  printf("Testing SDRAM 8-bit access...\n");
+  uint8_t *mem = (uint8_t *)SDRAM_BASE;
+  for (int i = 0; i < SDRAM_LEN; i++) {
+    mem[i] = i & MASK8;
+    // if (i % 1024 == 0) printf("  Write progress: %d/%d\n", i, SDRAM_LEN);
 
-// void sdram_test16() {
-//   uint16_t *mem = (uint16_t *)SDRAM_BASE;
-//   for (int i = 0; i < SDRAM_LEN / 2; i++) {
-//     mem[i] = (i * 2) & MASK16;
-//   }
-//   for (int i = 0; i < SDRAM_LEN / 2; i++) {
-//     check(mem[i] == ((i * 2) & MASK16));
-//   }
-// }
+  }
+  for (int i = 0; i < SDRAM_LEN; i++) {
+    check(mem[i] == (i & MASK8));
+    // if (i % 1024 == 0) printf("  Read progress: %d/%d\n", i, SDRAM_LEN);
+  }
+    printf("SDRAM 8-bit test PASS\n");
+}
 
-// void sdram_test32() {
-//   uint32_t *mem = (uint32_t *)SDRAM_BASE;
-//   for (int i = 0; i < SDRAM_LEN / 4; i++) {
-//     mem[i] = (i * 4) & MASK32;
-//   }
-//   for (int i = 0; i < SDRAM_LEN / 4; i++) {
-//     check(mem[i] == ((i * 4) & MASK32));
-//   }
-// }
+void sdram_test16() {
+  uint16_t *mem = (uint16_t *)SDRAM_BASE;
+  for (int i = 0; i < SDRAM_LEN / 2; i++) {
+    mem[i] = (i * 2) & MASK16;
+  }
+  for (int i = 0; i < SDRAM_LEN / 2; i++) {
+    check(mem[i] == ((i * 2) & MASK16));
+  }
+}
 
-// void sdram_test64() {
-//   uint64_t *mem = (uint64_t *)SDRAM_BASE;
-//   for (int i = 0; i < SDRAM_LEN / 8; i++) {
-//     mem[i] = ((uint64_t)(i * 8)) & MASK64;
-//   }
-//   for (int i = 0; i < SDRAM_LEN / 8; i++) {
-//     check(mem[i] == (((uint64_t)(i * 8)) & MASK64));
-//   }
-// }
+void sdram_test32() {
+  uint32_t *mem = (uint32_t *)SDRAM_BASE;
+  for (int i = 0; i < SDRAM_LEN / 4; i++) {
+    mem[i] = (i * 4) & MASK32;
+  }
+  for (int i = 0; i < SDRAM_LEN / 4; i++) {
+    check(mem[i] == ((i * 4) & MASK32));
+  }
+}
+
+void sdram_test64() {
+  uint64_t *mem = (uint64_t *)SDRAM_BASE;
+  for (int i = 0; i < SDRAM_LEN / 8; i++) {
+    mem[i] = ((uint64_t)(i * 8)) & MASK64;
+  }
+  for (int i = 0; i < SDRAM_LEN / 8; i++) {
+    check(mem[i] == (((uint64_t)(i * 8)) & MASK64));
+  }
+}
 
 void psram_test8() {
   printf("Testing PSRAM 8-bit access...\n");
@@ -183,10 +189,10 @@ int main() {
   // psram_test32();
   // psram_test64();
   // printf("PSRAM PASS\n");
-//   sdram_test8();
-//   sdram_test16();
-//   sdram_test32();
-//   sdram_test64();
-//   printf("SDRAM PASS\n");  
+  sdram_test8();
+  sdram_test16();
+  sdram_test32();
+  sdram_test64();
+  printf("SDRAM PASS\n");  
   return 0;
 }
