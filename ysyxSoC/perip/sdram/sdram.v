@@ -248,7 +248,7 @@ endmodule
 //=============================================================================
 // 32位SDRAM包装模块 - 通过位扩展实现（2个16位芯片并联）
 //=============================================================================
-module sdram(
+module sdram_32bit(
   input        clk,
   input        cke,
   input        cs,
@@ -287,6 +287,76 @@ module sdram(
     .ba(ba),
     .dqm(dqm[3:2]),
     .dq(dq[31:16])
+  );
+
+endmodule
+
+//=============================================================================
+// 字扩展SDRAM模块 - 4个16位芯片（2对位扩展后再字扩展）
+//=============================================================================
+module sdram(
+  input        clk,
+  input        cke,
+  input        cs,
+  input        ras,
+  input        cas,
+  input        we,
+  input [13:0] a,        // 14位地址，a[13]用于字扩展片选
+  input [ 1:0] ba,
+  input [ 3:0] dqm,
+  inout [31:0] dq
+);
+
+  // 命令解码
+  wire [3:0] command = {cs, ras, cas, we};
+  localparam CMD_ACTIVE     = 4'b0011;
+  localparam CMD_READ       = 4'b0101;
+  localparam CMD_WRITE      = 4'b0100;
+
+  // 记录当前激活的地址空间（在ACTIVE命令时更新）
+  reg active_space_high_reg;
+
+  always @(posedge clk) begin
+    if (cke && command == CMD_ACTIVE) begin
+      active_space_high_reg <= a[13];
+    end
+  end
+
+  // 组合逻辑：ACTIVE命令时立即使用a[13]
+  wire active_space_high = (command == CMD_ACTIVE) ? a[13] : active_space_high_reg;
+
+  // 判断是否为数据访问命令
+  wire is_data_access = (command == CMD_ACTIVE) || (command == CMD_READ) || (command == CMD_WRITE);
+
+  wire cs_low  = is_data_access ? (cs | active_space_high) : cs;
+  wire cs_high = is_data_access ? (cs | ~active_space_high) : cs;
+
+  // 低地址空间：chip0+chip1位扩展
+  sdram_32bit sdram_low (
+    .clk(clk),
+    .cke(cke),
+    .cs(cs_low),
+    .ras(ras),
+    .cas(cas),
+    .we(we),
+    .a(a[12:0]),
+    .ba(ba),
+    .dqm(dqm),
+    .dq(dq)
+  );
+
+  // 高地址空间：chip2+chip3位扩展
+  sdram_32bit sdram_high (
+    .clk(clk),
+    .cke(cke),
+    .cs(cs_high),
+    .ras(ras),
+    .cas(cas),
+    .we(we),
+    .a(a[12:0]),
+    .ba(ba),
+    .dqm(dqm),
+    .dq(dq)
   );
 
 endmodule

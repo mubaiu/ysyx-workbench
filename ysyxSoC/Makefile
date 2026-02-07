@@ -17,11 +17,15 @@ $(V_FILE_FINAL): $(SCALA_FILES)
 	sed -i '/firrtl_black_box_resource_files.f/, $$d' $@
 	sed -i -e 's/\[15:0\] sdram_dq/[31:0] sdram_dq/g' $@
 	sed -i -e 's/\[1:0\] sdram_dqm/[3:0] sdram_dqm/g' $@
+	sed -i -e 's/\[12:0\] sdram_a/[13:0] sdram_a/g' $@
+	sed -i -e 's/\[12:0\] _asic_sdram_a/[13:0] _asic_sdram_a/g' $@
 	sed -i -e 's/\[15:0\] _dq_wire/[31:0] _dq_wire/g' $@
 	sed -i -e 's/\[1:0\]  _asic_sdram_dqm/[3:0]  _asic_sdram_dqm/g' $@
 	sed -i -e 's/^                sdram_bundle_dqm,/  output [3:0]  sdram_bundle_dqm,/g' $@
 	sed -i -e 's/\[15:0\] sdram_bundle_dq/[31:0] sdram_bundle_dq/g' $@
+	sed -i -e 's/\[12:0\] sdram_bundle_a/[13:0] sdram_bundle_a/g' $@
 	sed -i -e 's/^                sdram_dqm,/  output [3:0]  sdram_dqm,/g' $@
+	sed -i -e 's/^                sdram_a,/  output [13:0] sdram_a,/g' $@
 	sed -i -e 's/ysyx_00000000/ysyx_25010003/g' $@
 
 verilog: $(V_FILE_FINAL)

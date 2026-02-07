@@ -37,12 +37,12 @@ SECTIONS {
   ssbl_length = _ssbl_vma_end - _ssbl_vma;
   _flash_offset = _flash_offset + ssbl_length;
 
-  /* .text段：VMA在psram，LMA在flash（紧接着.ssbl） */
+  /* .text段：VMA在sdram，LMA在flash（紧接着.ssbl） */
   .text : AT(_flash_offset) {
     _text_vma = .;
     *(.text*)
     _text_vma_end = .;
-  } > psram : text
+  } > sdram : text
 
   etext = .;
   _etext = .;
@@ -64,7 +64,7 @@ SECTIONS {
   _flash_offset = _flash_offset + rodata_length;
 
 
-  /* .data段：VMA在psram，LMA在flash（紧接着.data.extra） */
+  /* .data段：VMA在sdram，LMA在flash（紧接着.data.extra） */
   .data : AT(_flash_offset) {
     _data_vma = .;
     *(.sdata*)
@@ -91,7 +91,7 @@ SECTIONS {
     __am_apps_data_end = .;
     . = ALIGN(8);
     _data_vma_end = .;
-  } > psram : data
+  } > sdram : data
 
   _data_lma = LOADADDR(.data);
   data_length = _data_vma_end - _data_vma;
@@ -110,16 +110,17 @@ SECTIONS {
     *(__am_apps.scommon*)
     __am_apps_bss_end = .;
     . = ALIGN(8);
-  } > psram
+  } > sdram
 
   _bss_end = .;
 
-  _stack_bottom = 0x0f002000; /* PSRAM_END */
+  _stack_bottom = 0x0f002000; /* SRAM_END */
   _stack_pointer = _stack_bottom;
   _stack_top = _stack_bottom - 0x800; 
 
-  _heap_start = 0x0f000000; /* PSRAM_START */
-  _heap_end = _stack_top;
+  /* 堆空间改到SDRAM（从BSS段结束后开始） */
+  _heap_start = _bss_end;
+  _heap_end = 0xa0000000 + 0x2000000; /* SDRAM_START + 32MB */
   end = .;
   _end = .;
 
