@@ -1,2 +1,12 @@
-npc/mynpc/wave.fst
-**/build/
+*.fst
+*.fst.hier
+*.o
+*.d
+*.a
+*.bin
+*.elf
+*.txt
+CLAUDE.md
+build/
+obj_dir/
+nvboard/
