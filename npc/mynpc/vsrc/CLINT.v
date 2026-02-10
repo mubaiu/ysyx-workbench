@@ -19,10 +19,10 @@ module CLINT(
     input  wire        io_slave_wvalid,
     input  wire        io_slave_bready,
 
-    output reg         io_slave_awready,
-    output reg         io_slave_wready,
-    output reg  [1:0]  io_slave_bresp,
-    output reg         io_slave_bvalid
+    output wire        io_slave_awready,
+    output wire        io_slave_wready,
+    output wire [1:0]  io_slave_bresp,
+    output wire        io_slave_bvalid
 );
 
     // 64位mtime计数器

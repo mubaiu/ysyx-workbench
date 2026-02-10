@@ -34,8 +34,10 @@ module EXU(
     output wire [31:0]  branch_target
 );
 
+`ifdef VERILATOR
 import "DPI-C" function void ebreak();
 import "DPI-C" function void etrace_exception(input int mcause, input int epc, input int mtvec);
+`endif
 
     wire [31:0] operand_a;
     wire [31:0] operand_b;
@@ -167,7 +169,9 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
     end
 
     always @(*) begin
+`ifdef VERILATOR
         if(ebreak_en)
             ebreak();
+`endif
     end
 endmodule

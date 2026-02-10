@@ -27,9 +27,11 @@ module Memory (
     output reg         io_slave_bvalid
 );
 
+`ifdef VERILATOR
 import "DPI-C" function int intake(input int pc);
 import "DPI-C" function void vaddr_write(input int addr, input int len, input int data);
 import "DPI-C" function int vaddr_read(input int addr, input int len);
+`endif
 
 wire [31:0] len;
 wire [31:0] aligned_addr;
@@ -58,7 +60,11 @@ always @(posedge clock) begin
     else if (ar_handshake) begin
         io_slave_rvalid  <= 1'b1;
         io_slave_arready <= 1'b0;
+`ifdef VERILATOR
         io_slave_rdata   <= vaddr_read(aligned_addr, 4);
+`else
+        io_slave_rdata   <= 32'h0;
+`endif
     end 
     else if (r_handshake) begin
         // 读数据握手完成
@@ -79,7 +85,9 @@ always @(posedge clock) begin
         io_slave_awready <= 1'b0;  // 只拉低写地址 ready
         if (w_handshake) begin
             io_slave_wready <= 1'b0;  // 写地址和写数据都握手成功，拉低写数据 ready
+`ifdef VERILATOR
             vaddr_write(io_slave_awaddr, len, io_slave_wdata);
+`endif
             io_slave_bvalid <= 1'b1;  // 写响应
         end
     end else if (b_handshake) begin

@@ -26,13 +26,13 @@ module IFU(
     output reg  [31:0] pc,
     output reg  [31:0] snpc,           // 静态下一个PC
     output wire [31:0] inst,           // 从指令存储器获取的
-    output wire        inst_valid,
-    
+    output reg         inst_valid,
+
     //IFU Arbiter 接口
     output wire [31:0] io_ifu_araddr,  //AR
-    output wire        io_ifu_arvalid,
+    output reg         io_ifu_arvalid,
 
-    output wire        io_ifu_rready,  //R
+    output reg         io_ifu_rready,  //R
     input  wire [31:0] io_ifu_rdata,  
     input  wire        io_ifu_rvalid,
     input  wire [1:0]  io_ifu_rresp,
@@ -63,6 +63,7 @@ module IFU(
     localparam EXECUTE = 3'd3;
     localparam ACCESS = 3'd4;
 
+`ifdef VERILATOR
     import "DPI-C" function int intake(input int pc);
     import "DPI-C" function void set_snpc(input int pc);
     import "DPI-C" function void set_dnpc(input int pc);
@@ -75,6 +76,7 @@ module IFU(
     import "DPI-C" function void perf_ifu_idle();       // IFU空闲
     import "DPI-C" function void perf_lsu_load_latency(input longint latency);   // LSU读延迟
     import "DPI-C" function void perf_lsu_store_latency(input longint latency);  // LSU写延迟
+`endif
 
 
     reg [31:0] dnpc; // 动态下一个PC
@@ -123,9 +125,11 @@ module IFU(
     end
 
     always @(posedge clock) begin
+`ifdef VERILATOR
         set_snpc(snpc);
         set_dnpc(dnpc_reg);
         set_pc(pc);
+`endif
     end
 
     // PC更新逻辑
@@ -146,7 +150,9 @@ module IFU(
                         inst_valid <= 1'b0;
                         pc <= dnpc_reg;
                         next_state <= FETCH;
+`ifdef VERILATOR
                         perf_ifu_idle();  // IFU空闲周期
+`endif
                 end
                 FETCH: begin
                     // inst_reg <= intake(pc);
@@ -161,7 +167,9 @@ module IFU(
                         next_state <= FETCH;
                         // IFU无法取指，可能是LSU占用总线
                         if (mem_read || mem_write) begin
+`ifdef VERILATOR
                             perf_ifu_stall_lsu();  // 因LSU而stall
+`endif
                         end
                     end
                 end
@@ -171,19 +179,25 @@ module IFU(
                         io_ifu_rready <= 1'b0;
                         inst_valid <= 1'b1;
                         inst_reg <= io_ifu_rdata;
+`ifdef VERILATOR
                         perf_ifu_fetch();  // 性能计数：IFU取到指令
+`endif
                         next_state <= EXECUTE;
                     end
                     else if(lsu_r_handshake) begin
                         io_lsu_rready <= 1'b0;
+`ifdef VERILATOR
                         perf_lsu_load();  // 性能计数：LSU读到数据
                         perf_lsu_load_latency(lsu_latency_counter);  // 记录读延迟
+`endif
                         next_state <= IDLE;
                     end
                     else if(lsu_b_handshake) begin
                         io_lsu_bready <= 1'b0;
+`ifdef VERILATOR
                         perf_lsu_store();  // 性能计数：LSU写完成
                         perf_lsu_store_latency(lsu_latency_counter);  // 记录写延迟
+`endif
                         next_state <= IDLE;
                     end
                     else begin
@@ -194,7 +208,9 @@ module IFU(
                         end
                         // 只有当IFU在等待自己的取指响应时才计数
                         if (io_ifu_rready) begin
+`ifdef VERILATOR
                             perf_ifu_stall_wait();  // IFU等待AXI响应
+`endif
                         end
                     end
                 end

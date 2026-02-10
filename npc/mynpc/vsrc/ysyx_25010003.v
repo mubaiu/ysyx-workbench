@@ -447,6 +447,7 @@ module ysyx_25010003(
         .wbu_ready          (wbu_ready)
     );
 
+`ifdef VERILATOR
 import "DPI-C" function void set_callfunc();
 import "DPI-C" function void set_retfunc();
 
@@ -454,17 +455,20 @@ import "DPI-C" function void set_retfunc();
 import "DPI-C" function void perf_alu_inst();
 import "DPI-C" function void perf_branch_inst();
 import "DPI-C" function void perf_csr_inst();
-
+`endif
 
 always @(posedge clock) begin
+`ifdef VERILATOR
     if(jal_en)
         set_callfunc();
     if(jalr_en)
         set_retfunc();
+`endif
 end
 
 // 指令类型性能计数器
 always @(posedge clock) begin
+`ifdef VERILATOR
     if (inst_valid && !reset) begin
         // 分支跳转指令
         if (branch_taken || jal_en || jalr_en)
@@ -478,6 +482,7 @@ always @(posedge clock) begin
         if (!mem_read && !mem_write && !branch_taken && !jal_en && !jalr_en && !is_csr_op)
             perf_alu_inst();
     end
+`endif
 end
 
 endmodule

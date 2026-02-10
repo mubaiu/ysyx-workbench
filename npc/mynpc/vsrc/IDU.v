@@ -32,7 +32,9 @@ module IDU(
 );
 
 
+`ifdef VERILATOR
 import "DPI-C" function void invalid_inst(input int thispc);
+`endif
 
 
     // 指令类型和操作码
@@ -40,9 +42,8 @@ import "DPI-C" function void invalid_inst(input int thispc);
     // wire [2:0] funct3;
     reg [6:0] funct7;
 
-    reg idu_ready_reg;
 
-    assign idu_ready = idu_ready_reg;
+    assign idu_ready = !inst_valid;
 
     // assign opcode = inst[6:0];
     // assign funct3 = inst[14:12];
@@ -55,6 +56,13 @@ import "DPI-C" function void invalid_inst(input int thispc);
 
     // 指令解码和控制信号生成
     always @(*) begin
+        opcode = inst[6:0];
+        funct3 = inst[14:12];
+        funct7 = inst[31:25];
+        rs1_addr = inst[19:15] & 5'hF; // RV32E只有16个寄存器
+        rs2_addr = inst[24:20] & 5'hF;
+        rd_addr = inst[11:7] & 5'hF;
+
         // 默认值
         lsu_wmask     = 4'b0;
         alu_op        = 4'b0000;
@@ -71,14 +79,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
         jalr_en       = 1'b0;
         imm           = 32'h0;
         is_csr_op     = 1'b0;
-        idu_ready_reg = 1'b1;
     if(inst_valid) begin
-        opcode = inst[6:0];
-        funct3 = inst[14:12];
-        funct7 = inst[31:25];
-        rs1_addr = inst[19:15] & 5'hF; // RV32E只有16个寄存器
-        rs2_addr = inst[24:20] & 5'hF;
-        rd_addr = inst[11:7] & 5'hF;
         case (opcode)
             7'b0110011: begin // R-type
                 reg_write = 1'b1;
@@ -94,7 +95,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1000; // OR
                     3'b111: alu_op = 4'b1001; // AND
                     default: begin
+`ifdef VERILATOR
                     invalid_inst(pc);
+`endif
                 end
                 endcase
             end
@@ -114,7 +117,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1000; // ORI
                     3'b111: alu_op = 4'b1001; // ANDI
                     default: begin
+`ifdef VERILATOR
                     invalid_inst(pc);
+`endif
                 end
                 endcase
             end
@@ -152,7 +157,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     3'b110: alu_op = 4'b1110; // BLTU
                     3'b111: alu_op = 4'b1111; // BGEU
                 default: begin
+`ifdef VERILATOR
                     invalid_inst(pc);
+`endif
                 end
                 endcase
                 imm = {{20{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0};
@@ -204,7 +211,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
                             mret_en = 1'b1; // 设置MRET标志
                         end
                         default: begin
-                            invalid_inst(pc);
+`ifdef VERILATOR
+                    invalid_inst(pc);
+`endif
                         end
                     endcase
                 end
@@ -221,7 +230,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
                     imm = {{20{1'b0}}, inst[31:20]};
                 end 
                 else begin
+`ifdef VERILATOR
                     invalid_inst(pc);
+`endif
                 end
             end
                 // 其他系统指令...
@@ -229,11 +240,12 @@ import "DPI-C" function void invalid_inst(input int thispc);
             
             default: begin
                 if(reset)begin
-                    invalid_inst(pc); // 调用DPI-C函数处理非法指令
+`ifdef VERILATOR
+                    invalid_inst(pc); 
+`endif 
                 end
             end
         endcase
-        idu_ready_reg = !inst_valid;
     end
 end
 

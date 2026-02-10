@@ -16,9 +16,10 @@ module REG(
     output reg  [31:0] rs1_data,
     output reg  [31:0] rs2_data
 );
+`ifdef VERILATOR
   // DPI-C接口声明
   import "DPI-C" function void set_reg_value(input int idx, input int val);
-  import "DPI-C" function void ebreak();
+`endif
 
   // 16个寄存器(RV32E)
   reg [31:0] registers [0:31];
@@ -46,7 +47,9 @@ module REG(
       end else if ((rd_wen || mem_to_reg) && rd_addr != 5'h0) begin
           // x0不可写
           registers[rd_addr] <= rd_data;
+        `ifdef VERILATOR
           set_reg_value(32'(rd_addr), rd_data); // 更新DPI-C接口中的寄存器值
+        `endif
       end
   end
 
