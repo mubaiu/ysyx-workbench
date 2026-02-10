@@ -450,12 +450,34 @@ module ysyx_25010003(
 import "DPI-C" function void set_callfunc();
 import "DPI-C" function void set_retfunc();
 
+// 性能计数器DPI-C函数
+import "DPI-C" function void perf_alu_inst();
+import "DPI-C" function void perf_branch_inst();
+import "DPI-C" function void perf_csr_inst();
+
 
 always @(posedge clock) begin
     if(jal_en)
         set_callfunc();
     if(jalr_en)
         set_retfunc();
+end
+
+// 指令类型性能计数器
+always @(posedge clock) begin
+    if (inst_valid && !reset) begin
+        // 分支跳转指令
+        if (branch_taken || jal_en || jalr_en)
+            perf_branch_inst();
+
+        // CSR指令
+        if (is_csr_op)
+            perf_csr_inst();
+
+        // ALU计算指令（排除访存、分支、CSR指令）
+        if (!mem_read && !mem_write && !branch_taken && !jal_en && !jalr_en && !is_csr_op)
+            perf_alu_inst();
+    end
 end
 
 endmodule

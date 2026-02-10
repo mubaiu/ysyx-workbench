@@ -20,12 +20,62 @@ CPU_state cpu = {};
 riscv32e_CPU_state npc = {};
 static bool g_print_step = false;
 static uint64_t g_timer = 0; // unit: us
-uint64_t g_nr_guest_inst = 0;
+uint64_t g_nr_guest_inst = 1;
+static uint64_t g_nr_cycles = 2;  // 周期计数器
+
+// 性能计数器
+static uint64_t g_ifu_fetch_count = 0;   // IFU取指次数
+static uint64_t g_lsu_load_count = 0;    // LSU读数据次数
+static uint64_t g_lsu_store_count = 0;   // LSU写数据次数
+static uint64_t g_alu_inst_count = 0;    // ALU计算指令
+static uint64_t g_mem_inst_count = 0;    // 访存指令
+static uint64_t g_branch_inst_count = 0; // 分支跳转指令
+static uint64_t g_csr_inst_count = 0;    // CSR指令
+
+// 指令类别周期数计数器
+static uint64_t g_alu_cycles = 0;        // ALU指令执行周期
+static uint64_t g_mem_cycles = 0;        // 访存指令执行周期
+static uint64_t g_branch_cycles = 0;     // 分支指令执行周期
+static uint64_t g_csr_cycles = 0;        // CSR指令执行周期
+
+// IFU stall 原因计数器
+static uint64_t g_ifu_stall_lsu = 0;     // 因LSU占用总线而stall
+static uint64_t g_ifu_stall_wait = 0;    // 等待AXI响应而stall
+static uint64_t g_ifu_idle_cycles = 0;   // IFU空闲周期
+
+// LSU 延迟计数器
+static uint64_t g_lsu_load_latency_total = 0;   // 读操作总延迟（周期）
+static uint64_t g_lsu_store_latency_total = 0;  // 写操作总延迟（周期）
 
 void device_update();
 void wp_difftest();
 void free_symbol();
 void print_log();
+
+// DPI-C函数：性能计数器递增
+extern "C" void perf_ifu_fetch() { g_ifu_fetch_count++; }
+extern "C" void perf_lsu_load() { g_lsu_load_count++; }
+extern "C" void perf_lsu_store() { g_lsu_store_count++; }
+extern "C" void perf_alu_inst() { g_alu_inst_count++; }
+extern "C" void perf_mem_inst() { g_mem_inst_count++; }
+extern "C" void perf_branch_inst() { g_branch_inst_count++; }
+extern "C" void perf_csr_inst() { g_csr_inst_count++; }
+
+// DPI-C函数：指令类别周期数
+extern "C" void perf_alu_cycles(uint64_t cycles) { g_alu_cycles += cycles; }
+extern "C" void perf_mem_cycles(uint64_t cycles) { g_mem_cycles += cycles; }
+extern "C" void perf_branch_cycles(uint64_t cycles) { g_branch_cycles += cycles; }
+extern "C" void perf_csr_cycles(uint64_t cycles) { g_csr_cycles += cycles; }
+
+// DPI-C函数：IFU stall 原因
+extern "C" void perf_ifu_stall_lsu() { g_ifu_stall_lsu++; }
+extern "C" void perf_ifu_stall_wait() { g_ifu_stall_wait++; }
+extern "C" void perf_ifu_idle() { g_ifu_idle_cycles++; }
+
+// DPI-C函数：LSU 延迟
+extern "C" void perf_lsu_load_latency(uint64_t latency) { g_lsu_load_latency_total += latency; }
+extern "C" void perf_lsu_store_latency(uint64_t latency) { g_lsu_store_latency_total += latency; }
+
 
 typedef struct ItraceNode
 {
@@ -156,21 +206,18 @@ static void execute(uint64_t n) {
 
 
   for (;n > 0; n --) {
-    g_nr_guest_inst ++;
-    
+
     if(last_difftest_pc != d.pc){
-      exec_once(&d, npc.pc);
-    }
+      g_nr_guest_inst ++;  // PC更新时才计数指令
+      exec_once(&d, last_difftest_pc);
     #ifdef CONFIG_DIFFTEST
-    if(last_difftest_pc != d.pc){
-      
       if(is_device_access()){
         difftest_skip_ref();
       }
       trace_and_difftest(&d, d.dnpc);
-      last_difftest_pc = d.pc;
-    }
     #endif
+    last_difftest_pc = d.pc;
+    }
     for (int i = 0; i < 2; i++) {
         nvboard_update();
         ysyxSoCFull->clock = 0;
@@ -180,6 +227,7 @@ static void execute(uint64_t n) {
         ysyxSoCFull->clock = 1;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+        g_nr_cycles++;  // 统计周期数
         if (nemu_state.state != NEMU_RUNNING) break;
     }
     if (nemu_state.state != NEMU_RUNNING) break;
@@ -200,6 +248,7 @@ static void execute(uint64_t n) {
         ysyxSoCFull->clock = 1;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+        g_nr_cycles++;  // 统计周期数
     }
     exec_once(&d, npc.pc);
 }
@@ -209,8 +258,62 @@ static void statistic() {
 #define NUMBERIC_FMT MUXDEF(CONFIG_TARGET_AM, "%", "%'") PRIu64
   Log("host time spent = " NUMBERIC_FMT " us", g_timer);
   Log("total guest instructions = " NUMBERIC_FMT, g_nr_guest_inst);
-  if (g_timer > 0) Log("simulation frequency = " NUMBERIC_FMT " inst/s", g_nr_guest_inst * 1000000 / g_timer);
-  else Log("Finish running in less than 1 us and can not calculate the simulation frequency");
+  Log("total cycles = " NUMBERIC_FMT, g_nr_cycles);
+  if (g_nr_cycles > 0) {
+    double ipc = (double)g_nr_guest_inst / g_nr_cycles;
+    double cpi = (double)g_nr_cycles / g_nr_guest_inst;
+    Log(ANSI_FG_CYAN "IPC (Instructions Per Cycle) = %.3f", ipc);
+    Log(ANSI_FG_CYAN "CPI (Cycles Per Instruction) = %.3f", cpi);
+  }
+  if (g_timer > 0) Log(ANSI_FG_CYAN "simulation frequency = " NUMBERIC_FMT " inst/s", g_nr_guest_inst * 1000000 / g_timer);
+  else Log(ANSI_FG_CYAN "Finish running in less than 1 us and can not calculate the simulation frequency");
+  // 输出性能计数器
+  Log(ANSI_FMT("=== Performance Counters ===", ANSI_FG_YELLOW));
+  Log(ANSI_FG_YELLOW "IFU fetch count = " NUMBERIC_FMT ANSI_NONE, g_ifu_fetch_count);
+  Log(ANSI_FG_YELLOW "LSU load count = " NUMBERIC_FMT ANSI_NONE, g_lsu_load_count);
+  Log(ANSI_FG_YELLOW "LSU store count = " NUMBERIC_FMT ANSI_NONE, g_lsu_store_count);
+  Log(ANSI_FG_YELLOW "ALU instruction count = " NUMBERIC_FMT ANSI_NONE, g_alu_inst_count);
+  Log(ANSI_FG_YELLOW "Memory instruction count = " NUMBERIC_FMT ANSI_NONE, g_mem_inst_count);
+  Log(ANSI_FG_YELLOW "Branch instruction count = " NUMBERIC_FMT ANSI_NONE, g_branch_inst_count);
+  Log(ANSI_FG_YELLOW "CSR instruction count = " NUMBERIC_FMT ANSI_NONE, g_csr_inst_count);
+
+  // IFU stall 原因分析
+  Log("");
+  Log(ANSI_FMT("=== IFU Stall Analysis ===", ANSI_FG_CYAN));
+  uint64_t total_ifu_stalls = g_ifu_stall_lsu + g_ifu_stall_wait + g_ifu_idle_cycles;
+  if (total_ifu_stalls > 0) {
+    Log(ANSI_FG_RED "IFU stalled by LSU: " NUMBERIC_FMT " cycles (%.2f%%)" ANSI_NONE,
+        g_ifu_stall_lsu, 100.0 * g_ifu_stall_lsu / total_ifu_stalls);
+    Log(ANSI_FG_RED "IFU waiting for AXI: " NUMBERIC_FMT " cycles (%.2f%%)" ANSI_NONE,
+        g_ifu_stall_wait, 100.0 * g_ifu_stall_wait / total_ifu_stalls);
+    Log(ANSI_FG_RED "IFU idle cycles: " NUMBERIC_FMT " cycles (%.2f%%)" ANSI_NONE,
+        g_ifu_idle_cycles, 100.0 * g_ifu_idle_cycles / total_ifu_stalls);
+    Log(ANSI_FG_YELLOW "Total IFU stall cycles: " NUMBERIC_FMT ANSI_NONE, total_ifu_stalls);
+    if (g_nr_cycles > 0) {
+      Log(ANSI_FG_YELLOW "IFU stall ratio: %.2f%%" ANSI_NONE, 100.0 * total_ifu_stalls / g_nr_cycles);
+    }
+  }
+
+  // LSU 平均访存延迟分析
+  Log("");
+  Log(ANSI_FMT("=== LSU Latency Analysis ===", ANSI_FG_CYAN));
+  if (g_lsu_load_count > 0) {
+    double avg_load_latency = (double)g_lsu_load_latency_total / g_lsu_load_count;
+    Log(ANSI_FG_GREEN "Average load latency: %.2f cycles" ANSI_NONE, avg_load_latency);
+    Log(ANSI_FG_GREEN "Total load operations: " NUMBERIC_FMT ANSI_NONE, g_lsu_load_count);
+    Log(ANSI_FG_GREEN "Total load latency: " NUMBERIC_FMT " cycles" ANSI_NONE, g_lsu_load_latency_total);
+  }
+  if (g_lsu_store_count > 0) {
+    double avg_store_latency = (double)g_lsu_store_latency_total / g_lsu_store_count;
+    Log(ANSI_FG_MAGENTA "Average store latency: %.2f cycles" ANSI_NONE, avg_store_latency);
+    Log(ANSI_FG_MAGENTA "Total store operations: " NUMBERIC_FMT ANSI_NONE, g_lsu_store_count);
+    Log(ANSI_FG_MAGENTA "Total store latency: " NUMBERIC_FMT " cycles" ANSI_NONE, g_lsu_store_latency_total);
+  }
+  if (g_lsu_load_count + g_lsu_store_count > 0) {
+    double avg_mem_latency = (double)(g_lsu_load_latency_total + g_lsu_store_latency_total) /
+                             (g_lsu_load_count + g_lsu_store_count);
+    Log(ANSI_FG_YELLOW "Average memory access latency: %.2f cycles" ANSI_NONE, avg_mem_latency);
+  }
 }
 
 void assert_fail_msg() {

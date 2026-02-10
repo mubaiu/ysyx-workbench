@@ -25,6 +25,7 @@ module LSU(
 
     import "DPI-C" function void vaddr_write(input int addr, input int len, input int data);
     import "DPI-C" function int vaddr_read(input int addr, input int len);
+    import "DPI-C" function void perf_mem_inst();
                                
     // 检测字节访问：lb/lbu/sb 指令不需要对齐
     // wire is_mrom_access = (addr_reg >= 32'h2000_0000 && addr_reg <= 32'h2000_0fff);
@@ -54,10 +55,13 @@ module LSU(
     reg [31:0] io_lsu_wdata_reg;
 
     always @(posedge clock) begin
-        if (mem_read)
+        if (mem_read) begin
             load_flag <= 1'b1;
+            perf_mem_inst();
+        end
         else if (mem_write) begin
             store_data_reg <= io_lsu_wdata_reg;
+            perf_mem_inst();
         end
         else if (io_lsu_rvalid)
             load_flag <= 1'b0;
