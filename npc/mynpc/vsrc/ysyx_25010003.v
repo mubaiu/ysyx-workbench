@@ -74,12 +74,10 @@ module ysyx_25010003(
 
     assign io_master_awid = 4'd0;
     assign io_master_awlen = 8'd0;
-    assign io_master_awsize = 3'b000;
     assign io_master_awburst = 2'b00;
-    assign io_master_wlast = 1'b0;
+    assign io_master_wlast = 1'b1;  // awlen=0时，每次传输1个数据，该数据即为最后一个
     assign io_master_arid = 4'd0;
     assign io_master_arlen = 8'd0;
-    assign io_master_arsize = 3'b000;
     assign io_master_arburst = 2'b00;
 
     assign io_slave_arready = 1'b0;
@@ -145,12 +143,14 @@ module ysyx_25010003(
     // ===== LSU Arbiter 接口 =====
     wire        io_lsu_arvalid;  //AR
     wire [31:0] io_lsu_araddr;
+    wire [2:0]  io_lsu_arsize;
     wire        io_lsu_rready;   //R
     wire [31:0] io_lsu_rdata;
     wire        io_lsu_rvalid;
     wire [1:0]  io_lsu_rresp;
     wire [31:0] io_lsu_awaddr;   //AW
     wire        io_lsu_awvalid;
+    wire [2:0]  io_lsu_awsize;
     wire [31:0] io_lsu_wdata;    //W
     wire [3:0]  io_lsu_wstrb;
     wire        io_lsu_wvalid;
@@ -251,12 +251,14 @@ module ysyx_25010003(
         // ===== LSU Master 接口 =====
         .io_lsu_arvalid     (io_lsu_arvalid),  //AR
         .io_lsu_araddr      (io_lsu_araddr),
+        .io_lsu_arsize      (io_lsu_arsize),
         .io_lsu_rready      (io_lsu_rready),   //R
         .io_lsu_rdata       (io_lsu_rdata),
         .io_lsu_rvalid      (io_lsu_rvalid),
         .io_lsu_rresp       (io_lsu_rresp),
         .io_lsu_awvalid     (io_lsu_awvalid),  //AW
         .io_lsu_awaddr      (io_lsu_awaddr),
+        .io_lsu_awsize      (io_lsu_awsize),
         .io_lsu_wvalid      (io_lsu_wvalid),   //W
         .io_lsu_wdata       (io_lsu_wdata),
         .io_lsu_wstrb       (io_lsu_wstrb),
@@ -294,6 +296,7 @@ module ysyx_25010003(
 
         .io_master_arvalid  (io_master_arvalid),
         .io_master_araddr   (io_master_araddr),
+        .io_master_arsize   (io_master_arsize),
         .io_master_rready   (io_master_rready),
 
         .io_master_awready  (io_master_awready),
@@ -303,6 +306,7 @@ module ysyx_25010003(
 
         .io_master_awvalid  (io_master_awvalid),
         .io_master_awaddr   (io_master_awaddr),
+        .io_master_awsize   (io_master_awsize),
         .io_master_wvalid   (io_master_wvalid),
         .io_master_wdata    (io_master_wdata),
         .io_master_wstrb    (io_master_wstrb),
@@ -424,8 +428,8 @@ module ysyx_25010003(
         .io_lsu_wdata       (io_lsu_wdata),
         .lsu_ready          (lsu_ready),
         .mem_to_reg         (mem_to_reg),
-        .io_lsu_arsize      (),
-        .io_lsu_awsize      (),
+        .io_lsu_arsize      (io_lsu_arsize),
+        .io_lsu_awsize      (io_lsu_awsize),
         .io_lsu_wstrb       (io_lsu_wstrb)
     );
     

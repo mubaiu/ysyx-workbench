@@ -38,6 +38,7 @@ module Arbiter (
     // ===== LSU Master 接口 =====
     input wire        io_lsu_arvalid,  //AR
     input wire [31:0] io_lsu_araddr,
+    input wire [2:0]  io_lsu_arsize,
 
     input wire        io_lsu_rready,   //R
     output wire [31:0] io_lsu_rdata,
@@ -46,6 +47,7 @@ module Arbiter (
 
     input wire        io_lsu_awvalid,  //AW
     input wire [31:0] io_lsu_awaddr,
+    input wire [2:0]  io_lsu_awsize,
 
     input wire        io_lsu_wvalid,   //W
     input wire [31:0] io_lsu_wdata,
@@ -85,8 +87,9 @@ module Arbiter (
 
     output wire       io_master_arvalid,
     output wire[31:0] io_master_araddr,
+    output wire[2:0]  io_master_arsize,
     output wire       io_master_rready,
-    
+
     input wire        io_master_awready,
     input wire        io_master_wready,
     input wire        io_master_bvalid,
@@ -94,6 +97,7 @@ module Arbiter (
 
     output wire       io_master_awvalid,
     output wire[31:0] io_master_awaddr,
+    output wire[2:0]  io_master_awsize,
     output wire       io_master_wvalid,
     output wire[31:0] io_master_wdata,
     output wire[3:0]  io_master_wstrb,
@@ -210,6 +214,7 @@ module Arbiter (
                           1'b0;
 
     assign io_master_araddr = (state == IFU_ACTIVE) ? io_ifu_araddr : io_lsu_araddr;
+    assign io_master_arsize = (state == IFU_ACTIVE) ? 3'b010 : io_lsu_arsize;  // IFU固定字访问，LSU动态
 
     // =========================================================================
     // 读数据通道响应 - CLINT
@@ -244,6 +249,7 @@ module Arbiter (
     // =========================================================================
     assign io_master_awvalid = (state == LSU_WRITE) ? io_lsu_awvalid : io_ifu_awvalid;
     assign io_master_awaddr  = (state == LSU_WRITE) ? io_lsu_awaddr : io_ifu_awaddr;
+    assign io_master_awsize  = (state == LSU_WRITE) ? io_lsu_awsize : 3'b010;  // LSU动态，IFU固定字访问
     assign io_master_wvalid  = (state == LSU_WRITE) ? io_lsu_wvalid : io_ifu_wvalid;
     assign io_master_wdata   = (state == LSU_WRITE) ? io_lsu_wdata : io_ifu_wdata;
     assign io_master_wstrb   = (state == LSU_WRITE) ? io_lsu_wstrb : io_ifu_wstrb;

@@ -40,7 +40,7 @@ static const char mainargs[MAINARGS_MAX_LEN] = MAINARGS_PLACEHOLDER; // defined 
 
 void putch(char ch) {
   // 等待THR空
-  while ((inb(LSR) & 0x20) == 0x00);
+  while (!(inb(LSR) & 0x20));
   *(volatile char *)(UART_BASE + UART_TX) = ch;
 }
 

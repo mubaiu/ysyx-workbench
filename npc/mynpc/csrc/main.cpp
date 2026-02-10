@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "verilated.h"
 #include "verilated_fst_c.h"
+#include <nvboard.h>
 
 #include <cpu/cpu.h>
 #include <reg.h>  // 添加这一行引入 CPU_state 和 cpu 声明
@@ -18,6 +19,9 @@ void engine_start();
 int is_exit_status_bad();
 
 void exec_once(Decode *d, vaddr_t pc);
+
+// NVBoard 函数声明
+void nvboard_bind_all_pins(VysyxSoCFull* top);
 
 extern Decode d; 
 
@@ -43,7 +47,11 @@ int main(int argc, char** argv) {
     contextp->traceEverOn(false);
     ysyxSoCFull = new VysyxSoCFull{contextp};
     #endif
-    
+
+    // NVBoard 初始化
+    nvboard_bind_all_pins(ysyxSoCFull);
+    nvboard_init();
+
     // 首先让顶层模块评估一次，确保内部信号初始化
     // top->eval();
     // top->clk = !top->clk;
@@ -81,6 +89,7 @@ int main(int argc, char** argv) {
     // 释放复位信号后，给予额外的时钟周期稳定系统
     ysyxSoCFull->reset = 0;
     for (int i = 0; i < 2; i++) {
+        nvboard_update();
         ysyxSoCFull->clock = 0;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));

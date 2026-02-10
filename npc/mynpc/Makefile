@@ -1,8 +1,23 @@
+# NVBoard 配置
+TOPNAME = ysyxSoCFull
+NXDC_FILES = constr/ysyxSoCFull.nxdc
+
 VSRC = $(wildcard ./vsrc/*.v) \
        ../../ysyxSoC/build/ysyxSoCFull.v \
        $(shell find ../../ysyxSoC/perip -name "*.v")
+
+# 定义build目录
+BUILD_DIR := $(shell pwd)/build
+
+# 自动生成引脚绑定代码
+SRC_AUTO_BIND = $(BUILD_DIR)/auto_bind.cpp
+$(SRC_AUTO_BIND): $(NXDC_FILES)
+	@mkdir -p $(BUILD_DIR)
+	python3 $(NVBOARD_HOME)/scripts/auto_pin_bind.py $^ $@
+
 # 查找csrc目录下所有的.c和.cpp文件，包括子目录
 CSRC = $(shell find ./csrc -name "*.c" -o -name "*.cpp")
+CSRC += $(SRC_AUTO_BIND)
 
 # 定义包含路径列表
 INC_PATH = /home/mubai/ysyx-workbench/npc/mynpc/include \
@@ -28,20 +43,26 @@ INCLUDES = $(addprefix -I, $(INC_PATH))
 CFLAGS += -D__GUEST_ISA__=riscv32  # 或者其他ISA
 CFLAGS += -DNPC_PROJECT
 CFLAGS_TRACE += -DITRACE_COND=$(if $(CONFIG_ITRACE_COND),$(call remove_quote,$(CONFIG_ITRACE_COND)),true)
-LDFLAGS+=-lreadline -lhistory
+
+# 包含 NVBoard 编译规则（必须在LDFLAGS定义之前）
+include $(NVBOARD_HOME)/scripts/nvboard.mk
+
+# 添加其他链接库
+LDFLAGS += -lreadline -lhistory
 
 # IMG := /home/mubai/ysyx-workbench/char-test.bin
 
-run: $(IMG)
+run: $(IMG) $(SRC_AUTO_BIND) $(NVBOARD_ARCHIVE)
 	$(call git_commit, "sim RTL") # DO NOT REMOVE THIS LINE!!!
 	@echo $(VSRC)
 	@echo $(CSRC)
 	@bash -c 'ELF_FILE=$(basename $(IMG)).elf && \
 		echo "ELF file: $$ELF_FILE" && \
-		verilator $(VERILOG_INCLUDES) --cc --exe --build --trace-fst --top-module ysyxSoCFull \
+		verilator $(VERILOG_INCLUDES) --cc --exe --build --trace-fst --top-module $(TOPNAME) \
 		--timescale "1ns/1ns" --no-timing --autoflush\
-		--CFLAGS "$(INCLUDES) $(CFLAGS) $(CFLAGS_TRACE)" -LDFLAGS "$(LDFLAGS) -ldl" $(VSRC) $(CSRC) && \
-		./obj_dir/VysyxSoCFull -e $$ELF_FILE $(NPC_ARGS) -d $(DIFFTEST_REF_SO) $(IMG) '
+		--CFLAGS "$(INCLUDES) $(CFLAGS) $(CFLAGS_TRACE)" -LDFLAGS "$(NVBOARD_ARCHIVE) $(LDFLAGS) -ldl" \
+		$(VSRC) $(CSRC) && \
+		./obj_dir/V$(TOPNAME) -e $$ELF_FILE $(NPC_ARGS) -d $(DIFFTEST_REF_SO) $(IMG) '
 
 clean:
 	@rm -rf obj_dir

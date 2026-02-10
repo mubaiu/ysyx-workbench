@@ -6,6 +6,7 @@
 #include <verilated_fst_c.h>
 #include "VysyxSoCFull.h"
 #include "VysyxSoCFull___024root.h"
+#include <nvboard.h>
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
 
@@ -171,6 +172,7 @@ static void execute(uint64_t n) {
     }
     #endif
     for (int i = 0; i < 2; i++) {
+        nvboard_update();
         ysyxSoCFull->clock = 0;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
@@ -190,6 +192,7 @@ static void execute(uint64_t n) {
     }
     // IFDEF(CONFIG_DEVICE, device_update());
     for (int i = 0; i < 2; i++) {
+        nvboard_update();
         ysyxSoCFull->clock = 0;
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));

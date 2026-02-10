@@ -42,6 +42,8 @@
 #define SDRAM_LEN  4 * 1024  //4KB
 // #define SDRAM_LEN  16
 //#define LEN 0x10
+#define CHIPLINK_BASE 0xc0000000
+#define CHIPLINK_LEN  4 * 1024
 
 #define MASK8  0xff
 #define MASK16 0xffff
@@ -177,22 +179,85 @@ void psram_test64() {
   }
 }
 
+void chiplink_test8() {
+  printf("Testing ChipLink 8-bit access...\n");
+  uint8_t *mem = (uint8_t *)CHIPLINK_BASE;
+  for (int i = 0; i < CHIPLINK_LEN; i++) {
+    mem[i] = i & MASK8;
+    if (i % 1024 == 0) printf("  Write progress: %d/%d\n", i, CHIPLINK_LEN);
+  }
+  for (int i = 0; i < CHIPLINK_LEN; i++) {
+    check(mem[i] == (i & MASK8));
+    if (i % 1024 == 0) printf("  Read progress: %d/%d\n", i, CHIPLINK_LEN);
+  }
+  printf("ChipLink 8-bit test PASS\n");
+}
+
+void chiplink_test16() {
+  printf("Testing ChipLink 16-bit access...\n");
+  uint16_t *mem = (uint16_t *)CHIPLINK_BASE;
+  for (int i = 0; i < CHIPLINK_LEN / 2; i++) {
+    mem[i] = (i * 2) & MASK16;
+    if (i % 512 == 0) printf("  Write progress: %d/%d\n", i, CHIPLINK_LEN / 2);
+  }
+  for (int i = 0; i < CHIPLINK_LEN / 2; i++) {
+    check(mem[i] == ((i * 2) & MASK16));
+    if (i % 512 == 0) printf("  Read progress: %d/%d\n", i, CHIPLINK_LEN / 2);
+  }
+  printf("ChipLink 16-bit test PASS\n");
+}
+
+void chiplink_test32() {
+  printf("Testing ChipLink 32-bit access...\n");
+  uint32_t *mem = (uint32_t *)CHIPLINK_BASE;
+  for (int i = 0; i < CHIPLINK_LEN / 4; i++) {
+    mem[i] = (i * 4) & MASK32;
+    if (i % 256 == 0) printf("  Write progress: %d/%d\n", i, CHIPLINK_LEN / 4);
+  }
+  for (int i = 0; i < CHIPLINK_LEN / 4; i++) {
+    check(mem[i] == ((i * 4) & MASK32));
+    if (i % 256 == 0) printf("  Read progress: %d/%d\n", i, CHIPLINK_LEN / 4);
+  }
+  printf("ChipLink 32-bit test PASS\n");
+}
+
+void chiplink_test64() {
+  printf("Testing ChipLink 64-bit access...\n");
+  uint64_t *mem = (uint64_t *)CHIPLINK_BASE;
+  for (int i = 0; i < CHIPLINK_LEN / 8; i++) {
+    mem[i] = ((uint64_t)(i * 8)) & MASK64;
+    if (i % 128 == 0) printf("  Write progress: %d/%d\n", i, CHIPLINK_LEN / 8);
+  }
+  for (int i = 0; i < CHIPLINK_LEN / 8; i++) {
+    check(mem[i] == (((uint64_t)(i * 8)) & MASK64));
+    if (i % 128 == 0) printf("  Read progress: %d/%d\n", i, CHIPLINK_LEN / 8);
+  }
+  printf("ChipLink 64-bit test PASS\n");
+}
+
 int main() {
-    // sram_test8();
-    // sram_test16();
-    // sram_test32();
-    // sram_test64();
-    // printf("SRAM PASS\n");
+  // sram_test8();
+  // sram_test16();
+  // sram_test32();
+  // sram_test64();
+  // printf("SRAM PASS\n");
 
   // psram_test8();
   // psram_test16();
   // psram_test32();
   // psram_test64();
   // printf("PSRAM PASS\n");
+
   // sdram_test8();
   // sdram_test16();
   // sdram_test32();
   // sdram_test64();
-  printf("SDRAM PASS\n");  
+  // printf("SDRAM PASS\n");  
+  
+  // chiplink_test8();
+  // chiplink_test16();
+  // chiplink_test32();
+  // chiplink_test64();
+  printf("ChipLink PASS\n");
   return 0;
 }
