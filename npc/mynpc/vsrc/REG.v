@@ -3,12 +3,12 @@ module REG(
     input  wire        reset,
     
     input  wire        mem_to_reg,
-    // 读寄存器地址
-    input  wire [4:0]  rs1_addr,
-    input  wire [4:0]  rs2_addr,
-    
+    // 读寄存器地址（RV32E使用4位）
+    input  wire [3:0]  rs1_addr,
+    input  wire [3:0]  rs2_addr,
+
     // 写寄存器地址和数据
-    input  wire [4:0]  rd_addr,
+    input  wire [3:0]  rd_addr,
     input  wire [31:0] rd_data,
     input  wire        rd_wen,  // 写使能
     
@@ -22,7 +22,7 @@ module REG(
 `endif
 
   // 16个寄存器(RV32E)
-  reg [31:0] registers [0:31];
+  reg [31:0] registers [0:15];
   
   integer i;
   
@@ -33,18 +33,14 @@ module REG(
           rs2_data = 32'h0;
       end else begin
           // x0寄存器恒为0
-          rs1_data = (rs1_addr == 5'h0) ? 32'h0 : registers[rs1_addr];
-          rs2_data = (rs2_addr == 5'h0) ? 32'h0 : registers[rs2_addr];
+          rs1_data = (rs1_addr == 4'h0) ? 32'h0 : registers[rs1_addr];
+          rs2_data = (rs2_addr == 4'h0) ? 32'h0 : registers[rs2_addr];
       end
   end
 
   // 寄存器写入逻辑
   always @(posedge clock) begin
-      if (reset) begin
-          for (i = 0; i < 16; i = i + 1) begin
-              registers[i] <= 32'h0;
-          end
-      end else if ((rd_wen || mem_to_reg) && rd_addr != 5'h0) begin
+        if ((rd_wen || mem_to_reg) && rd_addr != 4'h0) begin
           // x0不可写
           registers[rd_addr] <= rd_data;
         `ifdef VERILATOR

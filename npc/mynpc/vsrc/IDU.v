@@ -4,10 +4,10 @@ module IDU(
     input  wire [31:0] pc,
     input  wire        reset,
 
-    // 寄存器地址输出
-    output reg  [4:0]  rs1_addr,
-    output reg  [4:0]  rs2_addr,
-    output reg  [4:0]  rd_addr,
+    // 寄存器地址输出（RV32E使用4位）
+    output reg  [3:0]  rs1_addr,
+    output reg  [3:0]  rs2_addr,
+    output reg  [3:0]  rd_addr,
 
     // 立即数生成
     output reg  [31:0] imm,
@@ -59,9 +59,9 @@ import "DPI-C" function void invalid_inst(input int thispc);
         opcode = inst[6:0];
         funct3 = inst[14:12];
         funct7 = inst[31:25];
-        rs1_addr = inst[19:15] & 5'hF; // RV32E只有16个寄存器
-        rs2_addr = inst[24:20] & 5'hF;
-        rd_addr = inst[11:7] & 5'hF;
+        rs1_addr = inst[18:15]; // RV32E只有16个寄存器，直接取低4位
+        rs2_addr = inst[23:20];
+        rd_addr = inst[10:7];
 
         // 默认值
         lsu_wmask     = 4'b0;
@@ -225,7 +225,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
                 end 
                 else if (funct3 == 3'b010) begin // CSRRS
                     reg_write = 1'b1;
-                    is_csr_op = (rs1_addr != 5'h0) ? 1'b1 : 1'b0; // 如果rs1_addr为0，则不写回
+                    is_csr_op = (rs1_addr != 4'h0) ? 1'b1 : 1'b0; // 如果rs1_addr为0，则不写回
                     alu_op = 4'b1100; // 直通操作
                     imm = {{20{1'b0}}, inst[31:20]};
                 end 

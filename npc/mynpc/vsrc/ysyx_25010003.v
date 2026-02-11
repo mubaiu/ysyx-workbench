@@ -101,8 +101,8 @@ module ysyx_25010003(
     wire        wbu_ready;
     wire [31:0] snpc;  // 静态下一个PC
     
-    // 寄存器接口连线
-    wire [4:0]  rs1_addr, rs2_addr, rd_addr;
+    // 寄存器接口连线（RV32E使用4位地址）
+    wire [3:0]  rs1_addr, rs2_addr, rd_addr;
     wire [31:0] rs1_data, rs2_data, wb_data;
     wire        reg_write;
     

@@ -89,6 +89,18 @@ module IFU(
     // LSU 延迟计数器
     reg [63:0] lsu_latency_counter;
 
+    // ICache 请求信号（由IFU状态机控制）
+    reg         icache_req_valid;
+    wire [31:0] icache_req_addr;
+    // ICache 响应信号（由ICache输出）
+    wire        icache_resp_valid;
+    wire [31:0] icache_resp_data;
+    wire        icache_ready;
+    wire        icache_arvalid;
+    wire [31:0] icache_araddr;
+    wire [2:0]  icache_arsize;
+    wire        icache_rready;
+
     wire ar_handshake    = (io_master_arvalid && io_master_arready) || 
                             (io_clint_arvalid && io_clint_arready);  // 读地址握手
     wire ifu_r_handshake = io_ifu_rvalid     && io_ifu_rready    ;  // IFU读数据握手
@@ -97,7 +109,11 @@ module IFU(
     wire w_handshake     = io_master_wvalid  && io_master_wready ;  // 写数据握手
     wire lsu_b_handshake = io_lsu_bvalid     && io_lsu_bready    ;  // 写响应握手
 
-    assign io_ifu_araddr = pc;
+    assign icache_req_addr = pc;
+    // ICache的AXI接口连接到IFU的输出
+    assign io_ifu_araddr = icache_araddr;
+    assign io_ifu_arvalid = icache_arvalid;
+    assign io_ifu_rready = icache_rready;
     assign inst = inst_reg;
 
     assign io_ifu_awaddr = 32'd0;
@@ -106,6 +122,32 @@ module IFU(
     assign io_ifu_wstrb = 4'b0;
     assign io_ifu_wvalid = 1'b0;
     assign io_ifu_bready = 1'b0;
+
+    // ICache 模块实例
+    ICache #(
+        .CACHE_SIZE(16),
+        .BLOCK_SIZE(4),
+        .ADDR_WIDTH(32),
+        .DATA_WIDTH(32)
+    ) u_icache (
+        .clock(clock),
+        .reset(reset),
+        // IFU接口
+        .ifu_req_valid(icache_req_valid),
+        .ifu_req_addr(icache_req_addr),
+        .ifu_resp_valid(icache_resp_valid),
+        .ifu_resp_data(icache_resp_data),
+        .ifu_ready(icache_ready),
+        // AXI总线接口
+        .ar_handshake(ar_handshake),
+        .axi_arvalid(icache_arvalid),
+        .axi_araddr(icache_araddr),
+        .axi_arsize(icache_arsize),
+        .axi_arready(io_master_arready),
+        .axi_rvalid(io_ifu_rvalid),
+        .axi_rdata(io_ifu_rdata),
+        .axi_rready(icache_rready)
+    );
 
     always @(*) begin
         snpc = pc + 32'd4;
@@ -138,8 +180,7 @@ module IFU(
             pc <= 32'h30000000;
             inst_reg <= 32'b0;
             inst_valid <= 1'b0;
-            io_ifu_arvalid <= 1'b0;
-            io_ifu_rready <= 1'b0;
+            icache_req_valid <= 1'b0;
             next_state <= FETCH;
             dnpc_reg <= 32'h20000004;
             lsu_latency_counter <= 0;  // 初始化延迟计数器
@@ -155,12 +196,11 @@ module IFU(
 `endif
                 end
                 FETCH: begin
-                    // inst_reg <= intake(pc);
-                        io_ifu_arvalid <= 1'b1;
-                        inst_valid <= 1'b0;
-                    if (ar_handshake) begin
-                        io_ifu_arvalid <= 1'b0;
-                        io_ifu_rready <= 1'b1;
+                    // 向ICache发起取指请求
+                    icache_req_valid <= 1'b1;
+                    inst_valid <= 1'b0;
+                    if (icache_ready) begin
+                        // ICache就绪，可以接受请求
                         next_state <= WAIT;
                     end
                     else begin
@@ -175,10 +215,11 @@ module IFU(
                 end
                 WAIT: begin
                     inst_valid <= 1'b0;
-                    if(ifu_r_handshake) begin
-                        io_ifu_rready <= 1'b0;
+                    if(icache_resp_valid) begin
+                        // ICache返回指令
+                        icache_req_valid <= 1'b0;
                         inst_valid <= 1'b1;
-                        inst_reg <= io_ifu_rdata;
+                        inst_reg <= icache_resp_data;
 `ifdef VERILATOR
                         perf_ifu_fetch();  // 性能计数：IFU取到指令
 `endif
@@ -206,10 +247,10 @@ module IFU(
                         if (io_lsu_rready || io_lsu_bready) begin
                             lsu_latency_counter <= lsu_latency_counter + 1;
                         end
-                        // 只有当IFU在等待自己的取指响应时才计数
-                        if (io_ifu_rready) begin
+                        // 只有当IFU在等待ICache响应时才计数
+                        if (icache_req_valid) begin
 `ifdef VERILATOR
-                            perf_ifu_stall_wait();  // IFU等待AXI响应
+                            perf_ifu_stall_wait();  // IFU等待ICache响应
 `endif
                         end
                     end
