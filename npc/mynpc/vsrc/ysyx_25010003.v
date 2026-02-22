@@ -75,7 +75,7 @@ module ysyx_25010003(
     assign io_master_awid = 4'd0;
     assign io_master_awlen = 8'd0;
     assign io_master_awburst = 2'b00;
-    assign io_master_wlast = 1'b1;  // awlen=0时，每次传输1个数据，该数据即为最后一个
+    // assign io_master_wlast = 1'b1;  // awlen=0时，每次传输1个数据，该数据即为最后一个
     assign io_master_arid = 4'd0;
     assign io_master_arlen = 8'd0;
     assign io_master_arburst = 2'b00;
@@ -154,6 +154,7 @@ module ysyx_25010003(
     wire [31:0] io_lsu_wdata;    //W
     wire [3:0]  io_lsu_wstrb;
     wire        io_lsu_wvalid;
+    wire        io_lsu_wlast;
     wire        io_lsu_bready;   //B
     wire [1:0]  io_lsu_bresp;
     wire        io_lsu_bvalid;
@@ -227,6 +228,7 @@ module ysyx_25010003(
         .io_lsu_rvalid      (io_lsu_rvalid),
         .io_lsu_awvalid     (io_lsu_awvalid),
         .io_lsu_wvalid      (io_lsu_wvalid),
+        .io_lsu_wlast       (io_lsu_wlast),
         .io_lsu_bready      (io_lsu_bready),
         .io_lsu_bvalid      (io_lsu_bvalid)
     );
@@ -260,6 +262,7 @@ module ysyx_25010003(
         .io_lsu_awaddr      (io_lsu_awaddr),
         .io_lsu_awsize      (io_lsu_awsize),
         .io_lsu_wvalid      (io_lsu_wvalid),   //W
+        .io_lsu_wlast       (io_lsu_wlast),
         .io_lsu_wdata       (io_lsu_wdata),
         .io_lsu_wstrb       (io_lsu_wstrb),
         .io_lsu_bready      (io_lsu_bready),  //B
@@ -308,6 +311,7 @@ module ysyx_25010003(
         .io_master_awaddr   (io_master_awaddr),
         .io_master_awsize   (io_master_awsize),
         .io_master_wvalid   (io_master_wvalid),
+        .io_master_wlast    (io_master_wlast),
         .io_master_wdata    (io_master_wdata),
         .io_master_wstrb    (io_master_wstrb),
         .io_master_bready   (io_master_bready)

@@ -47,6 +47,13 @@ static uint64_t g_ifu_idle_cycles = 0;   // IFU空闲周期
 static uint64_t g_lsu_load_latency_total = 0;   // 读操作总延迟（周期）
 static uint64_t g_lsu_store_latency_total = 0;  // 写操作总延迟（周期）
 
+// ICache 性能计数器
+static uint64_t g_icache_access_count = 0;      // ICache总访问次数
+static uint64_t g_icache_hit_count = 0;         // ICache命中次数
+static uint64_t g_icache_miss_count = 0;        // ICache缺失次数
+static uint64_t g_icache_hit_cycles = 0;        // Cache命中总周期数
+static uint64_t g_icache_miss_cycles = 0;       // Cache缺失总周期数
+
 void device_update();
 void wp_difftest();
 void free_symbol();
@@ -60,6 +67,17 @@ extern "C" void perf_alu_inst() { g_alu_inst_count++; }
 extern "C" void perf_mem_inst() { g_mem_inst_count++; }
 extern "C" void perf_branch_inst() { g_branch_inst_count++; }
 extern "C" void perf_csr_inst() { g_csr_inst_count++; }
+
+// DPI-C函数：ICache性能计数
+extern "C" void perf_icache_access() { g_icache_access_count++; }
+extern "C" void perf_icache_hit(uint64_t cycles) {
+    g_icache_hit_count++;
+    g_icache_hit_cycles += cycles;
+}
+extern "C" void perf_icache_miss(uint64_t cycles) {
+    g_icache_miss_count++;
+    g_icache_miss_cycles += cycles;
+}
 
 // DPI-C函数：指令类别周期数
 extern "C" void perf_alu_cycles(uint64_t cycles) { g_alu_cycles += cycles; }
@@ -313,6 +331,31 @@ static void statistic() {
     double avg_mem_latency = (double)(g_lsu_load_latency_total + g_lsu_store_latency_total) /
                              (g_lsu_load_count + g_lsu_store_count);
     Log(ANSI_FG_YELLOW "Average memory access latency: %.2f cycles" ANSI_NONE, avg_mem_latency);
+  }
+
+  // ICache AMAT 统计
+  Log("");
+  Log(ANSI_FMT("=== ICache AMAT Analysis ===", ANSI_FG_CYAN));
+  if (g_icache_access_count > 0) {
+    double hit_rate = (double)g_icache_hit_count / g_icache_access_count;
+    double amat = (double)(g_icache_hit_cycles + g_icache_miss_cycles) / g_icache_access_count;
+
+    Log(ANSI_FG_GREEN "Total accesses: " NUMBERIC_FMT ANSI_NONE, g_icache_access_count);
+    Log(ANSI_FG_GREEN "Cache hits: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
+        g_icache_hit_count, hit_rate * 100.0);
+    Log(ANSI_FG_RED "Cache misses: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
+        g_icache_miss_count, (1.0 - hit_rate) * 100.0);
+
+    if (g_icache_hit_count > 0) {
+      double avg_hit_cycles = (double)g_icache_hit_cycles / g_icache_hit_count;
+      Log(ANSI_FG_GREEN "Average hit latency: %.2f cycles" ANSI_NONE, avg_hit_cycles);
+    }
+    if (g_icache_miss_count > 0) {
+      double avg_miss_cycles = (double)g_icache_miss_cycles / g_icache_miss_count;
+      Log(ANSI_FG_RED "Average miss penalty: %.2f cycles" ANSI_NONE, avg_miss_cycles);
+    }
+
+    Log(ANSI_FG_YELLOW "AMAT (Average Memory Access Time): %.2f cycles" ANSI_NONE, amat);
   }
 }
 

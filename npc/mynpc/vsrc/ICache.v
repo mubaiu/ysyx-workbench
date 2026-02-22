@@ -26,7 +26,15 @@ module ICache #(
     output reg                   axi_rready        // 读数据就绪
 );
 
+    // DPI-C函数声明
+    import "DPI-C" function void perf_icache_access();
+    import "DPI-C" function void perf_icache_hit(longint unsigned cycles);
+    import "DPI-C" function void perf_icache_miss(longint unsigned cycles);
+
     wire r_handshake  = axi_rvalid  && axi_rready;
+
+    // 周期计数器（64位以匹配DPI-C函数参数）
+    reg [63:0] access_cycle_count;
 
     // 参数计算
     localparam INDEX_WIDTH = $clog2(CACHE_SIZE);   // 4位
@@ -64,10 +72,32 @@ module ICache #(
 
     // 状态寄存器更新（时序逻辑）
     always @(posedge clock) begin
-        if (reset)
+        if (reset) begin
             state <= IDLE;
-        else
+            access_cycle_count <= 0;
+        end
+        else begin
             state <= next_state;
+
+            // 周期计数和性能统计
+            if (state == IDLE && ifu_req_valid) begin
+                // 新请求开始，重置计数器并统计访问次数
+                access_cycle_count <= 1;
+                perf_icache_access();
+            end
+            else if (state == LOOKUP && cache_hit) begin
+                // Cache命中，统计命中次数和周期数
+                perf_icache_hit(access_cycle_count + 1);
+            end
+            else if (state == REFILL && axi_rvalid) begin
+                // Cache缺失，统计缺失次数和周期数
+                perf_icache_miss(access_cycle_count + 1);
+            end
+            else if (state != IDLE) begin
+                // 非IDLE状态，递增周期计数器
+                access_cycle_count <= access_cycle_count + 1;
+            end
+        end
     end
 
     // 状态转移逻辑（组合逻辑）
@@ -92,7 +122,7 @@ module ICache #(
             end
 
             REFILL: begin
-                if (axi_rvalid)
+                if (axi_rvalid && axi_rready)
                     next_state = IDLE;  // 取回数据后直接返回IDLE
             end
 
@@ -130,7 +160,7 @@ module ICache #(
             end
 
             REFILL: begin
-                if (axi_rvalid) begin
+                if (axi_rvalid && axi_rready) begin
                     // 取回数据时立即返回
                     ifu_resp_valid = 1'b1;
                     ifu_resp_data = axi_rdata;
@@ -192,16 +222,16 @@ module ICache #(
             axi_araddr <= {ADDR_WIDTH{1'b0}};
             axi_arsize <= 3'b010; // 4字节
         end
-        else if (state == MISS) begin
+        else if (state == LOOKUP && !cache_hit) begin
             axi_arvalid <= 1'b1;
+            axi_rready <= 1'b1;
             axi_araddr <= {current_tag, current_index, {OFFSET_WIDTH{1'b0}}};
             axi_arsize <= 3'b010; // 4字节传输
         end
-        else if (ar_handshake) begin
+        else if (ar_handshake && state != IDLE) begin
             axi_arvalid <= 1'b0;
-            axi_rready <= 1'b1;
         end
-        else if (r_handshake) begin
+        else if (r_handshake && state != IDLE) begin
             axi_rready <= 1'b0;
         end
     end

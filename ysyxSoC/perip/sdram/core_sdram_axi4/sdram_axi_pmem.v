@@ -266,7 +266,7 @@ u_requests
 
 wire resp_is_write_w = req_out_valid_w ? ~req_out_w[5] : 1'b0;
 wire resp_is_read_w  = req_out_valid_w ? req_out_w[5]  : 1'b0;
-wire resp_is_last_w  = req_out_w[4];
+wire resp_is_last_w  = req_out_valid_w ? req_out_w[4]  : 1'b0;
 wire [3:0] resp_id_w = req_out_w[3:0];
 
 //-----------------------------------------------------------------

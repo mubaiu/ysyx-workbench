@@ -643,13 +643,20 @@ assign ram_read_data_w = sample_data_q;
 // ACK
 //-----------------------------------------------------------------
 reg ack_q;
+reg [3:0] last_state_q;
+
+always @ (posedge clk_i or posedge rst_i)
+if (rst_i)
+    last_state_q <= STATE_IDLE;
+else
+    last_state_q <= state_q;
 
 always @ (posedge clk_i or posedge rst_i)
 if (rst_i)
     ack_q   <= 1'b0;
 else
 begin
-    if (state_q == STATE_WRITE)  // 修改为STATE_WRITE
+    if (state_q == STATE_WRITE && last_state_q != STATE_WRITE)
         ack_q <= 1'b1;
     else if (rd_q[SDRAM_READ_LATENCY+1])
         ack_q <= 1'b1;

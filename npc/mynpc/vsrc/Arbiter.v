@@ -50,6 +50,7 @@ module Arbiter (
     input wire [2:0]  io_lsu_awsize,
 
     input wire        io_lsu_wvalid,   //W
+    input wire        io_lsu_wlast,    //WLAST
     input wire [31:0] io_lsu_wdata,
     input wire [3:0]  io_lsu_wstrb,
 
@@ -99,6 +100,7 @@ module Arbiter (
     output wire[31:0] io_master_awaddr,
     output wire[2:0]  io_master_awsize,
     output wire       io_master_wvalid,
+    output wire       io_master_wlast,
     output wire[31:0] io_master_wdata,
     output wire[3:0]  io_master_wstrb,
     output wire       io_master_bready
@@ -251,6 +253,7 @@ module Arbiter (
     assign io_master_awaddr  = (state == LSU_WRITE) ? io_lsu_awaddr : io_ifu_awaddr;
     assign io_master_awsize  = (state == LSU_WRITE) ? io_lsu_awsize : 3'b010;  // LSU动态，IFU固定字访问
     assign io_master_wvalid  = (state == LSU_WRITE) ? io_lsu_wvalid : io_ifu_wvalid;
+    assign io_master_wlast   = (state == LSU_WRITE) ? io_lsu_wlast : 1'b0;
     assign io_master_wdata   = (state == LSU_WRITE) ? io_lsu_wdata : io_ifu_wdata;
     assign io_master_wstrb   = (state == LSU_WRITE) ? io_lsu_wstrb : io_ifu_wstrb;
 

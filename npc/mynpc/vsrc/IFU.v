@@ -52,6 +52,7 @@ module IFU(
     output reg  io_lsu_rready,   
     output reg  io_lsu_awvalid,         //AW
     output reg  io_lsu_wvalid,          //W
+    output wire io_lsu_wlast,           //WLAST
    
     output reg  io_lsu_bready,          //B
     input  wire io_lsu_bvalid
@@ -123,6 +124,7 @@ module IFU(
     assign io_ifu_wvalid = 1'b0;
     assign io_ifu_bready = 1'b0;
 
+    assign io_lsu_wlast = io_lsu_wvalid;
     // ICache 模块实例
     ICache #(
         .CACHE_SIZE(16),
@@ -258,7 +260,6 @@ module IFU(
                 ACCESS: begin
                     lsu_latency_counter <= lsu_latency_counter + 1;  // 延迟计数递增
                     if (ar_handshake) begin
-                            io_lsu_rready <= 1'b1;
                             io_lsu_arvalid <= 1'b0;
                             next_state <= WAIT;
                         end
@@ -266,7 +267,6 @@ module IFU(
                             io_lsu_awvalid <= 1'b0;
                         if (w_handshake) begin
                                 io_lsu_wvalid <= 1'b0;
-                                io_lsu_bready <= 1'b1;
                                 next_state <= WAIT;
                         end
                     end
@@ -279,6 +279,7 @@ module IFU(
                     dnpc_reg <= dnpc;
                     if (mem_read) begin
                         io_lsu_arvalid <= 1'b1;
+                        io_lsu_rready <= 1'b1;
                         lsu_latency_counter <= 0;  // 初始化延迟计数器
                         next_state <= ACCESS;
                         inst_valid <= 1'b0;
@@ -286,6 +287,7 @@ module IFU(
                     else if (mem_write) begin
                         io_lsu_awvalid <= 1'b1;
                         io_lsu_wvalid <= 1'b1;
+                        io_lsu_bready <= 1'b1;
                         lsu_latency_counter <= 0;  // 初始化延迟计数器
                         next_state <= ACCESS;
                         inst_valid <= 1'b0;

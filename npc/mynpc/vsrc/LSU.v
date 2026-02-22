@@ -40,9 +40,12 @@ module LSU(
     // wire is_byte_write = mem_write && (lsu_wmask == 4'b0001);                 // sb
     // wire is_byte_access = is_byte_read || is_byte_write;
 
-    // RAM控制信号：字节访问不对齐，字/半字访问对齐到4字节边界
-    assign io_lsu_araddr = addr_reg;
-    assign io_lsu_awaddr = addr_reg;
+    // RAM控制信号：根据lsu_size对齐地址
+    wire [31:0] aligned_addr = (lsu_size == 3'b010) ? {addr_reg[31:2], 2'b00} :  // 字对齐
+                               (lsu_size == 3'b001) ? {addr_reg[31:1], 1'b0} :   // 半字对齐
+                               addr_reg;                                          // 字节不对齐
+    assign io_lsu_araddr = aligned_addr;
+    assign io_lsu_awaddr = aligned_addr;
     assign io_lsu_arsize = lsu_size;
     assign io_lsu_awsize = lsu_size;
     assign lsu_ready     = lsu_ready_reg;
