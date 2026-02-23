@@ -31,11 +31,14 @@ module IFU(
     //IFU Arbiter 接口
     output wire [31:0] io_ifu_araddr,  //AR
     output reg         io_ifu_arvalid,
+    output wire [7:0]  io_ifu_arlen,
+    output wire [1:0]  io_ifu_arburst,
 
     output reg         io_ifu_rready,  //R
     input  wire [31:0] io_ifu_rdata,  
     input  wire        io_ifu_rvalid,
     input  wire [1:0]  io_ifu_rresp,
+    input  wire        io_ifu_rlast,
 
     output wire [31:0] io_ifu_awaddr,  //AW
     output wire        io_ifu_awvalid,
@@ -100,6 +103,8 @@ module IFU(
     wire        icache_arvalid;
     wire [31:0] icache_araddr;
     wire [2:0]  icache_arsize;
+    wire [7:0]  icache_arlen;
+    wire [1:0]  icache_arburst;
     wire        icache_rready;
 
     wire ar_handshake    = (io_master_arvalid && io_master_arready) || 
@@ -114,6 +119,8 @@ module IFU(
     // ICache的AXI接口连接到IFU的输出
     assign io_ifu_araddr = icache_araddr;
     assign io_ifu_arvalid = icache_arvalid;
+    assign io_ifu_arlen = icache_arlen;
+    assign io_ifu_arburst = icache_arburst;
     assign io_ifu_rready = icache_rready;
     assign inst = inst_reg;
 
@@ -127,8 +134,8 @@ module IFU(
     assign io_lsu_wlast = io_lsu_wvalid;
     // ICache 模块实例
     ICache #(
-        .CACHE_SIZE(16),
-        .BLOCK_SIZE(4),
+        .CACHE_SIZE(4),
+        .BLOCK_SIZE(16),
         .ADDR_WIDTH(32),
         .DATA_WIDTH(32)
     ) u_icache (
@@ -145,9 +152,12 @@ module IFU(
         .axi_arvalid(icache_arvalid),
         .axi_araddr(icache_araddr),
         .axi_arsize(icache_arsize),
+        .axi_arlen(icache_arlen),
+        .axi_arburst(icache_arburst),
         .axi_arready(io_master_arready),
         .axi_rvalid(io_ifu_rvalid),
         .axi_rdata(io_ifu_rdata),
+        .axi_rlast(io_ifu_rlast),
         .axi_rready(icache_rready)
     );
 

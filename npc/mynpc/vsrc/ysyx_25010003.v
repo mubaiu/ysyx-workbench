@@ -77,8 +77,6 @@ module ysyx_25010003(
     assign io_master_awburst = 2'b00;
     // assign io_master_wlast = 1'b1;  // awlen=0时，每次传输1个数据，该数据即为最后一个
     assign io_master_arid = 4'd0;
-    assign io_master_arlen = 8'd0;
-    assign io_master_arburst = 2'b00;
 
     assign io_slave_arready = 1'b0;
     assign io_slave_rvalid = 1'b0;
@@ -129,10 +127,13 @@ module ysyx_25010003(
     // ===== IFU Arbiter 接口 =====
     wire        io_ifu_arvalid;  //AR
     wire [31:0] io_ifu_araddr;
+    wire [7:0]  io_ifu_arlen;
+    wire [1:0]  io_ifu_arburst;
     wire        io_ifu_rready;   //R
     wire [31:0] io_ifu_rdata;
     wire        io_ifu_rvalid;
     wire [1:0]  io_ifu_rresp;
+    wire        io_ifu_rlast;
     wire [31:0] io_ifu_awaddr;   //AW
     wire        io_ifu_awvalid;
     wire [31:0] io_ifu_wdata;    //W
@@ -211,10 +212,13 @@ module ysyx_25010003(
         // ===== IFU Arbiter 接口 =====
         .io_ifu_arvalid     (io_ifu_arvalid),
         .io_ifu_araddr      (io_ifu_araddr),
+        .io_ifu_arlen       (io_ifu_arlen),
+        .io_ifu_arburst     (io_ifu_arburst),
         .io_ifu_rready      (io_ifu_rready),
         .io_ifu_rdata       (io_ifu_rdata),
         .io_ifu_rvalid      (io_ifu_rvalid),
         .io_ifu_rresp       (io_ifu_rresp),
+        .io_ifu_rlast       (io_ifu_rlast),
         .io_ifu_awaddr      (io_ifu_awaddr),
         .io_ifu_awvalid     (io_ifu_awvalid),
         .io_ifu_wdata       (io_ifu_wdata),
@@ -239,10 +243,13 @@ module ysyx_25010003(
         // ===== IFU Master 接口 =====
         .io_ifu_arvalid     (io_ifu_arvalid), //AR
         .io_ifu_araddr      (io_ifu_araddr),
+        .io_ifu_arlen       (io_ifu_arlen),
+        .io_ifu_arburst     (io_ifu_arburst),
         .io_ifu_rready      (io_ifu_rready),  //R
         .io_ifu_rdata       (io_ifu_rdata),
         .io_ifu_rvalid      (io_ifu_rvalid),
         .io_ifu_rresp       (io_ifu_rresp),
+        .io_ifu_rlast       (io_ifu_rlast),
         .io_ifu_awaddr      (io_ifu_awaddr),  //AW
         .io_ifu_awvalid     (io_ifu_awvalid),
         .io_ifu_wdata       (io_ifu_wdata),   //W
@@ -296,10 +303,13 @@ module ysyx_25010003(
         .io_master_rvalid   (io_master_rvalid),
         .io_master_rdata    (io_master_rdata),
         .io_master_rresp    (io_master_rresp),
+        .io_master_rlast    (io_master_rlast),
 
         .io_master_arvalid  (io_master_arvalid),
         .io_master_araddr   (io_master_araddr),
         .io_master_arsize   (io_master_arsize),
+        .io_master_arlen    (io_master_arlen),
+        .io_master_arburst  (io_master_arburst),
         .io_master_rready   (io_master_rready),
 
         .io_master_awready  (io_master_awready),

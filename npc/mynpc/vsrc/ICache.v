@@ -1,6 +1,6 @@
 module ICache #(
-    parameter CACHE_SIZE = 16,      // cache块数量
-    parameter BLOCK_SIZE = 4,       // 块大小（字节）
+    parameter CACHE_SIZE = 4,      // cache块数量
+    parameter BLOCK_SIZE = 16,      // 块大小（字节），默认为总线数据位宽的4倍
     parameter ADDR_WIDTH = 32,      // 地址位宽
     parameter DATA_WIDTH = 32       // 数据位宽
 )(
@@ -19,17 +19,22 @@ module ICache #(
     output reg                   axi_arvalid,      // 读地址有效
     output reg  [ADDR_WIDTH-1:0] axi_araddr,       // 读地址
     output reg  [2:0]            axi_arsize,       // 读传输大小
+    output reg  [7:0]            axi_arlen,        // 突发长度-1
+    output reg  [1:0]            axi_arburst,      // 突发类型
     input  wire                  axi_arready,      // 读地址就绪
 
     input  wire                  axi_rvalid,       // 读数据有效
     input  wire [DATA_WIDTH-1:0] axi_rdata,        // 读数据
+    input  wire                  axi_rlast,        // 最后一次传输
     output reg                   axi_rready        // 读数据就绪
 );
 
+`ifdef VERILATOR
     // DPI-C函数声明
     import "DPI-C" function void perf_icache_access();
     import "DPI-C" function void perf_icache_hit(longint unsigned cycles);
     import "DPI-C" function void perf_icache_miss(longint unsigned cycles);
+`endif
 
     wire r_handshake  = axi_rvalid  && axi_rready;
 
@@ -38,8 +43,11 @@ module ICache #(
 
     // 参数计算
     localparam INDEX_WIDTH = $clog2(CACHE_SIZE);   // 4位
-    localparam OFFSET_WIDTH = $clog2(BLOCK_SIZE);  // 2位
-    localparam TAG_WIDTH = ADDR_WIDTH - INDEX_WIDTH - OFFSET_WIDTH; // 26位
+    localparam OFFSET_WIDTH = $clog2(BLOCK_SIZE);  // 4位（16字节）
+    localparam TAG_WIDTH = ADDR_WIDTH - INDEX_WIDTH - OFFSET_WIDTH; // 24位
+    localparam WORDS_PER_BLOCK = BLOCK_SIZE / (DATA_WIDTH/8);  // 每块字数：4
+    localparam WORD_OFFSET_WIDTH = $clog2(WORDS_PER_BLOCK);    // 字偏移位宽：2位
+    localparam [WORD_OFFSET_WIDTH-1:0] LAST_WORD = WORD_OFFSET_WIDTH'(WORDS_PER_BLOCK - 1);  // 最后一个字的索引
 
     // 地址解析
     wire [TAG_WIDTH-1:0]   req_tag;
@@ -53,7 +61,7 @@ module ICache #(
     // Cache存储阵列
     reg                    valid [0:CACHE_SIZE-1];  // 有效位
     reg [TAG_WIDTH-1:0]    tag   [0:CACHE_SIZE-1];  // 标签
-    reg [DATA_WIDTH-1:0]   data  [0:CACHE_SIZE-1];  // 数据
+    reg [BLOCK_SIZE*8-1:0] data  [0:CACHE_SIZE-1];  // 数据（整个块）
 
     // 状态机
     localparam IDLE   = 3'd0;
@@ -67,6 +75,14 @@ module ICache #(
     reg cache_hit;
     reg [INDEX_WIDTH-1:0] current_index;
     reg [TAG_WIDTH-1:0]   current_tag;
+    reg [WORD_OFFSET_WIDTH-1:0] current_word_offset;
+
+    // REFILL计数器和突发传输控制
+    reg [WORD_OFFSET_WIDTH-1:0] word_count;
+    reg use_burst;  // 是否使用突发传输
+
+    // SDRAM地址范围判断：0xa0000000-0xbfffffff
+    wire is_sdram = (ifu_req_addr[31:28] == 4'ha) || (ifu_req_addr[31:28] == 4'hb);
 
     integer i;
 
@@ -75,23 +91,36 @@ module ICache #(
         if (reset) begin
             state <= IDLE;
             access_cycle_count <= 0;
+            word_count <= 0;
         end
         else begin
             state <= next_state;
+
+            // word_count更新
+            if (state == MISS && axi_arready)
+                word_count <= 0;
+            else if (state == REFILL && axi_rvalid && axi_rready)
+                word_count <= word_count + 1;
 
             // 周期计数和性能统计
             if (state == IDLE && ifu_req_valid) begin
                 // 新请求开始，重置计数器并统计访问次数
                 access_cycle_count <= 1;
+`ifdef VERILATOR
                 perf_icache_access();
+`endif
             end
             else if (state == LOOKUP && cache_hit) begin
                 // Cache命中，统计命中次数和周期数
+`ifdef VERILATOR
                 perf_icache_hit(access_cycle_count + 1);
+`endif
             end
-            else if (state == REFILL && axi_rvalid) begin
+            else if (state == REFILL && axi_rvalid && word_count == LAST_WORD) begin
                 // Cache缺失，统计缺失次数和周期数
+`ifdef VERILATOR
                 perf_icache_miss(access_cycle_count + 1);
+`endif
             end
             else if (state != IDLE) begin
                 // 非IDLE状态，递增周期计数器
@@ -122,8 +151,8 @@ module ICache #(
             end
 
             REFILL: begin
-                if (axi_rvalid && axi_rready)
-                    next_state = IDLE;  // 取回数据后直接返回IDLE
+                if (axi_rvalid && axi_rready && (use_burst ? axi_rlast : (word_count == LAST_WORD)))
+                    next_state = IDLE;  // 突发传输完成或单次传输完成
             end
 
             default: next_state = IDLE;
@@ -141,9 +170,9 @@ module ICache #(
 
             LOOKUP: begin
                 if (cache_hit) begin
-                    // cache hit时立即返回数据
+                    // cache hit时立即返回数据，根据word_offset选择正确的字
                     ifu_resp_valid = 1'b1;
-                    ifu_resp_data = data[current_index];
+                    ifu_resp_data = data[current_index][current_word_offset*DATA_WIDTH +: DATA_WIDTH];
                     ifu_ready = 1'b0;
                 end
                 else begin
@@ -160,10 +189,11 @@ module ICache #(
             end
 
             REFILL: begin
-                if (axi_rvalid && axi_rready) begin
-                    // 取回数据时立即返回
+                if (axi_rvalid && axi_rready && (use_burst ? axi_rlast : (word_count == LAST_WORD))) begin
+                    // 突发传输完成或单次传输完成时返回请求的字
                     ifu_resp_valid = 1'b1;
-                    ifu_resp_data = axi_rdata;
+                    ifu_resp_data = (word_count == current_word_offset) ? axi_rdata :
+                                    data[current_index][current_word_offset*DATA_WIDTH +: DATA_WIDTH];
                     ifu_ready = 1'b0;
                 end
                 else begin
@@ -186,10 +216,14 @@ module ICache #(
         if (reset) begin
             current_index <= {INDEX_WIDTH{1'b0}};
             current_tag <= {TAG_WIDTH{1'b0}};
+            current_word_offset <= {WORD_OFFSET_WIDTH{1'b0}};
+            use_burst <= 1'b0;
         end
         else if (state == IDLE && ifu_req_valid) begin
             current_index <= req_index;
             current_tag <= req_tag;
+            current_word_offset <= req_offset[OFFSET_WIDTH-1:2];
+            use_burst <= is_sdram;
         end
     end
 
@@ -199,18 +233,14 @@ module ICache #(
 
     // Cache存储阵列初始化
     always @(posedge clock) begin
-        if (reset) begin
-            for (i = 0; i < CACHE_SIZE; i = i + 1) begin
-                valid[i] <= 1'b0;
-                tag[i] <= {TAG_WIDTH{1'b0}};
-                data[i] <= {DATA_WIDTH{1'b0}};
+            if (state == REFILL && axi_rvalid) begin
+            // Cache填充：将读取的字存储到块的正确位置
+            data[current_index][word_count*DATA_WIDTH +: DATA_WIDTH] <= axi_rdata;
+            // 突发传输完成或单次传输完成时设置valid和tag
+            if (use_burst ? axi_rlast : (word_count == LAST_WORD)) begin
+                valid[current_index] <= 1'b1;
+                tag[current_index] <= current_tag;
             end
-        end
-        else if (state == REFILL && axi_rvalid) begin
-            // Cache填充
-            valid[current_index] <= 1'b1;
-            tag[current_index] <= current_tag;
-            data[current_index] <= axi_rdata;
         end
     end
 
@@ -220,18 +250,27 @@ module ICache #(
             axi_arvalid <= 1'b0;
             axi_rready <= 1'b0;
             axi_araddr <= {ADDR_WIDTH{1'b0}};
-            axi_arsize <= 3'b010; // 4字节
+            axi_arsize <= 3'b010;
+            axi_arlen <= 8'b0;
+            axi_arburst <= 2'b0;
         end
         else if (state == LOOKUP && !cache_hit) begin
             axi_arvalid <= 1'b1;
             axi_rready <= 1'b1;
             axi_araddr <= {current_tag, current_index, {OFFSET_WIDTH{1'b0}}};
-            axi_arsize <= 3'b010; // 4字节传输
+            axi_arsize <= 3'b010;
+            axi_arlen <= use_burst ? 8'd3 : 8'd0;  // 突发传输4次或单次传输
+            axi_arburst <= use_burst ? 2'b01 : 2'b00;  // INCR或FIXED
+        end
+        else if (state == REFILL && !use_burst && axi_rvalid && axi_rready && word_count < LAST_WORD) begin
+            // 非突发传输时，继续读取下一个字
+            axi_arvalid <= 1'b1;
+            axi_araddr <= {current_tag, current_index, {OFFSET_WIDTH{1'b0}}} + (32'(word_count + 1) << 2);
         end
         else if (ar_handshake && state != IDLE) begin
             axi_arvalid <= 1'b0;
         end
-        else if (r_handshake && state != IDLE) begin
+        else if (r_handshake && state != IDLE && (use_burst ? axi_rlast : (word_count == LAST_WORD))) begin
             axi_rready <= 1'b0;
         end
     end

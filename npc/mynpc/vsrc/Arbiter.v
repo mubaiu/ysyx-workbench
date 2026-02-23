@@ -20,11 +20,14 @@ module Arbiter (
     // ===== IFU Master 接口 =====
     input wire        io_ifu_arvalid, //AR
     input wire [31:0] io_ifu_araddr,
+    input wire [7:0]  io_ifu_arlen,
+    input wire [1:0]  io_ifu_arburst,
 
     input wire        io_ifu_rready,  //R
     output wire [31:0] io_ifu_rdata,
     output wire        io_ifu_rvalid,
     output wire [1:0]  io_ifu_rresp,
+    output wire        io_ifu_rlast,
 
     input wire [31:0] io_ifu_awaddr,  //AW
     input wire        io_ifu_awvalid,
@@ -85,10 +88,13 @@ module Arbiter (
     input wire        io_master_rvalid,
     input wire [31:0] io_master_rdata,
     input wire [1:0]  io_master_rresp,
+    input wire        io_master_rlast,
 
     output wire       io_master_arvalid,
     output wire[31:0] io_master_araddr,
     output wire[2:0]  io_master_arsize,
+    output wire[7:0]  io_master_arlen,
+    output wire[1:0]  io_master_arburst,
     output wire       io_master_rready,
 
     input wire        io_master_awready,
@@ -169,8 +175,8 @@ module Arbiter (
                 end
                 
                 IFU_ACTIVE: begin
-                    // 读数据握手完成，返回IDLE
-                    if (r_handshake) begin
+                    // 读数据握手完成（突发传输的最后一次），返回IDLE
+                    if (r_handshake && io_master_rlast) begin
                         next_state = IDLE;
                     end
                 end
@@ -217,6 +223,8 @@ module Arbiter (
 
     assign io_master_araddr = (state == IFU_ACTIVE) ? io_ifu_araddr : io_lsu_araddr;
     assign io_master_arsize = (state == IFU_ACTIVE) ? 3'b010 : io_lsu_arsize;  // IFU固定字访问，LSU动态
+    assign io_master_arlen = (state == IFU_ACTIVE) ? io_ifu_arlen : 8'd0;  // IFU支持突发，LSU单次传输
+    assign io_master_arburst = (state == IFU_ACTIVE) ? io_ifu_arburst : 2'b00;  // IFU支持突发，LSU固定
 
     // =========================================================================
     // 读数据通道响应 - CLINT
@@ -232,6 +240,7 @@ module Arbiter (
     assign io_ifu_rdata = io_master_rdata;
     assign io_ifu_rvalid = (state == IFU_ACTIVE) ? io_master_rvalid : 1'b0;
     assign io_ifu_rresp = io_master_rresp;
+    assign io_ifu_rlast = (state == IFU_ACTIVE) ? io_master_rlast : 1'b0;
 
     assign io_lsu_rdata = (state == LSU_READ) ? io_master_rdata : (state == CLINT_READ) ? io_clint_rdata : 32'b0;
     assign io_lsu_rvalid = (state == LSU_READ) ? io_master_rvalid : (state == CLINT_READ) ? io_clint_rvalid : 1'b0;
