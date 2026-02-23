@@ -1,6 +1,6 @@
 include $(AM_HOME)/scripts/isa/riscv.mk
 include $(AM_HOME)/scripts/platform/ysyxsoc.mk
-COMMON_CFLAGS += -march=rv32e_zicsr -mabi=ilp32e  # overwrite
+COMMON_CFLAGS += -march=rv32e_zicsr_zifencei -mabi=ilp32e  # overwrite
 COMMON_CFLAGS += -falign-functions=16   # 强制对齐所有函数
 LDFLAGS       += -melf32lriscv                    # overwrite
 

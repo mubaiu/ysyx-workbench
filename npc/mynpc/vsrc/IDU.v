@@ -25,6 +25,7 @@ module IDU(
     output reg         ebreak_en,   // EBREAK标志
     output reg         ecall_en,    // ECALL使能信号
     output reg         mret_en,     // MRET使能信号
+    output reg         fence_i_en,  // FENCE.I使能信号
     output reg  [2:0]  funct3,
     output reg         auipc_flag,
     output reg         is_csr_op,
@@ -74,6 +75,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
         ecall_en      = 1'b0;
         ebreak_en     = 1'b0; // EBREAK标志
         mret_en       = 1'b0;
+        fence_i_en    = 1'b0;
         branch        = 1'b0;
         jal_en        = 1'b0;
         jalr_en       = 1'b0;
@@ -196,6 +198,12 @@ import "DPI-C" function void invalid_inst(input int thispc);
                 auipc_flag = 1'b1; // AUIPC特有的标志
                 alu_src = 1'b1;
                 imm = {inst[31:12], 12'b0};
+            end
+
+            7'b0001111: begin // MISC-MEM指令
+                if (funct3 == 3'b001 && inst[31:20] == 12'b000000000000) begin // FENCE.I
+                    fence_i_en = 1'b1;
+                end
             end
 
             7'b1110011: begin // SYSTEM指令

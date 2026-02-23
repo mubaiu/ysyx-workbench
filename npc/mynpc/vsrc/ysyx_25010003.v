@@ -108,7 +108,7 @@ module ysyx_25010003(
     wire [31:0] imm;
     wire [3:0]  alu_op;
     wire        mem_read, mem_write, alu_src, mem_to_reg, branch, jal_en, 
-                jalr_en, ebreak_en, ecall_en, mret_en, auipc_flag, is_csr_op;
+                jalr_en, ebreak_en, ecall_en, mret_en, fence_i_en, auipc_flag, is_csr_op;
     wire [3:0]  lsu_wmask;
 
     // 执行单元连线
@@ -201,6 +201,7 @@ module ysyx_25010003(
         .ecall_target       (ecall_target),
         .branch_taken       (branch_taken),
         .branch_target      (branch_target),
+        .fence_i_en         (fence_i_en),
         .pc                 (pc),
         .snpc               (snpc),
 
@@ -369,6 +370,7 @@ module ysyx_25010003(
         .ebreak_en          (ebreak_en),
         .ecall_en           (ecall_en),
         .mret_en            (mret_en),
+        .fence_i_en         (fence_i_en),
         .mem_read           (mem_read),
         .mem_write          (mem_write),
         .reg_write          (reg_write),

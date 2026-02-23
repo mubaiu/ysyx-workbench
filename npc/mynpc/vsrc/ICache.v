@@ -6,6 +6,7 @@ module ICache #(
 )(
     input  wire                  clock,
     input  wire                  reset,
+    input  wire                  flush,        // FENCE.I flush信号
 
     // IFU接口
     input  wire                  ar_handshake,
@@ -233,7 +234,13 @@ module ICache #(
 
     // Cache存储阵列初始化
     always @(posedge clock) begin
-            if (state == REFILL && axi_rvalid) begin
+        if (flush) begin
+            // flush时清空所有valid位
+            for (i = 0; i < CACHE_SIZE; i = i + 1) begin
+                valid[i] <= 1'b0;
+            end
+        end
+        else if (state == REFILL && axi_rvalid) begin
             // Cache填充：将读取的字存储到块的正确位置
             data[current_index][word_count*DATA_WIDTH +: DATA_WIDTH] <= axi_rdata;
             // 突发传输完成或单次传输完成时设置valid和tag

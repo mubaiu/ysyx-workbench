@@ -22,6 +22,7 @@ module IFU(
     input  wire [31:0] ecall_target,
     input  wire        branch_taken,
     input  wire [31:0] branch_target,
+    input  wire        fence_i_en,     // FENCE.I使能信号
 
     output reg  [31:0] pc,
     output reg  [31:0] snpc,           // 静态下一个PC
@@ -141,6 +142,7 @@ module IFU(
     ) u_icache (
         .clock(clock),
         .reset(reset),
+        .flush(fence_i_en),
         // IFU接口
         .ifu_req_valid(icache_req_valid),
         .ifu_req_addr(icache_req_addr),
