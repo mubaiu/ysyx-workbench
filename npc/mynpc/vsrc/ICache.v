@@ -224,7 +224,7 @@ module ICache #(
             current_index <= req_index;
             current_tag <= req_tag;
             current_word_offset <= req_offset[OFFSET_WIDTH-1:2];
-            use_burst <= is_sdram;
+            // use_burst <= is_sdram;
         end
     end
 

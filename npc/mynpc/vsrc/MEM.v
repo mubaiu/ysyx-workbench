@@ -8,6 +8,7 @@ module Memory (
     input  wire        io_slave_rready,
     output reg         io_slave_arready,
     output reg  [31:0] io_slave_rdata,
+    output reg         io_slave_rlast,
     output reg  [1:0]  io_slave_rresp,
     output reg         io_slave_rvalid, 
 
@@ -54,11 +55,13 @@ always @(posedge clock) begin
     if (reset) begin
         io_slave_arready <= 1'b1 ;
         io_slave_rdata   <= 32'b0;
+        io_slave_rlast   <= 1'b0 ;
         io_slave_rresp   <= 2'b0 ;
         io_slave_rvalid  <= 1'b0 ;
     end 
     else if (ar_handshake) begin
         io_slave_rvalid  <= 1'b1;
+        io_slave_rlast   <= 1'b1;
         io_slave_arready <= 1'b0;
 `ifdef VERILATOR
         io_slave_rdata   <= vaddr_read(aligned_addr, 4);
@@ -69,6 +72,7 @@ always @(posedge clock) begin
     else if (r_handshake) begin
         // 读数据握手完成
         io_slave_rvalid  <= 1'b0;
+        io_slave_rlast   <= 1'b0;
         io_slave_arready <= 1'b1;  // 恢复读地址 ready
     end
 end

@@ -216,9 +216,9 @@ static int is_batch_mode = false;
   Log("The image is %s, size = %ld", img_file, size);
 
     // Check if image size exceeds MROM capacity
-  if (size > FLASH_SIZE) {
-    Assert(0, "Image too large for FLASH (max %d bytes, got %ld bytes)", FLASH_SIZE, size);
-  }
+  // if (size > FLASH_SIZE) {
+  //   Assert(0, "Image too large for FLASH (max %d bytes, got %ld bytes)", FLASH_SIZE, size);
+  // }
 
   fseek(fp, 0, SEEK_SET);
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);

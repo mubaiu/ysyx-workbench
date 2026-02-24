@@ -191,12 +191,12 @@ module IFU(
     // PC更新逻辑
     always @(posedge clock) begin
         if (reset) begin
-            pc <= 32'h30000000;
+            pc <= 32'h80000000;
             inst_reg <= 32'b0;
             inst_valid <= 1'b0;
             icache_req_valid <= 1'b0;
             next_state <= FETCH;
-            dnpc_reg <= 32'h20000004;
+            dnpc_reg <= 32'h80000004;
             lsu_latency_counter <= 0;  // 初始化延迟计数器
         end 
         else begin

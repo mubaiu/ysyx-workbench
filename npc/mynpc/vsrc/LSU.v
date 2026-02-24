@@ -114,19 +114,25 @@ module LSU(
             endcase
 
             case (lsu_wmask)
+                // 4'b0001: begin
+                //     case (addr[1:0])
+                //         2'b00: io_lsu_wdata <= {24'b0, store_data[7:0]};  // 字节0
+                //         2'b01: io_lsu_wdata <= {16'b0, store_data[7:0], 8'b0};  // 字节1
+                //         2'b10: io_lsu_wdata <= {8'b0, store_data[7:0], 16'b0};  // 字节2
+                //         2'b11: io_lsu_wdata <= {store_data[7:0], 24'b0};  // 字节3
+                //     endcase
+                // end
+                // 4'b0011: begin
+                //     case (addr[1])
+                //         1'b0: io_lsu_wdata <= {16'b0, store_data[15:0]};  // 半字0-1
+                //         1'b1: io_lsu_wdata <= {store_data[15:0], 16'b0};  // 半字2-3
+                //     endcase
+                // end
                 4'b0001: begin
-                    case (addr[1:0])
-                        2'b00: io_lsu_wdata <= {24'b0, store_data[7:0]};  // 字节0
-                        2'b01: io_lsu_wdata <= {16'b0, store_data[7:0], 8'b0};  // 字节1
-                        2'b10: io_lsu_wdata <= {8'b0, store_data[7:0], 16'b0};  // 字节2
-                        2'b11: io_lsu_wdata <= {store_data[7:0], 24'b0};  // 字节3
-                    endcase
+                        io_lsu_wdata <= {24'b0, store_data[7:0]};  // 字节0
                 end
                 4'b0011: begin
-                    case (addr[1])
-                        1'b0: io_lsu_wdata <= {16'b0, store_data[15:0]};  // 半字0-1
-                        1'b1: io_lsu_wdata <= {store_data[15:0], 16'b0};  // 半字2-3
-                    endcase
+                        io_lsu_wdata <= {16'b0, store_data[15:0]};  // 半字0-1
                 end
                 4'b1111: io_lsu_wdata <= store_data; //SW
                 default: io_lsu_wdata <= 32'b0; // 默认按

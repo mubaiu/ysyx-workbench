@@ -1,10 +1,10 @@
-#include "VysyxSoCFull.h"
+#include "Vcomputer.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "verilated.h"
 #include "verilated_fst_c.h"
-#include <nvboard.h>
+// #include <nvboard.h>
 
 #include <cpu/cpu.h>
 #include <reg.h>  // 添加这一行引入 CPU_state 和 cpu 声明
@@ -21,14 +21,14 @@ int is_exit_status_bad();
 void exec_once(Decode *d, vaddr_t pc);
 
 // NVBoard 函数声明
-void nvboard_bind_all_pins(VysyxSoCFull* top);
+// void nvboard_bind_all_pins(Vcomputer* top);
 
 extern Decode d; 
 
 
 extern "C" {
   VerilatedContext* contextp = nullptr;
-  VysyxSoCFull* ysyxSoCFull = nullptr;
+  Vcomputer* computer = nullptr;
   VerilatedFstC* tfp = nullptr;
 }
 
@@ -39,18 +39,18 @@ int main(int argc, char** argv) {
     
     #if ENABLE_WAVE_TRACE
     contextp->traceEverOn(true);
-    ysyxSoCFull = new VysyxSoCFull{contextp};
+    computer = new Vcomputer{contextp};
     tfp = new VerilatedFstC;
-    ysyxSoCFull->trace(tfp, 99);
+    computer->trace(tfp, 99);
     tfp->open("wave.fst");
     #else
     contextp->traceEverOn(false);
-    ysyxSoCFull = new VysyxSoCFull{contextp};
+    computer = new Vcomputer{contextp};
     #endif
 
     // NVBoard 初始化
-    nvboard_bind_all_pins(ysyxSoCFull);
-    nvboard_init();
+    // nvboard_bind_all_pins(computer);
+    // nvboard_init();
 
     // 首先让顶层模块评估一次，确保内部信号初始化
     // top->eval();
@@ -69,33 +69,33 @@ int main(int argc, char** argv) {
     init_monitor(argc, argv);
     #endif
      // 然后设置复位信号
-    ysyxSoCFull->reset = 1;
-    ysyxSoCFull->clock = 1;
-    ysyxSoCFull->eval();
+    computer->reset = 1;
+    computer->clock = 1;
+    computer->eval();
     IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     
 
     for (int i = 0; i < 18; i++) {
         
-        ysyxSoCFull->clock = 0;
-        ysyxSoCFull->eval();
+        computer->clock = 0;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
 
-        ysyxSoCFull->clock = 1;
-        ysyxSoCFull->eval();
+        computer->clock = 1;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     // exec_once(&d, npc.pc);
     // 释放复位信号后，给予额外的时钟周期稳定系统
-    ysyxSoCFull->reset = 0;
+    computer->reset = 0;
     for (int i = 0; i < 2; i++) {
-        nvboard_update();
-        ysyxSoCFull->clock = 0;
-        ysyxSoCFull->eval();
+        // nvboard_update();
+        computer->clock = 0;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
 
-        ysyxSoCFull->clock = 1;
-        ysyxSoCFull->eval();
+        computer->clock = 1;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
     
@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
     delete tfp;
     #endif
     
-    delete ysyxSoCFull;
+    delete computer;
     delete contextp;
     return is_exit_status_bad();
 }

@@ -4,15 +4,16 @@
 #include <locale.h>
 #include <verilated.h>
 #include <verilated_fst_c.h>
-#include "VysyxSoCFull.h"
-#include "VysyxSoCFull___024root.h"
-#include <nvboard.h>
+#include "Vcomputer.h"
+#include "Vcomputer___024root.h"
+#include "Vcomputer_computer.h"
+// #include <nvboard.h>
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
 
 extern uint64_t sim_time;
-Decode d = {d.pc = 0x30000000};
-static uint32_t last_difftest_pc = 0x30000000;
+Decode d = {d.pc = 0x80000000};
+static uint32_t last_difftest_pc = 0x80000000;
 
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 // 在cpu-exec.c中初始化CPU
@@ -208,14 +209,16 @@ void exec_once(Decode *d, vaddr_t pc) {
 
 
 extern VerilatedContext* contextp;
-extern VysyxSoCFull* ysyxSoCFull;
+extern Vcomputer* computer;
 extern VerilatedFstC* tfp;
 
-bool is_device_access() 
+bool is_device_access()
 {
-  uint32_t araddr = ysyxSoCFull->rootp->ysyxSoCFull__DOT__asic__DOT__axi42apb__DOT__araddr_reg_r;                                                 
+  uint32_t araddr = computer->rootp->computer->io_master_araddr;
+  // printf("DEBUG: Checking device access for address 0x%08x\n", araddr);                                                 
   if (araddr >= 0x10000000 && araddr <= 0x10000FFF) return true;// UART 范围   
   if (araddr >= 0x10001000 && araddr <= 0x10001FFF) return true;// SPI 范围
+  if (araddr >= 0x02000000 && araddr <= 0x02000004) return true;// CLINT 范围
 
   return false;                             
 }  
@@ -237,13 +240,13 @@ static void execute(uint64_t n) {
     last_difftest_pc = d.pc;
     }
     for (int i = 0; i < 2; i++) {
-        nvboard_update();
-        ysyxSoCFull->clock = 0;
-        ysyxSoCFull->eval();
+        // nvboard_update();
+        computer->clock = 0;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
 
-        ysyxSoCFull->clock = 1;
-        ysyxSoCFull->eval();
+        computer->clock = 1;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
         g_nr_cycles++;  // 统计周期数
         if (nemu_state.state != NEMU_RUNNING) break;
@@ -258,13 +261,13 @@ static void execute(uint64_t n) {
     }
     // IFDEF(CONFIG_DEVICE, device_update());
     for (int i = 0; i < 2; i++) {
-        nvboard_update();
-        ysyxSoCFull->clock = 0;
-        ysyxSoCFull->eval();
+        // nvboard_update();
+        computer->clock = 0;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
 
-        ysyxSoCFull->clock = 1;
-        ysyxSoCFull->eval();
+        computer->clock = 1;
+        computer->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
         g_nr_cycles++;  // 统计周期数
     }
