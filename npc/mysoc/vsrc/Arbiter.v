@@ -1,11 +1,11 @@
 /***************************************************************************************
 * AXI4-Lite Arbiter Module
-* 
+*
 * 功能描述:
 * - 实现两个Master(IFU和LSU)到单个Slave的仲裁
 * - 支持AXI4-Lite协议的读写通道
-* - 优先级: LSU写 > IFU读 > LSU读
-* 
+* - 优先级: LSU写 > LSU读 > IFU读
+*
 * 优化特性:
 * - 使用单周期状态机，减少延迟
 * - 地址握手完成后立即锁定事务
@@ -22,6 +22,7 @@ module Arbiter (
     input wire [31:0] io_ifu_araddr,
     input wire [7:0]  io_ifu_arlen,
     input wire [1:0]  io_ifu_arburst,
+    output wire       io_ifu_arready,
 
     input wire        io_ifu_rready,  //R
     output wire [31:0] io_ifu_rdata,
@@ -42,6 +43,7 @@ module Arbiter (
     input wire        io_lsu_arvalid,  //AR
     input wire [31:0] io_lsu_araddr,
     input wire [2:0]  io_lsu_arsize,
+    output wire       io_lsu_arready,
 
     input wire        io_lsu_rready,   //R
     output wire [31:0] io_lsu_rdata,
@@ -51,11 +53,13 @@ module Arbiter (
     input wire        io_lsu_awvalid,  //AW
     input wire [31:0] io_lsu_awaddr,
     input wire [2:0]  io_lsu_awsize,
+    output wire       io_lsu_awready,
 
     input wire        io_lsu_wvalid,   //W
     input wire        io_lsu_wlast,    //WLAST
     input wire [31:0] io_lsu_wdata,
     input wire [3:0]  io_lsu_wstrb,
+    output wire       io_lsu_wready,
 
     input wire        io_lsu_bready,  //B
     output wire [1:0]  io_lsu_bresp,
@@ -162,13 +166,13 @@ module Arbiter (
             next_state = state;
             case (state)
                 IDLE: begin
-                    // 仲裁优先级: LSU写 > IFU读 > LSU读
+                    // 仲裁优先级: LSU写 > LSU读 > IFU读
                     if (lsu_write_req) begin
                         next_state = LSU_WRITE;
-                    end else if (io_ifu_arvalid) begin
-                        next_state = IFU_ACTIVE;
                     end else if (lsu_read_req) begin
                         next_state = LSU_READ;
+                    end else if (io_ifu_arvalid) begin
+                        next_state = IFU_ACTIVE;
                     end else if (clint_read_req) begin
                         next_state = CLINT_READ;
                     end
@@ -242,9 +246,16 @@ module Arbiter (
     assign io_ifu_rresp = io_master_rresp;
     assign io_ifu_rlast = (state == IFU_ACTIVE) ? io_master_rlast : 1'b0;
 
+    // IFU读地址ready信号
+    assign io_ifu_arready = (state == IFU_ACTIVE) ? io_master_arready : 1'b0;
+
     assign io_lsu_rdata = (state == LSU_READ) ? io_master_rdata : (state == CLINT_READ) ? io_clint_rdata : 32'b0;
     assign io_lsu_rvalid = (state == LSU_READ) ? io_master_rvalid : (state == CLINT_READ) ? io_clint_rvalid : 1'b0;
     assign io_lsu_rresp = (state == LSU_READ) ? io_master_rresp : (state == CLINT_READ) ? io_clint_rresp : 2'b0;
+
+    // LSU读地址ready信号
+    assign io_lsu_arready = (state == LSU_READ) ? io_master_arready :
+                            (state == CLINT_READ) ? io_clint_arready : 1'b0;
 
     // =========================================================================
     // 写地址/数据通道仲裁 - CLINT
@@ -278,5 +289,9 @@ module Arbiter (
 
     assign io_lsu_bresp  = io_master_bresp;
     assign io_lsu_bvalid = (state == LSU_WRITE) ? io_master_bvalid : 1'b0;
+
+    // LSU写地址和写数据ready信号
+    assign io_lsu_awready = (state == LSU_WRITE) ? io_master_awready : 1'b0;
+    assign io_lsu_wready = (state == LSU_WRITE) ? io_master_wready : 1'b0;
 
 endmodule

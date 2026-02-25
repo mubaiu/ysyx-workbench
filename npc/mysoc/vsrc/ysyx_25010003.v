@@ -94,24 +94,75 @@ module ysyx_25010003(
     wire [31:0] pc;
     wire [31:0] inst_out;
     wire        inst_valid;
-    wire        idu_ready;
-    wire        lsu_ready;
-    wire        wbu_ready;
     wire [31:0] snpc;  // 静态下一个PC
-    
+
+    // ===== 流水线控制信号 =====
+    wire stall_IF, stall_ID, stall_EX, stall_LSU, flush_IF, flush_ID, flush_EX, flush_LSU;
+    wire lsu_busy, lsu_done;
+
+    // ===== IF/ID 流水线寄存器 =====
+    wire [31:0] IF_ID_pc;
+    wire [31:0] IF_ID_inst;
+    wire        IF_ID_inst_valid;
+
+    // ===== ID/EX 流水线寄存器 =====
+    wire        ID_EX_data_valid;
+    wire [31:0] ID_EX_pc;
+    wire [31:0] ID_EX_rs1_data;
+    wire [31:0] ID_EX_rs2_data;
+    wire [31:0] ID_EX_imm;
+    wire [3:0]  ID_EX_rs1_addr;
+    wire [3:0]  ID_EX_rs2_addr;
+    wire [3:0]  ID_EX_rd_addr;
+    wire [3:0]  ID_EX_alu_op;
+    wire        ID_EX_mem_read;
+    wire        ID_EX_mem_write;
+    wire        ID_EX_reg_write;
+    wire        ID_EX_alu_src;
+    wire        ID_EX_branch;
+    wire        ID_EX_jal_en;
+    wire        ID_EX_jalr_en;
+    wire        ID_EX_ebreak_en;
+    wire        ID_EX_ecall_en;
+    wire        ID_EX_mret_en;
+    wire        ID_EX_auipc_flag;
+    wire        ID_EX_is_csr_op;
+    wire [2:0]  ID_EX_funct3;
+    wire [3:0]  ID_EX_lsu_wmask;
+
+    // ===== EX/MEM 流水线寄存器 =====
+    wire        EX_LSU_data_valid;
+    wire [31:0] EX_LSU_alu_result;
+    wire [31:0] EX_LSU_rs2_data;
+    wire [3:0]  EX_LSU_rd_addr;
+    wire        EX_LSU_mem_read;
+    wire        EX_LSU_mem_write;
+    wire        EX_LSU_reg_write;
+    wire [2:0]  EX_LSU_funct3;
+    wire [3:0]  EX_LSU_lsu_wmask;
+
+
+    // ===== MEM/WB 流水线寄存器 =====
+    wire [31:0] LSU_WB_alu_result;
+    wire [31:0] LSU_WB_load_data;
+    wire [3:0]  LSU_WB_rd_addr;
+    wire        LSU_WB_reg_write;
+    wire        LSU_WB_mem_to_reg;
+
     // 寄存器接口连线（RV32E使用4位地址）
     wire [3:0]  rs1_addr, rs2_addr, rd_addr;
     wire [31:0] rs1_data, rs2_data, wb_data;
     wire        reg_write;
     
-    // 指令解码连线
+    // 指令解码连线（IDU输出）
     wire [31:0] imm;
     wire [3:0]  alu_op;
-    wire        mem_read, mem_write, alu_src, mem_to_reg, branch, jal_en, 
+    wire        mem_read, mem_write, alu_src, branch, jal_en,
                 jalr_en, ebreak_en, ecall_en, mret_en, fence_i_en, auipc_flag, is_csr_op;
     wire [3:0]  lsu_wmask;
+    wire [2:0]  funct3;
 
-    // 执行单元连线
+    // 执行单元连线（EXU输出）
     wire [31:0] alu_result;
     wire        branch_taken;
     wire [31:0] branch_target;
@@ -120,15 +171,20 @@ module ysyx_25010003(
     wire        mret_taken;
     wire [31:0] mret_target;
 
-    // 内存单元连线
+    // 内存单元连线（LSU输出）
     wire [31:0] load_data;
-    wire [2:0]  funct3;
+    wire        mem_to_reg;
+
+    // ===== Forwarding 单元连线 =====
+    wire [31:0] forward_a;
+    wire [31:0] forward_b;
 
     // ===== IFU Arbiter 接口 =====
     wire        io_ifu_arvalid;  //AR
     wire [31:0] io_ifu_araddr;
     wire [7:0]  io_ifu_arlen;
     wire [1:0]  io_ifu_arburst;
+    wire        io_ifu_arready;
     wire        io_ifu_rready;   //R
     wire [31:0] io_ifu_rdata;
     wire        io_ifu_rvalid;
@@ -145,6 +201,7 @@ module ysyx_25010003(
     wire        io_lsu_arvalid;  //AR
     wire [31:0] io_lsu_araddr;
     wire [2:0]  io_lsu_arsize;
+    wire        io_lsu_arready;
     wire        io_lsu_rready;   //R
     wire [31:0] io_lsu_rdata;
     wire        io_lsu_rvalid;
@@ -152,10 +209,12 @@ module ysyx_25010003(
     wire [31:0] io_lsu_awaddr;   //AW
     wire        io_lsu_awvalid;
     wire [2:0]  io_lsu_awsize;
+    wire        io_lsu_awready;
     wire [31:0] io_lsu_wdata;    //W
     wire [3:0]  io_lsu_wstrb;
     wire        io_lsu_wvalid;
     wire        io_lsu_wlast;
+    wire        io_lsu_wready;
     wire        io_lsu_bready;   //B
     wire [1:0]  io_lsu_bresp;
     wire        io_lsu_bvalid;
@@ -183,16 +242,11 @@ module ysyx_25010003(
     IFU ysyx_25010003_IFU(
         .clock              (clock),
         .reset              (reset),
+        .stall              (stall_IF),
+        .flush_IF           (flush_IF),
 
         .io_clint_arvalid   (io_clint_arvalid),
         .io_clint_arready   (io_clint_arready),
-        
-        .io_master_arready  (io_master_arready),
-        .io_master_awready  (io_master_awready),
-        .io_master_wready   (io_master_wready),
-        .io_master_arvalid  (io_master_arvalid),
-        .io_master_awvalid  (io_master_awvalid),
-        .io_master_wvalid   (io_master_wvalid),
 
         //===== 分支控制信号 =====
         .mret_taken         (mret_taken),
@@ -206,8 +260,6 @@ module ysyx_25010003(
         .snpc               (snpc),
 
         .inst_valid         (inst_valid),
-        .mem_read           (mem_read),
-        .mem_write          (mem_write),
         .inst               (inst_out),
 
         // ===== IFU Arbiter 接口 =====
@@ -215,6 +267,7 @@ module ysyx_25010003(
         .io_ifu_araddr      (io_ifu_araddr),
         .io_ifu_arlen       (io_ifu_arlen),
         .io_ifu_arburst     (io_ifu_arburst),
+        .io_ifu_arready     (io_ifu_arready),
         .io_ifu_rready      (io_ifu_rready),
         .io_ifu_rdata       (io_ifu_rdata),
         .io_ifu_rvalid      (io_ifu_rvalid),
@@ -225,19 +278,23 @@ module ysyx_25010003(
         .io_ifu_wdata       (io_ifu_wdata),
         .io_ifu_wstrb       (io_ifu_wstrb),
         .io_ifu_wvalid      (io_ifu_wvalid),
-        .io_ifu_bready      (io_ifu_bready),
-
-        // ===== LSU Arbiter 接口 =====
-        .io_lsu_arvalid     (io_lsu_arvalid),
-        .io_lsu_rready      (io_lsu_rready),
-        .io_lsu_rvalid      (io_lsu_rvalid),
-        .io_lsu_awvalid     (io_lsu_awvalid),
-        .io_lsu_wvalid      (io_lsu_wvalid),
-        .io_lsu_wlast       (io_lsu_wlast),
-        .io_lsu_bready      (io_lsu_bready),
-        .io_lsu_bvalid      (io_lsu_bvalid)
+        .io_ifu_bready      (io_ifu_bready)
     );
-    
+
+    // IF/ID 流水线寄存器
+    IF_ID ysyx_25010003_IF_ID(
+        .clock              (clock),
+        .reset              (reset),
+        .stall              (stall_ID),
+        .flush              (flush_ID),
+        .pc_in              (pc),
+        .inst_in            (inst_out),
+        .inst_valid_in      (inst_valid),
+        .pc_out             (IF_ID_pc),
+        .inst_out           (IF_ID_inst),
+        .inst_valid_out     (IF_ID_inst_valid)
+    );
+
     Arbiter ysyx_25010003_Arbiter(
         .clock              (clock),
         .reset              (reset),
@@ -246,6 +303,7 @@ module ysyx_25010003(
         .io_ifu_araddr      (io_ifu_araddr),
         .io_ifu_arlen       (io_ifu_arlen),
         .io_ifu_arburst     (io_ifu_arburst),
+        .io_ifu_arready     (io_ifu_arready),
         .io_ifu_rready      (io_ifu_rready),  //R
         .io_ifu_rdata       (io_ifu_rdata),
         .io_ifu_rvalid      (io_ifu_rvalid),
@@ -262,6 +320,7 @@ module ysyx_25010003(
         .io_lsu_arvalid     (io_lsu_arvalid),  //AR
         .io_lsu_araddr      (io_lsu_araddr),
         .io_lsu_arsize      (io_lsu_arsize),
+        .io_lsu_arready     (io_lsu_arready),
         .io_lsu_rready      (io_lsu_rready),   //R
         .io_lsu_rdata       (io_lsu_rdata),
         .io_lsu_rvalid      (io_lsu_rvalid),
@@ -269,10 +328,12 @@ module ysyx_25010003(
         .io_lsu_awvalid     (io_lsu_awvalid),  //AW
         .io_lsu_awaddr      (io_lsu_awaddr),
         .io_lsu_awsize      (io_lsu_awsize),
+        .io_lsu_awready     (io_lsu_awready),
         .io_lsu_wvalid      (io_lsu_wvalid),   //W
         .io_lsu_wlast       (io_lsu_wlast),
         .io_lsu_wdata       (io_lsu_wdata),
         .io_lsu_wstrb       (io_lsu_wstrb),
+        .io_lsu_wready      (io_lsu_wready),
         .io_lsu_bready      (io_lsu_bready),  //B
         .io_lsu_bresp       (io_lsu_bresp),
         .io_lsu_bvalid      (io_lsu_bvalid),
@@ -357,10 +418,10 @@ module ysyx_25010003(
 
     // 指令解码单元
     IDU ysyx_25010003_IDU(
-        .pc                 (pc),
+        .pc                 (IF_ID_pc),
         .reset              (reset),
-        .inst               (inst_out),
-        .inst_valid         (inst_valid),
+        .inst               (IF_ID_inst),
+        .inst_valid         (IF_ID_inst_valid),
         .rs1_addr           (rs1_addr),
         .rs2_addr           (rs2_addr),
         .rd_addr            (rd_addr),
@@ -380,20 +441,73 @@ module ysyx_25010003(
         .jal_en             (jal_en),
         .jalr_en            (jalr_en),
         .auipc_flag         (auipc_flag),
-        .is_csr_op          (is_csr_op),
-        .idu_ready          (idu_ready)
+        .is_csr_op          (is_csr_op)
     );
-    
+
+    // ID/EX 流水线寄存器
+    ID_EX ysyx_25010003_ID_EX(
+        .clock              (clock),
+        .reset              (reset),
+        .stall              (stall_EX),
+        .flush              (flush_EX),
+        .data_valid_in      (IF_ID_inst_valid),    
+        .pc_in              (IF_ID_pc),
+        .rs1_data_in        (rs1_data),
+        .rs2_data_in        (rs2_data),
+        .imm_in             (imm),
+        .rs1_addr_in        (rs1_addr),
+        .rs2_addr_in        (rs2_addr),
+        .rd_addr_in         (rd_addr),
+        .alu_op_in          (alu_op),
+        .mem_read_in        (mem_read),
+        .mem_write_in       (mem_write),
+        .reg_write_in       (reg_write),
+        .alu_src_in         (alu_src),
+        .branch_in          (branch),
+        .jal_en_in          (jal_en),
+        .jalr_en_in         (jalr_en),
+        .ebreak_en_in       (ebreak_en),
+        .ecall_en_in        (ecall_en),
+        .mret_en_in         (mret_en),
+        .auipc_flag_in      (auipc_flag),
+        .is_csr_op_in       (is_csr_op),
+        .funct3_in          (funct3),
+        .lsu_wmask_in       (lsu_wmask),
+        .data_valid_out     (ID_EX_data_valid),
+        .pc_out             (ID_EX_pc),
+        .rs1_data_out       (ID_EX_rs1_data),
+        .rs2_data_out       (ID_EX_rs2_data),
+        .imm_out            (ID_EX_imm),
+        .rs1_addr_out       (ID_EX_rs1_addr),
+        .rs2_addr_out       (ID_EX_rs2_addr),
+        .rd_addr_out        (ID_EX_rd_addr),
+        .alu_op_out         (ID_EX_alu_op),
+        .mem_read_out       (ID_EX_mem_read),
+        .mem_write_out      (ID_EX_mem_write),
+        .reg_write_out      (ID_EX_reg_write),
+        .alu_src_out        (ID_EX_alu_src),
+        .branch_out         (ID_EX_branch),
+        .jal_en_out         (ID_EX_jal_en),
+        .jalr_en_out        (ID_EX_jalr_en),
+        .ebreak_en_out      (ID_EX_ebreak_en),
+        .ecall_en_out       (ID_EX_ecall_en),
+        .mret_en_out        (ID_EX_mret_en),
+        .auipc_flag_out     (ID_EX_auipc_flag),
+        .is_csr_op_out      (ID_EX_is_csr_op),
+        .funct3_out         (ID_EX_funct3),
+        .lsu_wmask_out      (ID_EX_lsu_wmask)
+    );
+
     // 寄存器模块
     REG ysyx_25010003_REG(
         .clock              (clock),
         .reset              (reset),
-        .mem_to_reg         (mem_to_reg),
+        .mem_to_reg         (LSU_WB_mem_to_reg),
         .rs1_addr           (rs1_addr),
         .rs2_addr           (rs2_addr),
-        .rd_addr            (rd_addr),
+        .rd_addr            (LSU_WB_rd_addr),
         .rd_data            (wb_data),
-        .rd_wen             (reg_write),
+        .rd_wen             (LSU_WB_reg_write),
         .rs1_data           (rs1_data),
         .rs2_data           (rs2_data)
     );
@@ -402,65 +516,163 @@ module ysyx_25010003(
     EXU ysyx_25010003_EXU(
         .clock              (clock),
         .reset              (reset),
-        .idu_ready          (idu_ready),
-        .alu_op             (alu_op),
-        .rs1_data           (rs1_data),
-        .rs2_data           (rs2_data),
-        .imm                (imm),
-        .alu_src            (alu_src),
-        .pc                 (pc),
-        .branch             (branch),
-        .jal_en             (jal_en),
-        .jalr_en            (jalr_en),
-        .ebreak_en          (ebreak_en),
-        .ecall_en           (ecall_en),
-        .mret_en            (mret_en),
+        .data_valid         (ID_EX_data_valid),
+        .alu_op             (ID_EX_alu_op),
+        .rs1_data           (forward_a),
+        .rs2_data           (forward_b),
+        .imm                (ID_EX_imm),
+        .alu_src            (ID_EX_alu_src),
+        .pc                 (ID_EX_pc),
+        .branch             (ID_EX_branch),
+        .jal_en             (ID_EX_jal_en),
+        .jalr_en            (ID_EX_jalr_en),
+        .ebreak_en          (ID_EX_ebreak_en),
+        .ecall_en           (ID_EX_ecall_en),
+        .mret_en            (ID_EX_mret_en),
         .mret_taken         (mret_taken),
         .mret_target        (mret_target),
         .ecall_taken        (ecall_taken),
         .ecall_target       (ecall_target),
-        .auipc_flag         (auipc_flag),
-        .is_csr_op          (is_csr_op),
+        .auipc_flag         (ID_EX_auipc_flag),
+        .is_csr_op          (ID_EX_is_csr_op),
         .alu_result         (alu_result),
         .branch_taken       (branch_taken),
         .branch_target      (branch_target)
     );
-    
+
+    // EX/LSU 流水线寄存器
+    EX_LSU ysyx_25010003_EX_LSU(
+        .clock              (clock),
+        .reset              (reset),
+        .stall              (stall_LSU),
+        .flush              (flush_LSU),
+        .data_valid_in      (ID_EX_data_valid),
+        .alu_result_in      (alu_result),
+        .rs2_data_in        (forward_b),
+        .rd_addr_in         (ID_EX_rd_addr),
+        .mem_read_in        (ID_EX_mem_read),
+        .mem_write_in       (ID_EX_mem_write),
+        .reg_write_in       (ID_EX_reg_write),
+        .funct3_in          (ID_EX_funct3),
+        .lsu_wmask_in       (ID_EX_lsu_wmask),
+        .alu_result_out     (EX_LSU_alu_result),
+        .rs2_data_out       (EX_LSU_rs2_data),
+        .rd_addr_out        (EX_LSU_rd_addr),
+        .mem_read_out       (EX_LSU_mem_read),
+        .mem_write_out      (EX_LSU_mem_write),
+        .reg_write_out      (EX_LSU_reg_write),
+        .funct3_out         (EX_LSU_funct3),
+        .lsu_wmask_out      (EX_LSU_lsu_wmask)
+    );
+
     // 加载/存储单元
     LSU ysyx_25010003_LSU(
         .clock              (clock),
         .reset              (reset),
-        .lsu_wmask          (lsu_wmask),
+        .mem_read           (EX_LSU_mem_read),
+        .mem_write          (EX_LSU_mem_write),
+        .funct3             (EX_LSU_funct3),
+        .addr               (EX_LSU_alu_result),
+        .lsu_wmask          (EX_LSU_lsu_wmask),
+        .store_data         (EX_LSU_rs2_data),
+        .load_data          (load_data),
+        .mem_to_reg         (mem_to_reg),
+        .lsu_busy           (lsu_busy),
+        .lsu_done           (lsu_done),
+
+        // ===== AXI读地址通道 =====
+        .io_lsu_araddr      (io_lsu_araddr),
+        .io_lsu_arsize      (io_lsu_arsize),
+        .io_lsu_arvalid     (io_lsu_arvalid),
+        .io_lsu_arready     (io_lsu_arready),
+
+        // ===== AXI读数据通道 =====
         .io_lsu_rdata       (io_lsu_rdata),
         .io_lsu_rvalid      (io_lsu_rvalid),
-        .mem_read           (mem_read),
-        .mem_write          (mem_write),
-        .addr               (alu_result),
-        .funct3             (funct3),
-        .store_data         (rs2_data),
-        .load_data          (load_data),
-        .io_lsu_araddr      (io_lsu_araddr),
+        .io_lsu_rresp       (io_lsu_rresp),
+        .io_lsu_rready      (io_lsu_rready),
+
+        // ===== AXI写地址通道 =====
         .io_lsu_awaddr      (io_lsu_awaddr),
-        .io_lsu_wdata       (io_lsu_wdata),
-        .lsu_ready          (lsu_ready),
-        .mem_to_reg         (mem_to_reg),
-        .io_lsu_arsize      (io_lsu_arsize),
         .io_lsu_awsize      (io_lsu_awsize),
-        .io_lsu_wstrb       (io_lsu_wstrb)
+        .io_lsu_awvalid     (io_lsu_awvalid),
+        .io_lsu_awready     (io_lsu_awready),
+
+        // ===== AXI写数据通道 =====
+        .io_lsu_wdata       (io_lsu_wdata),
+        .io_lsu_wstrb       (io_lsu_wstrb),
+        .io_lsu_wvalid      (io_lsu_wvalid),
+        .io_lsu_wlast       (io_lsu_wlast),
+        .io_lsu_wready      (io_lsu_wready),
+
+        // ===== AXI写响应通道 =====
+        .io_lsu_bresp       (io_lsu_bresp),
+        .io_lsu_bvalid      (io_lsu_bvalid),
+        .io_lsu_bready      (io_lsu_bready)
     );
-    
+
+    // LSU/WB 流水线寄存器
+    LSU_WB ysyx_25010003_LSU_WB(
+        .clock              (clock),
+        .reset              (reset),
+        .alu_result_in      (EX_LSU_alu_result),
+        .load_data_in       (load_data),
+        .rd_addr_in         (EX_LSU_rd_addr),
+        .reg_write_in       (EX_LSU_reg_write),
+        .mem_to_reg_in      (mem_to_reg),
+        .alu_result_out     (LSU_WB_alu_result),
+        .load_data_out      (LSU_WB_load_data),
+        .rd_addr_out        (LSU_WB_rd_addr),
+        .reg_write_out      (LSU_WB_reg_write),
+        .mem_to_reg_out     (LSU_WB_mem_to_reg)
+    );
+
     // 写回单元
     WBU ysyx_25010003_WBU(
-        .idu_ready          (idu_ready),
-        .lsu_ready          (lsu_ready),
-        .alu_result         (alu_result),
-        .load_data          (load_data),
-        .snpc               (snpc),
-        .mem_to_reg         (mem_to_reg),
-        .jal_en             (jal_en),
-        .jalr_en            (jalr_en),
-        .wb_data            (wb_data),
-        .wbu_ready          (wbu_ready)
+        .alu_result         (LSU_WB_alu_result),
+        .load_data          (LSU_WB_load_data),
+        .mem_to_reg         (LSU_WB_mem_to_reg),
+        .wb_data            (wb_data)
+    );
+
+    // 冒险检测单元
+    Hazard ysyx_25010003_Hazard(
+        .clock              (clock),
+        .ID_EX_mem_read     (ID_EX_mem_read),
+        .ID_EX_rd           (ID_EX_rd_addr),
+        .ID_rs1             (rs1_addr),
+        .ID_rs2             (rs2_addr),
+        .branch_taken       (branch_taken),
+        .jal_en             (ID_EX_jal_en),
+        .jalr_en            (ID_EX_jalr_en),
+        .ecall_taken        (ecall_taken),
+        .mret_taken         (mret_taken),
+        .lsu_busy           (lsu_busy),
+        .lsu_done           (lsu_done),
+        .stall_IF           (stall_IF),
+        .stall_ID           (stall_ID),
+        .stall_EX           (stall_EX),
+        .stall_LSU          (stall_LSU),
+        .flush_IF           (flush_IF),
+        .flush_ID           (flush_ID),
+        .flush_EX           (flush_EX),
+        .flush_LSU          (flush_LSU)
+    );
+
+    // 数据前递单元
+    Forwarding ysyx_25010003_Forwarding(
+        .ID_EX_rs1          (ID_EX_rs1_addr),
+        .ID_EX_rs2          (ID_EX_rs2_addr),
+        .ID_EX_rs1_data     (ID_EX_rs1_data),
+        .ID_EX_rs2_data     (ID_EX_rs2_data),
+        .EX_LSU_rd          (EX_LSU_rd_addr),
+        .EX_LSU_reg_write   (EX_LSU_reg_write),
+        .EX_LSU_alu_result  (EX_LSU_alu_result),
+        .LSU_WB_rd          (LSU_WB_rd_addr),
+        .LSU_WB_reg_write   (LSU_WB_reg_write),
+        .LSU_WB_wb_data     (wb_data),
+        .forward_a          (forward_a),
+        .forward_b          (forward_b)
     );
 
 `ifdef VERILATOR
@@ -471,32 +683,37 @@ import "DPI-C" function void set_retfunc();
 import "DPI-C" function void perf_alu_inst();
 import "DPI-C" function void perf_branch_inst();
 import "DPI-C" function void perf_csr_inst();
+import "DPI-C" function void perf_mem_inst();
 `endif
 
 always @(posedge clock) begin
 `ifdef VERILATOR
-    if(jal_en)
+    if(ID_EX_jal_en)
         set_callfunc();
-    if(jalr_en)
+    if(ID_EX_jalr_en)
         set_retfunc();
 `endif
 end
 
-// 指令类型性能计数器
+// 指令类型性能计数器（在EX阶段计数有效指令）
 always @(posedge clock) begin
 `ifdef VERILATOR
-    if (inst_valid && !reset) begin
+    if (!reset && ID_EX_data_valid) begin
         // 分支跳转指令
-        if (branch_taken || jal_en || jalr_en)
+        if (branch_taken || ID_EX_jal_en || ID_EX_jalr_en)
             perf_branch_inst();
 
         // CSR指令
-        if (is_csr_op)
+        if (ID_EX_is_csr_op)
             perf_csr_inst();
 
         // ALU计算指令（排除访存、分支、CSR指令）
-        if (!mem_read && !mem_write && !branch_taken && !jal_en && !jalr_en && !is_csr_op)
+        if (!ID_EX_mem_read && !ID_EX_mem_write && !branch_taken && !ID_EX_jal_en && !ID_EX_jalr_en && !ID_EX_is_csr_op)
             perf_alu_inst();
+
+        // 访存指令
+        if (ID_EX_mem_read || ID_EX_mem_write)
+            perf_mem_inst();
     end
 `endif
 end

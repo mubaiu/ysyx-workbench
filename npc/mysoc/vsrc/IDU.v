@@ -28,8 +28,7 @@ module IDU(
     output reg         fence_i_en,  // FENCE.I使能信号
     output reg  [2:0]  funct3,
     output reg         auipc_flag,
-    output reg         is_csr_op,
-    output wire        idu_ready
+    output reg         is_csr_op
 );
 
 
@@ -42,9 +41,6 @@ import "DPI-C" function void invalid_inst(input int thispc);
     reg [6:0] opcode;
     // wire [2:0] funct3;
     reg [6:0] funct7;
-
-
-    assign idu_ready = !inst_valid;
 
     // assign opcode = inst[6:0];
     // assign funct3 = inst[14:12];
