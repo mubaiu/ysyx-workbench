@@ -48,14 +48,11 @@ module Hazard(
         if (lsu_busy) begin
             stall_IF = 1'b1;
             stall_ID = 1'b1;
-            stall_EX = 1'b1;
-            stall_LSU = 1'b1;  // 阻止EX_LSU寄存器更新
+            // stall_EX = 1'b1;
         end
 
-        // LSU访存完成后清除ID_EX和EX_LSU中的访存指令
+        // LSU访存完成后清除EX_LSU中的访存指令
         if (lsu_done) begin
-            flush_ID = 1'b1;
-            flush_EX = 1'b1;
             flush_LSU = 1'b1;
         end
 

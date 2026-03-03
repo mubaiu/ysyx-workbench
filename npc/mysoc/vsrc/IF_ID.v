@@ -8,6 +8,7 @@ module IF_ID(
     input wire [31:0] inst_in,
     input wire inst_valid_in,
 
+    output reg        stall_out,
     output reg [31:0] pc_out,
     output reg [31:0] inst_out,
     output reg inst_valid_out
@@ -15,6 +16,7 @@ module IF_ID(
 
     always @(posedge clock) begin
         inst_valid_out <= inst_valid_in;
+        stall_out <= stall;
         if (reset || flush) begin
             pc_out <= 32'h0;
             inst_out <= 32'h0;

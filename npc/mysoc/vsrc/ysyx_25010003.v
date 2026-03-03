@@ -290,6 +290,7 @@ module ysyx_25010003(
         .pc_in              (pc),
         .inst_in            (inst_out),
         .inst_valid_in      (inst_valid),
+        .stall_out          (stall_EX),
         .pc_out             (IF_ID_pc),
         .inst_out           (IF_ID_inst),
         .inst_valid_out     (IF_ID_inst_valid)
@@ -651,7 +652,7 @@ module ysyx_25010003(
         .lsu_done           (lsu_done),
         .stall_IF           (stall_IF),
         .stall_ID           (stall_ID),
-        .stall_EX           (stall_EX),
+        .stall_EX           (),
         .stall_LSU          (stall_LSU),
         .flush_IF           (flush_IF),
         .flush_ID           (flush_ID),
