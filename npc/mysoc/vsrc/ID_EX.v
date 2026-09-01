@@ -7,6 +7,7 @@ module ID_EX(
 
     // 数据输入
     input wire [31:0] pc_in,
+    input wire [31:0] inst_in,
     input wire [31:0] rs1_data_in,
     input wire [31:0] rs2_data_in,
     input wire [31:0] imm_in,
@@ -33,6 +34,7 @@ module ID_EX(
 
     // 数据输出
     output reg [31:0] pc_out,
+    output reg [31:0] inst_out,
     output reg [31:0] rs1_data_out,
     output reg [31:0] rs2_data_out,
     output reg [31:0] imm_out,
@@ -79,6 +81,7 @@ module ID_EX(
             lsu_wmask_out <= 4'b0;
             auipc_flag_out <= 1'b0;
             pc_out <= 32'h0;
+            inst_out <= 32'h0;
             rs1_data_out <= 32'h0;
             rs2_data_out <= 32'h0;
             imm_out <= 32'h0;
@@ -89,6 +92,7 @@ module ID_EX(
         else if (!stall) begin
             data_valid_out <= data_valid_in;
             pc_out <= pc_in;
+            inst_out <= inst_in;
             rs1_data_out <= rs1_data_in;
             rs2_data_out <= rs2_data_in;
             imm_out <= imm_in;

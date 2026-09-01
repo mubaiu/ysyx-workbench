@@ -18,19 +18,17 @@
 #include <device/mmio.h>
 #include <isa.h>
 
-#if   defined(CONFIG_PMEM_MALLOC)
+#if defined(CONFIG_YSYXSOC)
+static uint8_t sram[YSYXSOC_SRAM_SIZE] PG_ALIGN = {};
+static uint8_t mrom[YSYXSOC_MROM_SIZE] PG_ALIGN = {};
+static uint8_t flash[YSYXSOC_FLASH_SIZE] PG_ALIGN = {};
+static uint8_t psram[YSYXSOC_PSRAM_SIZE] PG_ALIGN = {};
+static uint8_t sdram[YSYXSOC_SDRAM_SIZE] PG_ALIGN = {};
+#elif defined(CONFIG_PMEM_MALLOC)
 static uint8_t *pmem = NULL;
 #else // CONFIG_PMEM_GARRAY
 static uint8_t pmem[CONFIG_MSIZE] PG_ALIGN = {};
 #endif
-
-// MROM and SRAM for SoC
-#define MROM_BASE 0x20000000
-#define MROM_SIZE 0x1000  // 4KB (0x20000000 - 0x20000fff)
-#define SRAM_BASE 0x0f000000
-#define SRAM_SIZE 0x1000000  // 16MB (0x0f000000 - 0x0fffffff)
-
-// MROM is now part of pmem array (at the beginning, index 0 to MROM_SIZE-1)
 
 #define MAX_NUM 100
 typedef struct mem_log{
@@ -94,8 +92,53 @@ void print_log() {
 }
 
 
+#ifdef CONFIG_YSYXSOC
+uint8_t* guest_to_host(paddr_t paddr) {
+  if (paddr - YSYXSOC_SRAM_BASE < YSYXSOC_SRAM_SIZE) {
+    return sram + paddr - YSYXSOC_SRAM_BASE;
+  }
+  if (paddr - YSYXSOC_MROM_BASE < YSYXSOC_MROM_SIZE) {
+    return mrom + paddr - YSYXSOC_MROM_BASE;
+  }
+  if (paddr - YSYXSOC_FLASH_BASE < YSYXSOC_FLASH_SIZE) {
+    return flash + paddr - YSYXSOC_FLASH_BASE;
+  }
+  if (paddr - YSYXSOC_PSRAM_BASE < YSYXSOC_PSRAM_SIZE) {
+    return psram + paddr - YSYXSOC_PSRAM_BASE;
+  }
+  if (paddr - YSYXSOC_SDRAM_BASE < YSYXSOC_SDRAM_SIZE) {
+    return sdram + paddr - YSYXSOC_SDRAM_BASE;
+  }
+  panic("address = " FMT_PADDR " is outside the ysyxSoC memory map at pc = " FMT_WORD,
+      paddr, cpu.pc);
+}
+
+static bool host_in_region(uint8_t *haddr, uint8_t *base, size_t size) {
+  return (uintptr_t)haddr - (uintptr_t)base < size;
+}
+
+paddr_t host_to_guest(uint8_t *haddr) {
+  if (host_in_region(haddr, sram, sizeof(sram))) {
+    return haddr - sram + YSYXSOC_SRAM_BASE;
+  }
+  if (host_in_region(haddr, mrom, sizeof(mrom))) {
+    return haddr - mrom + YSYXSOC_MROM_BASE;
+  }
+  if (host_in_region(haddr, flash, sizeof(flash))) {
+    return haddr - flash + YSYXSOC_FLASH_BASE;
+  }
+  if (host_in_region(haddr, psram, sizeof(psram))) {
+    return haddr - psram + YSYXSOC_PSRAM_BASE;
+  }
+  if (host_in_region(haddr, sdram, sizeof(sdram))) {
+    return haddr - sdram + YSYXSOC_SDRAM_BASE;
+  }
+  panic("host address %p is outside the ysyxSoC memory map", haddr);
+}
+#else
 uint8_t* guest_to_host(paddr_t paddr) { return pmem + paddr - CONFIG_MBASE; }
 paddr_t host_to_guest(uint8_t *haddr) { return haddr - pmem + CONFIG_MBASE; }
+#endif
 
 static word_t pmem_read(paddr_t addr, int len) {
   word_t ret = host_read(guest_to_host(addr), len);
@@ -107,17 +150,49 @@ static void pmem_write(paddr_t addr, int len, word_t data) {
 }
 
 static void out_of_bound(paddr_t addr) {
+#ifdef CONFIG_YSYXSOC
+  panic("address = " FMT_PADDR " is outside the ysyxSoC memory map at pc = " FMT_WORD,
+      addr, cpu.pc);
+#else
   panic("address = " FMT_PADDR " is out of bound of pmem [" FMT_PADDR ", " FMT_PADDR "] at pc = " FMT_WORD,
       addr, PMEM_LEFT, PMEM_RIGHT, cpu.pc);
+#endif
 }
 
 void init_mem() {
-#if   defined(CONFIG_PMEM_MALLOC)
+#if defined(CONFIG_YSYXSOC)
+#ifdef CONFIG_MEM_RANDOM
+  int seed = rand();
+  memset(sram, seed, sizeof(sram));
+  memset(mrom, seed, sizeof(mrom));
+  memset(flash, seed, sizeof(flash));
+  memset(psram, seed, sizeof(psram));
+  memset(sdram, seed, sizeof(sdram));
+#endif
+  Log("ysyxSoC SRAM  [" FMT_PADDR ", " FMT_PADDR "]",
+      (paddr_t)YSYXSOC_SRAM_BASE,
+      (paddr_t)(YSYXSOC_SRAM_BASE + YSYXSOC_SRAM_SIZE - 1));
+  Log("ysyxSoC MROM  [" FMT_PADDR ", " FMT_PADDR "]",
+      (paddr_t)YSYXSOC_MROM_BASE,
+      (paddr_t)(YSYXSOC_MROM_BASE + YSYXSOC_MROM_SIZE - 1));
+  Log("ysyxSoC flash [" FMT_PADDR ", " FMT_PADDR "]",
+      (paddr_t)YSYXSOC_FLASH_BASE,
+      (paddr_t)(YSYXSOC_FLASH_BASE + YSYXSOC_FLASH_SIZE - 1));
+  Log("ysyxSoC PSRAM [" FMT_PADDR ", " FMT_PADDR "]",
+      (paddr_t)YSYXSOC_PSRAM_BASE,
+      (paddr_t)(YSYXSOC_PSRAM_BASE + YSYXSOC_PSRAM_SIZE - 1));
+  Log("ysyxSoC SDRAM [" FMT_PADDR ", " FMT_PADDR "]",
+      (paddr_t)YSYXSOC_SDRAM_BASE,
+      (paddr_t)(YSYXSOC_SDRAM_BASE + YSYXSOC_SDRAM_SIZE - 1));
+#elif defined(CONFIG_PMEM_MALLOC)
   pmem = malloc(CONFIG_MSIZE);
   assert(pmem);
-#endif
   IFDEF(CONFIG_MEM_RANDOM, memset(pmem, rand(), CONFIG_MSIZE));
   Log("physical memory area [" FMT_PADDR ", " FMT_PADDR "]", PMEM_LEFT, PMEM_RIGHT);
+#else
+  IFDEF(CONFIG_MEM_RANDOM, memset(pmem, rand(), CONFIG_MSIZE));
+  Log("physical memory area [" FMT_PADDR ", " FMT_PADDR "]", PMEM_LEFT, PMEM_RIGHT);
+#endif
 }
 
 word_t paddr_read(paddr_t addr, int len) {
@@ -137,6 +212,14 @@ word_t paddr_read(paddr_t addr, int len) {
 
 void paddr_write(paddr_t addr, int len, word_t data) {
   if (likely(in_pmem(addr))) { 
+#ifdef CONFIG_YSYXSOC
+    // XIP flash and MROM are read-only in ysyxSoC.  The CPU ignores the bus
+    // error response, so the reference must leave their contents unchanged.
+    if (addr - YSYXSOC_FLASH_BASE < YSYXSOC_FLASH_SIZE ||
+        addr - YSYXSOC_MROM_BASE < YSYXSOC_MROM_SIZE) {
+      return;
+    }
+#endif
     #ifdef CONFIG_MTRACE 
       write_log(addr, len, data);
     #endif

@@ -1,12 +1,11 @@
 module EXU(
     input  wire         clock,
     input  wire         reset,
+    input  wire         data_valid,
     // ALU控制信号
     input  wire [3:0]   alu_op,
-    input  wire         ebreak_en, // EBREAK标志
     input  wire         ecall_en,  // ECALL使能信号
     input  wire         mret_en,   // MRET使能信号
-    input  wire         idu_ready,
     // 操作数
     input  wire [31:0]  rs1_data,
     input  wire [31:0]  rs2_data,
@@ -35,7 +34,6 @@ module EXU(
 );
 
 `ifdef VERILATOR
-import "DPI-C" function void ebreak();
 import "DPI-C" function void etrace_exception(input int mcause, input int epc, input int mtvec);
 `endif
 
@@ -64,13 +62,15 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
                           (imm == 32'hF12) ? marchid : 32'h0;
     
     // AUIPC指令的特征是使用加法操作(alu_op=0000)和立即数alu_result(alu_src=1)，但不是跳转指令
-    assign operand_a = (jal_en | auipc_flag ) ? pc : rs1_data;
-    assign operand_b = alu_src ? imm : rs2_data;  // 使用立即数作为偏移量         // 使用立即数作为偏移量
+    // JAL/JALR指令的alu_result应该是返回地址(pc+4)，跳转目标在branch_target中计算
+    assign operand_a = (jal_en | jalr_en | auipc_flag) ? pc : rs1_data;
+    assign operand_b = (jal_en | jalr_en) ? 32'd4 :
+                       alu_src ? imm : rs2_data;
     
     // 分支目标计算
     // JALR指令：pc = rs1 + imm (需要将最低位清零)
     // JAL/分支指令：pc = pc + imm
-    assign branch_target = (!idu_ready) ? ((jal_en | jalr_en) ? 
+    assign branch_target = (data_valid) ? ((jal_en | jalr_en) ?
                         (alu_op == 4'b0000 && alu_src && jal_en) ? (pc + imm) :    // JAL: pc + imm
                         (rs1_data + imm) & 32'hFFFFFFFE :                // JALR: (rs1 + imm) & ~1
                         (pc + imm)) : 32'h0;                     // 分支指令: pc + imm
@@ -88,30 +88,30 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
         endcase
     end
 
-    assign branch_taken = (!idu_ready) ? (branch && branch_cond) || (jal_en | jalr_en) : 1'b0;
+    assign branch_taken = (data_valid) ? (branch && branch_cond) || (jal_en | jalr_en) : 1'b0;
 
     // ALU操作
     always @(*) begin
         alu_result = 32'h0;
-        if(!idu_ready) begin
-            case (alu_op)
-                4'b0000: alu_result = operand_a + operand_b;  // 加法计算：基地址 + 偏移量
-                4'b0001: alu_result = operand_a - operand_b;      // SUB
-                4'b0010: alu_result = operand_a << operand_b[4:0]; // SLL
-                4'b0011: alu_result = {31'b0, $signed(operand_a) < $signed(operand_b)}; // SLT
-                4'b0100: alu_result = {31'b0, operand_a < operand_b}; // SLTIU
-                4'b0101: alu_result = operand_a ^ operand_b;      // XOR
-                4'b0110: alu_result = operand_a >> operand_b[4:0]; // SRL
-                4'b0111: alu_result = $signed(operand_a) >>> operand_b[4:0]; // SRA
-                4'b1000: alu_result = operand_a | operand_b;      // OR
-                4'b1001: alu_result = alu_src ? (operand_a & $signed(operand_b)) : (operand_a & operand_b);      // AND
-                4'b1010: alu_result = operand_b;                  // 直通(用于LUI)
-                4'b1011: alu_result = {31'b0, operand_a == 0}; //SEQZ
-                4'b1100: alu_result = csr_read_data;
+        if(data_valid) begin
+        case (alu_op)
+            4'b0000: alu_result = operand_a + operand_b;  // 加法计算：基地址 + 偏移量
+            4'b0001: alu_result = operand_a - operand_b;      // SUB
+            4'b0010: alu_result = operand_a << operand_b[4:0]; // SLL
+            4'b0011: alu_result = {31'b0, $signed(operand_a) < $signed(operand_b)}; // SLT
+            4'b0100: alu_result = {31'b0, operand_a < operand_b}; // SLTIU
+            4'b0101: alu_result = operand_a ^ operand_b;      // XOR
+            4'b0110: alu_result = operand_a >> operand_b[4:0]; // SRL
+            4'b0111: alu_result = $signed(operand_a) >>> operand_b[4:0]; // SRA
+            4'b1000: alu_result = operand_a | operand_b;      // OR
+            4'b1001: alu_result = alu_src ? (operand_a & $signed(operand_b)) : (operand_a & operand_b);      // AND
+            4'b1010: alu_result = operand_b;                  // 直通(用于LUI)
+            4'b1011: alu_result = {31'b0, operand_a == 0}; //SEQZ
+            4'b1100: alu_result = csr_read_data;
 
-                default: alu_result = 32'h0;
-            endcase
-        end
+            default: alu_result = 32'h0;
+        endcase
+    end
     end
 
     //rt-thread
@@ -120,7 +120,7 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
         mret_taken = 1'b0;
         mret_target = 32'h0;
 
-        if (mret_en && !idu_ready) begin
+        if (data_valid && mret_en) begin
             mret_taken = 1'b1;
             mret_target = mepc;  // 跳转到mepc保存的地址
         end
@@ -130,7 +130,7 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
         ecall_taken = 1'b0;
         ecall_target = 32'h0;
 
-        if (ecall_en && !idu_ready) begin
+        if (data_valid && ecall_en) begin
             ecall_taken = 1'b1;
             ecall_target = mtvec; // 跳转到mtvec地址
         end
@@ -168,10 +168,4 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
         end
     end
 
-    always @(*) begin
-`ifdef VERILATOR
-        if(ebreak_en)
-            ebreak();
-`endif
-    end
 endmodule

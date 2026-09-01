@@ -41,7 +41,9 @@ module computer(
     wire        io_master_bvalid;
     wire        io_master_bready;
 
-ysyx_25010003 cpu(
+ysyx_25010003 #(
+    .RESET_VECTOR       (32'h80000000)
+) cpu(
     .clock              (clock),
     .reset              (reset),
     .io_interrupt       (     ), 

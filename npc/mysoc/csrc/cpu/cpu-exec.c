@@ -5,14 +5,12 @@
 #include <verilated.h>
 #include <verilated_fst_c.h>
 #include "VysyxSoCFull.h"
-#include "VysyxSoCFull___024root.h"
 #include <nvboard.h>
 #define MAX_INST_TO_PRINT 10
 #define MAX_iring 20
 
 extern uint64_t sim_time;
-Decode d = {d.pc = 0x30000000};
-static uint32_t last_difftest_pc = 0x30000000;
+static Decode d = {};
 
 void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
 // 在cpu-exec.c中初始化CPU
@@ -20,8 +18,31 @@ CPU_state cpu = {};
 riscv32e_CPU_state npc = {};
 static bool g_print_step = false;
 static uint64_t g_timer = 0; // unit: us
-uint64_t g_nr_guest_inst = 1;
-static uint64_t g_nr_cycles = 2;  // 周期计数器
+uint64_t g_nr_guest_inst = 0;
+static uint64_t g_nr_cycles = 0;  // 周期计数器
+
+typedef struct {
+  bool valid;
+  vaddr_t pc;
+  vaddr_t next_pc;
+  uint32_t inst;
+  bool skip_ref;
+} CommitEvent;
+
+static CommitEvent commit_event = {};
+
+// RTL 只在 WBU 有效退休时调用一次。事件在 eval() 返回后处理，确保同一
+// 个时钟沿上的寄存器写回已经通过 set_reg_value() 更新到 npc.gpr。
+extern "C" void commit_instruction(uint32_t pc, uint32_t next_pc,
+                                   uint32_t inst, uint32_t skip_ref) {
+  Assert(!commit_event.valid,
+         "unhandled commit before pc = " FMT_WORD, pc);
+  commit_event.valid = true;
+  commit_event.pc = pc;
+  commit_event.next_pc = next_pc;
+  commit_event.inst = inst;
+  commit_event.skip_ref = (skip_ref != 0);
+}
 
 // 性能计数器
 static uint64_t g_ifu_fetch_count = 0;   // IFU取指次数
@@ -31,12 +52,6 @@ static uint64_t g_alu_inst_count = 0;    // ALU计算指令
 static uint64_t g_mem_inst_count = 0;    // 访存指令
 static uint64_t g_branch_inst_count = 0; // 分支跳转指令
 static uint64_t g_csr_inst_count = 0;    // CSR指令
-
-// 指令类别周期数计数器
-static uint64_t g_alu_cycles = 0;        // ALU指令执行周期
-static uint64_t g_mem_cycles = 0;        // 访存指令执行周期
-static uint64_t g_branch_cycles = 0;     // 分支指令执行周期
-static uint64_t g_csr_cycles = 0;        // CSR指令执行周期
 
 // IFU stall 原因计数器
 static uint64_t g_ifu_stall_lsu = 0;     // 因LSU占用总线而stall
@@ -78,12 +93,6 @@ extern "C" void perf_icache_miss(uint64_t cycles) {
     g_icache_miss_count++;
     g_icache_miss_cycles += cycles;
 }
-
-// DPI-C函数：指令类别周期数
-extern "C" void perf_alu_cycles(uint64_t cycles) { g_alu_cycles += cycles; }
-extern "C" void perf_mem_cycles(uint64_t cycles) { g_mem_cycles += cycles; }
-extern "C" void perf_branch_cycles(uint64_t cycles) { g_branch_cycles += cycles; }
-extern "C" void perf_csr_cycles(uint64_t cycles) { g_csr_cycles += cycles; }
 
 // DPI-C函数：IFU stall 原因
 extern "C" void perf_ifu_stall_lsu() { g_ifu_stall_lsu++; }
@@ -169,15 +178,15 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 
 
 
-void exec_once(Decode *d, vaddr_t pc) {
-  // d->pc = pc;
-  // printf("get_pc:%x\n",d->pc);
-  // d->snpc = pc;
-  // printf("npc->pc: %x   snpc: %x    dnpc: %x\n", npc.pc, d->snpc, d->dnpc);
+static void exec_once(Decode *d, vaddr_t pc, vaddr_t next_pc, uint32_t inst) {
+  d->pc = pc;
+  d->snpc = pc + 4;
+  d->dnpc = next_pc;
+  d->isa.inst = inst;
 
-  isa_exec_once(d); //  取指
-  // printf("get_dnpc: %x\n", d->dnpc);
-  // npc.pc = d->dnpc;
+  // mysoc 的 isa_exec_once() 只处理 ftrace；指令本身来自退休流水级，
+  // 不能再按当前取指 PC 从主机侧内存猜测。
+  isa_exec_once(d);
   
 #ifdef CONFIG_ITRACE
   char *p = d->logbuf;
@@ -211,64 +220,53 @@ extern VerilatedContext* contextp;
 extern VysyxSoCFull* ysyxSoCFull;
 extern VerilatedFstC* tfp;
 
-bool is_device_access() 
-{
-  uint32_t araddr = ysyxSoCFull->rootp->ysyxSoCFull__DOT__asic__DOT__axi42apb__DOT__araddr_reg_r;                                                 
-  if (araddr >= 0x10000000 && araddr <= 0x10000FFF) return true;// UART 范围   
-  if (araddr >= 0x10001000 && araddr <= 0x10001FFF) return true;// SPI 范围
+static void process_commit() {
+  CommitEvent event = commit_event;
+  commit_event.valid = false;
 
-  return false;                             
-}  
+  g_nr_guest_inst++;
+  npc.pc = event.next_pc;
+  exec_once(&d, event.pc, event.next_pc, event.inst);
+
+#ifdef CONFIG_DIFFTEST
+  if (event.skip_ref) {
+    difftest_skip_ref();
+  }
+#endif
+  trace_and_difftest(&d, event.next_pc);
+}
+
+static void step_cycle() {
+  nvboard_update();
+  ysyxSoCFull->clock = 0;
+  ysyxSoCFull->eval();
+  IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+
+  ysyxSoCFull->clock = 1;
+  ysyxSoCFull->eval();
+  IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
+  g_nr_cycles++;
+}
 
 static void execute(uint64_t n) {
+  uint64_t nr_retired = 0;
 
-
-  for (;n > 0; n --) {
-
-    if(last_difftest_pc != d.pc){
-      g_nr_guest_inst ++;  // PC更新时才计数指令
-      exec_once(&d, last_difftest_pc);
-    #ifdef CONFIG_DIFFTEST
-      if(is_device_access()){
-        difftest_skip_ref();
-      }
-      trace_and_difftest(&d, d.dnpc);
-    #endif
-    last_difftest_pc = d.pc;
+  while (nr_retired < n) {
+    if (!commit_event.valid && nemu_state.state == NEMU_RUNNING) {
+      step_cycle();
     }
-    for (int i = 0; i < 2; i++) {
-        nvboard_update();
-        ysyxSoCFull->clock = 0;
-        ysyxSoCFull->eval();
-        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
 
-        ysyxSoCFull->clock = 1;
-        ysyxSoCFull->eval();
-        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
-        g_nr_cycles++;  // 统计周期数
-        if (nemu_state.state != NEMU_RUNNING) break;
+    // EBREAK 和 commit 在同一个 WBU 时钟沿到达。即使 EBREAK 已把状态改成
+    // NEMU_END，也要先完成该退休事件的 trace/difftest。
+    if (commit_event.valid) {
+      process_commit();
+      nr_retired++;
     }
-    if (nemu_state.state != NEMU_RUNNING) break;
-    
 
-    // if(g_nr_cycles == 500000){
-    //   break;
-    // }
-    
+    if (nemu_state.state != NEMU_RUNNING) {
+      break;
     }
-    // IFDEF(CONFIG_DEVICE, device_update());
-    for (int i = 0; i < 2; i++) {
-        nvboard_update();
-        ysyxSoCFull->clock = 0;
-        ysyxSoCFull->eval();
-        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
-
-        ysyxSoCFull->clock = 1;
-        ysyxSoCFull->eval();
-        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
-        g_nr_cycles++;  // 统计周期数
-    }
-    exec_once(&d, npc.pc);
+  }
 }
 
 static void statistic() {

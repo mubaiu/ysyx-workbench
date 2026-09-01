@@ -9,3 +9,4 @@
 CLAUDE.md
 build/
 obj_dir/
+/nemu/include/config/ysyxsoc.h

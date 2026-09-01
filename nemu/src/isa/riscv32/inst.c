@@ -104,6 +104,10 @@ static int decode_exec(Decode *s) {
                                                                     csr_val = cpu.csr.mstatus;
                                                                 } else if (csr_addr == 0x341) { // mepc地址
                                                                     csr_val = cpu.csr.mepc;
+                                                                } else if (csr_addr == 0xF11) { // mvendorid（只读）
+                                                                    csr_val = 0x79737978;
+                                                                } else if (csr_addr == 0xF12) { // marchid（只读）
+                                                                    csr_val = 0x017d9f53;
                                                                 }
                                                                 R(rd) = csr_val;              // 将CSR当前值保存到rd寄存器
                                                                 // 根据CSR地址写入相应的寄存器
@@ -129,6 +133,10 @@ static int decode_exec(Decode *s) {
                                                                     csr_val = cpu.csr.mstatus;
                                                                 } else if (csr_addr == 0x341) { // mepc地址
                                                                     csr_val = cpu.csr.mepc;
+                                                                } else if (csr_addr == 0xF11) { // mvendorid（只读）
+                                                                    csr_val = 0x79737978;
+                                                                } else if (csr_addr == 0xF12) { // marchid（只读）
+                                                                    csr_val = 0x017d9f53;
                                                                 }
                                                                 
                                                                 // 将CSR值保存到目标寄存器
@@ -155,6 +163,10 @@ static int decode_exec(Decode *s) {
                                                                 );
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
   INSTPAT("??????? ????? ????? ??? ????? 00101 11", auipc  , U, R(rd) = s->pc + imm);
+  // The reference has no instruction cache, so FENCE/FENCE.I have no host-side
+  // action.  They still need to decode and advance PC for difftest.
+  INSTPAT("??????? ????? ????? 000 ????? 00011 11", fence  , N, );
+  INSTPAT("0000000 00000 00000 001 00000 00011 11", fence_i, N, );
   
   INSTPAT("??????? ????? ????? 000 ????? 01000 11", sb     , S, Mw(src1 + imm, 1, src2));
   INSTPAT("??????? ????? ????? 010 ????? 01000 11", sw     , S, Mw(src1 + imm, 4, src2));
@@ -210,4 +222,3 @@ int isa_exec_once(Decode *s) {
   // printf("nemu_inst: %08x\n", s->isa.inst);
   return decode_exec(s);
 }
-

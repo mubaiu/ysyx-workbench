@@ -28,7 +28,6 @@ module Memory (
 );
 
 `ifdef VERILATOR
-import "DPI-C" function int intake(input int pc);
 import "DPI-C" function void vaddr_write(input int addr, input int len, input int data);
 import "DPI-C" function int vaddr_read(input int addr, input int len);
 `endif

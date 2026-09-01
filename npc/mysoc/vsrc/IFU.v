@@ -49,10 +49,6 @@ module IFU(
     localparam WAIT = 3'd2;
 
 `ifdef VERILATOR
-    import "DPI-C" function int intake(input int pc);
-    import "DPI-C" function void set_snpc(input int pc);
-    import "DPI-C" function void set_dnpc(input int pc);
-    import "DPI-C" function void set_pc(input int pc);
     import "DPI-C" function void perf_ifu_fetch();  // 性能计数器：IFU取指
     import "DPI-C" function void perf_ifu_stall_wait(); // IFU等待AXI响应
     import "DPI-C" function void perf_ifu_idle();       // IFU空闲
@@ -146,14 +142,6 @@ module IFU(
           state = next_state;
     end
 
-    always @(posedge clock) begin
-`ifdef VERILATOR
-        set_snpc(snpc);
-        set_dnpc(dnpc_reg);
-        set_pc(pc);
-`endif
-    end
-
     // PC更新逻辑
     always @(posedge clock) begin
         if (reset) begin
@@ -219,4 +207,3 @@ module IFU(
 
 
 endmodule
-

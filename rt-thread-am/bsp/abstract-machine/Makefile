@@ -8,7 +8,11 @@ NAME = rtthread
 SRCS = $(shell find src -name "*.c")
 CFLAGS += -DHAVE_CCONFIG_H -D__RTTHREAD__
 CFLAGS += -Wno-nonnull-compare
-# LDFLAGS += -T extra.ld
+# soclinker.ld already contains these RT-Thread sections.  The standalone NPC
+# and NEMU linker scripts do not, so include the augmenting script for them.
+ifneq ($(filter riscv32e-npc riscv32-nemu,$(ARCH)),)
+LDSCRIPTS += $(abspath extra.ld)
+endif
 -include $(FILE_MK)
 -include $(AM_APPS_MK)
 include $(AM_HOME)/Makefile

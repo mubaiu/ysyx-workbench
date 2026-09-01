@@ -15,15 +15,12 @@
 
 #include <reg.h>
 #include <cpu/cpu.h>
-#include <cpu/ifetch.h>
 #include <cpu/decode.h>
 
 // #define R(i) gpr(i)
 // #define Mr vaddr_read
 // #define Mw vaddr_write
 
-bool callfunc = false;
-bool retfunc = false;
 void display_callfunc(word_t pc, word_t func_addr);
 void display_retfunc(word_t pc);
 
@@ -61,14 +58,13 @@ void display_retfunc(word_t pc);
 static int decode_exec(Decode *s) {
   // s->dnpc = s->snpc;
 #ifdef CONFIG_FTRACE
-if(callfunc){
-  display_callfunc(s->pc, s->dnpc);
-  callfunc = false;
-}
-else if(retfunc){
-  display_retfunc(s->pc);
-  retfunc = false;
-}
+  uint32_t opcode = s->isa.inst & 0x7f;
+  if (opcode == 0x6f) {
+    display_callfunc(s->pc, s->dnpc);
+  }
+  else if (opcode == 0x67) {
+    display_retfunc(s->pc);
+  }
 #endif
 // #define INSTPAT_INST(s) ((s)->isa.inst)
 // #define INSTPAT_MATCH(s, name, type, ... /* execute body */ ) { \
@@ -151,26 +147,5 @@ else if(retfunc){
 }
 
 int isa_exec_once(Decode *s) {
-  // s->isa.inst = inst_fetch(&s->pc, 4);
-  // printf("inst: %08x\n", s->isa.inst);
   return decode_exec(s);
 }
-
-// int intake_m(Decode *s) {
-//     // 计算正确的内存地址
-//     // uint32_t addr = s->snpc;
-//     // uint32_t index = (addr - 0x80000000) >> 2;  // 从0x80000000开始，每指令4字节
-    
-//     // // 边界检查
-//     // if (index >= MEMORY_SIZE) {
-//     //     printf("Error: Memory access out of bounds at PC = 0x%08x (index = %u)\n", addr, index);
-//     //     exit(1);
-//     // }
-    
-//     // // 获取指令并设置到解码结构中
-//     // s->isa.inst = memory[index];
-//     // s->snpc+=4;
-//     // 执行指令解码
-//     return decode_exec(s);
-// }
-

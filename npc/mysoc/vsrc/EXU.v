@@ -4,7 +4,6 @@ module EXU(
     input  wire         data_valid,
     // ALU控制信号
     input  wire [3:0]   alu_op,
-    input  wire         ebreak_en, // EBREAK标志
     input  wire         ecall_en,  // ECALL使能信号
     input  wire         mret_en,   // MRET使能信号
     // 操作数
@@ -35,7 +34,6 @@ module EXU(
 );
 
 `ifdef VERILATOR
-import "DPI-C" function void ebreak();
 import "DPI-C" function void etrace_exception(input int mcause, input int epc, input int mtvec);
 `endif
 
@@ -170,10 +168,4 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
         end
     end
 
-    always @(*) begin
-`ifdef VERILATOR
-        if(ebreak_en)
-            ebreak();
-`endif
-    end
 endmodule

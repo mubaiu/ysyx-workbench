@@ -194,7 +194,6 @@ static char *img_file = NULL;
 static char *elf_file = NULL;
 static int difftest_port = 1234;
 
-#define FLASH_SIZE 16 * 1024 * 1024  // 16MB
 // uint8_t mrom_mem[MROM_SIZE] PG_ALIGN = {};
 
 int i = 0; // global variable to track memory index
@@ -215,10 +214,10 @@ static int is_batch_mode = false;
 
   Log("The image is %s, size = %ld", img_file, size);
 
-    // Check if image size exceeds MROM capacity
-  // if (size > FLASH_SIZE) {
-  //   Assert(0, "Image too large for FLASH (max %d bytes, got %ld bytes)", FLASH_SIZE, size);
-  // }
+  uint64_t image_capacity = (uint64_t)PMEM_RIGHT - (uint64_t)RESET_VECTOR + 1;
+  Assert(size >= 0 && (uint64_t)size <= image_capacity,
+      "Image too large for physical memory (max %llu bytes, got %ld bytes)",
+      (unsigned long long)image_capacity, size);
 
   fseek(fp, 0, SEEK_SET);
   int ret = fread(guest_to_host(RESET_VECTOR), size, 1, fp);

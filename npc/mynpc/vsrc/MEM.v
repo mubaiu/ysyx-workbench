@@ -29,13 +29,12 @@ module Memory (
 );
 
 `ifdef VERILATOR
-import "DPI-C" function int intake(input int pc);
 import "DPI-C" function void vaddr_write(input int addr, input int len, input int data);
 import "DPI-C" function int vaddr_read(input int addr, input int len);
 `endif
 
-wire [31:0] len;
 wire [31:0] aligned_addr;
+wire [31:0] write_base_addr;
 
 wire ar_handshake = io_slave_arvalid && io_slave_arready;  // 读地址握手
 wire r_handshake  = io_slave_rvalid  && io_slave_rready ;  // 读数据握手
@@ -43,12 +42,8 @@ wire aw_handshake = io_slave_awvalid && io_slave_awready;  // 写地址握手
 wire w_handshake  = io_slave_wvalid  && io_slave_wready ;  // 写数据握手
 wire b_handshake  = io_slave_bvalid  && io_slave_bready ;  // 写响应握手
 
-assign len = (io_slave_size == 2'b00) ? 32'd1 : // byte
-             (io_slave_size == 2'b01) ? 32'd2 : // half-word
-             (io_slave_size == 2'b10) ? 32'd4 : // word
-             32'd0; // default to byte for safety
-
 assign aligned_addr = {io_slave_araddr[31:2], 2'b00}; // 字对齐(4字节)
+assign write_base_addr = {io_slave_awaddr[31:2], 2'b00};
 
 //读地址/数据通道
 always @(posedge clock) begin
@@ -90,7 +85,38 @@ always @(posedge clock) begin
         if (w_handshake) begin
             io_slave_wready <= 1'b0;  // 写地址和写数据都握手成功，拉低写数据 ready
 `ifdef VERILATOR
-            vaddr_write(io_slave_awaddr, len, io_slave_wdata);
+            // AXI 写数据按 WSTRB 选择字节通道。AWADDR 可以是非对齐
+            // 地址，因此每个有效通道都要写到所属 32 位字的对应字节。
+            case (io_slave_wstrb)
+                4'b0001: vaddr_write(write_base_addr + 32'd0, 1,
+                                      {24'b0, io_slave_wdata[7:0]});
+                4'b0010: vaddr_write(write_base_addr + 32'd1, 1,
+                                      {24'b0, io_slave_wdata[15:8]});
+                4'b0100: vaddr_write(write_base_addr + 32'd2, 1,
+                                      {24'b0, io_slave_wdata[23:16]});
+                4'b1000: vaddr_write(write_base_addr + 32'd3, 1,
+                                      {24'b0, io_slave_wdata[31:24]});
+                4'b0011: vaddr_write(write_base_addr + 32'd0, 2,
+                                      {16'b0, io_slave_wdata[15:0]});
+                4'b1100: vaddr_write(write_base_addr + 32'd2, 2,
+                                      {16'b0, io_slave_wdata[31:16]});
+                4'b1111: vaddr_write(write_base_addr, 4, io_slave_wdata);
+                default: begin
+                    // 兼容任意 AXI 字节使能组合。
+                    if (io_slave_wstrb[0])
+                        vaddr_write(write_base_addr + 32'd0, 1,
+                                    {24'b0, io_slave_wdata[7:0]});
+                    if (io_slave_wstrb[1])
+                        vaddr_write(write_base_addr + 32'd1, 1,
+                                    {24'b0, io_slave_wdata[15:8]});
+                    if (io_slave_wstrb[2])
+                        vaddr_write(write_base_addr + 32'd2, 1,
+                                    {24'b0, io_slave_wdata[23:16]});
+                    if (io_slave_wstrb[3])
+                        vaddr_write(write_base_addr + 32'd3, 1,
+                                    {24'b0, io_slave_wdata[31:24]});
+                end
+            endcase
 `endif
             io_slave_bvalid <= 1'b1;  // 写响应
         end

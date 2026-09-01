@@ -11,19 +11,14 @@
 #include <utils.h> // 引入nemu_state定义
 #include <isa.h>
 #include <memory/vaddr.h>
-#include <cpu/decode.h>  
 
 void init_monitor(int, char *[]);
 void am_init_monitor();
 void engine_start();
 int is_exit_status_bad();
 
-void exec_once(Decode *d, vaddr_t pc);
-
 // NVBoard 函数声明
 void nvboard_bind_all_pins(VysyxSoCFull* top);
-
-extern Decode d; 
 
 
 extern "C" {
@@ -85,7 +80,6 @@ int main(int argc, char** argv) {
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
-    // exec_once(&d, npc.pc);
     // 释放复位信号后，给予额外的时钟周期稳定系统
     ysyxSoCFull->reset = 0;
     for (int i = 0; i < 2; i++) {
@@ -114,10 +108,9 @@ int main(int argc, char** argv) {
     return is_exit_status_bad();
 }
 
-extern "C" void ebreak() {
+extern "C" void ebreak(uint32_t pc) {
     // 从CPU状态中获取a0寄存器的值
     uint32_t a0 = npc.gpr[10]; // a0是第10个寄存器
-    uint32_t pc = d.dnpc;
     
     // 设置nemu_state
     nemu_state.state = NEMU_END;

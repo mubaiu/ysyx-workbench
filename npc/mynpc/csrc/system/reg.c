@@ -2,12 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <isa.h>
-#include <cpu/decode.h>
-#include <cpu/ifetch.h>
-
-extern Decode d;
-extern bool callfunc;
-extern bool retfunc;
+#include <memory/vaddr.h>
 
 
 // Flash memory simulation (16MB)
@@ -69,12 +64,6 @@ word_t isa_reg_str2val(const char *s, bool *success) {
   return 0;
 }
 
-// DPI-C接口函数，从Verilog获取寄存器值
-extern "C" uint32_t get_reg_value(int idx) {
-  if (idx < 0 || idx >= NR_REG) return 0;
-  return npc.gpr[idx];
-}
-
 // DPI-C接口函数，设置寄存器值
 extern "C" void set_reg_value(int32_t idx, uint32_t val) {
   if (idx < 0 || idx >= NR_REG) return;
@@ -107,43 +96,6 @@ extern "C" void set_reg_value(int32_t idx, uint32_t val) {
 //     npc.gpr[i] = 0;
 //   }
 // }
-
-// DPI-C接口函数，获取PC值
-extern "C" uint32_t get_pc() {
-  return npc.pc;
-}
-
-// DPI-C接口函数，设置PC值
-extern "C" void set_snpc(uint32_t pc) {
-  d.snpc = pc;
-  // printf("set_snpc: %x\n", pc);
-}
-
-// DPI-C接口函数，设置PC值
-extern "C" void set_dnpc(uint32_t pc) {
-  d.dnpc = pc;
-  // printf("set_dnpc: %x\n", pc);
-}
-
-// DPI-C接口函数，设置PC值
-extern "C" void set_pc(uint32_t pc) {
-  d.pc = pc;
-  npc.pc = pc;
-  // printf("set_pc: %x\n", pc);
-}
-
-extern "C" void set_callfunc() {
-  callfunc = true;
-}
-
-extern "C" void set_retfunc() {
-  retfunc = true;
-}
-
-extern  "C" uint32_t intake(uint32_t pc){
-  vaddr_t vaddr = pc;
-  return inst_fetch(&vaddr, 4); 
-}
 
 extern "C" void flash_read(int32_t addr, int32_t *data) {
   uint32_t offset = addr + FLASH_BASE;

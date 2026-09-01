@@ -108,6 +108,7 @@ module ysyx_25010003(
     // ===== ID/EX 流水线寄存器 =====
     wire        ID_EX_data_valid;
     wire [31:0] ID_EX_pc;
+    wire [31:0] ID_EX_inst;
     wire [31:0] ID_EX_rs1_data;
     wire [31:0] ID_EX_rs2_data;
     wire [31:0] ID_EX_imm;
@@ -132,22 +133,33 @@ module ysyx_25010003(
 
     // ===== EX/MEM 流水线寄存器 =====
     wire        EX_LSU_data_valid;
+    wire [31:0] EX_LSU_pc;
+    wire [31:0] EX_LSU_next_pc;
+    wire [31:0] EX_LSU_inst;
     wire [31:0] EX_LSU_alu_result;
     wire [31:0] EX_LSU_rs2_data;
     wire [3:0]  EX_LSU_rd_addr;
     wire        EX_LSU_mem_read;
     wire        EX_LSU_mem_write;
     wire        EX_LSU_reg_write;
+    wire        EX_LSU_ebreak;
+    wire        EX_LSU_skip_ref;
     wire [2:0]  EX_LSU_funct3;
     wire [3:0]  EX_LSU_lsu_wmask;
 
 
     // ===== MEM/WB 流水线寄存器 =====
+    wire        LSU_WB_data_valid;
+    wire [31:0] LSU_WB_pc;
+    wire [31:0] LSU_WB_next_pc;
+    wire [31:0] LSU_WB_inst;
     wire [31:0] LSU_WB_alu_result;
     wire [31:0] LSU_WB_load_data;
     wire [3:0]  LSU_WB_rd_addr;
     wire        LSU_WB_reg_write;
     wire        LSU_WB_mem_to_reg;
+    wire        LSU_WB_ebreak;
+    wire        LSU_WB_skip_ref;
 
     // 寄存器接口连线（RV32E使用4位地址）
     wire [3:0]  rs1_addr, rs2_addr, rd_addr;
@@ -170,6 +182,24 @@ module ysyx_25010003(
     wire [31:0] ecall_target;
     wire        mret_taken;
     wire [31:0] mret_target;
+
+    // ===== 退休元数据 =====
+    wire [31:0] ID_EX_next_pc = mret_taken   ? mret_target :
+                                 ecall_taken  ? ecall_target :
+                                 branch_taken ? branch_target :
+                                                ID_EX_pc + 32'd4;
+
+    // MMIO 指令由 DUT 执行，退休时把 DUT 状态同步给参考模型。
+    wire ID_EX_skip_ref = ID_EX_data_valid &&
+                          (ID_EX_mem_read || ID_EX_mem_write) &&
+                          (((alu_result >= 32'h02000000) && (alu_result < 32'h02010000)) ||
+                           ((alu_result >= 32'h10000000) && (alu_result < 32'h10012000)) ||
+                           ((alu_result >= 32'h21000000) && (alu_result < 32'h21200000)) ||
+                           ((alu_result >= 32'h40000000) && (alu_result < 32'h80000000)));
+
+    // 普通指令进入 WB 即完成；访存指令必须等到 AXI 响应后才能退休。
+    wire EX_LSU_complete = EX_LSU_data_valid &&
+                           (!(EX_LSU_mem_read || EX_LSU_mem_write) || lsu_done);
 
     // 内存单元连线（LSU输出）
     wire [31:0] load_data;
@@ -453,6 +483,7 @@ module ysyx_25010003(
         .flush              (flush_EX),
         .data_valid_in      (IF_ID_inst_valid),    
         .pc_in              (IF_ID_pc),
+        .inst_in            (IF_ID_inst),
         .rs1_data_in        (rs1_data),
         .rs2_data_in        (rs2_data),
         .imm_in             (imm),
@@ -476,6 +507,7 @@ module ysyx_25010003(
         .lsu_wmask_in       (lsu_wmask),
         .data_valid_out     (ID_EX_data_valid),
         .pc_out             (ID_EX_pc),
+        .inst_out           (ID_EX_inst),
         .rs1_data_out       (ID_EX_rs1_data),
         .rs2_data_out       (ID_EX_rs2_data),
         .imm_out            (ID_EX_imm),
@@ -527,7 +559,6 @@ module ysyx_25010003(
         .branch             (ID_EX_branch),
         .jal_en             (ID_EX_jal_en),
         .jalr_en            (ID_EX_jalr_en),
-        .ebreak_en          (ID_EX_ebreak_en),
         .ecall_en           (ID_EX_ecall_en),
         .mret_en            (ID_EX_mret_en),
         .mret_taken         (mret_taken),
@@ -548,20 +579,31 @@ module ysyx_25010003(
         .stall              (stall_LSU),
         .flush              (flush_LSU),
         .data_valid_in      (ID_EX_data_valid),
+        .pc_in              (ID_EX_pc),
+        .next_pc_in         (ID_EX_next_pc),
+        .inst_in            (ID_EX_inst),
         .alu_result_in      (alu_result),
         .rs2_data_in        (forward_b),
         .rd_addr_in         (ID_EX_rd_addr),
         .mem_read_in        (ID_EX_mem_read),
         .mem_write_in       (ID_EX_mem_write),
         .reg_write_in       (ID_EX_reg_write),
+        .ebreak_in          (ID_EX_ebreak_en),
+        .skip_ref_in        (ID_EX_skip_ref),
         .funct3_in          (ID_EX_funct3),
         .lsu_wmask_in       (ID_EX_lsu_wmask),
+        .data_valid_out     (EX_LSU_data_valid),
+        .pc_out             (EX_LSU_pc),
+        .next_pc_out        (EX_LSU_next_pc),
+        .inst_out           (EX_LSU_inst),
         .alu_result_out     (EX_LSU_alu_result),
         .rs2_data_out       (EX_LSU_rs2_data),
         .rd_addr_out        (EX_LSU_rd_addr),
         .mem_read_out       (EX_LSU_mem_read),
         .mem_write_out      (EX_LSU_mem_write),
         .reg_write_out      (EX_LSU_reg_write),
+        .ebreak_out         (EX_LSU_ebreak),
+        .skip_ref_out       (EX_LSU_skip_ref),
         .funct3_out         (EX_LSU_funct3),
         .lsu_wmask_out      (EX_LSU_lsu_wmask)
     );
@@ -616,16 +658,28 @@ module ysyx_25010003(
     LSU_WB ysyx_25010003_LSU_WB(
         .clock              (clock),
         .reset              (reset),
+        .data_valid_in      (EX_LSU_complete),
+        .pc_in              (EX_LSU_pc),
+        .next_pc_in         (EX_LSU_next_pc),
+        .inst_in            (EX_LSU_inst),
         .alu_result_in      (EX_LSU_alu_result),
         .load_data_in       (load_data),
         .rd_addr_in         (EX_LSU_rd_addr),
         .reg_write_in       (EX_LSU_reg_write),
         .mem_to_reg_in      (mem_to_reg),
+        .ebreak_in          (EX_LSU_ebreak),
+        .skip_ref_in        (EX_LSU_skip_ref),
+        .data_valid_out     (LSU_WB_data_valid),
+        .pc_out             (LSU_WB_pc),
+        .next_pc_out        (LSU_WB_next_pc),
+        .inst_out           (LSU_WB_inst),
         .alu_result_out     (LSU_WB_alu_result),
         .load_data_out      (LSU_WB_load_data),
         .rd_addr_out        (LSU_WB_rd_addr),
         .reg_write_out      (LSU_WB_reg_write),
-        .mem_to_reg_out     (LSU_WB_mem_to_reg)
+        .mem_to_reg_out     (LSU_WB_mem_to_reg),
+        .ebreak_out         (LSU_WB_ebreak),
+        .skip_ref_out       (LSU_WB_skip_ref)
     );
 
     // 写回单元
@@ -677,8 +731,9 @@ module ysyx_25010003(
     );
 
 `ifdef VERILATOR
-import "DPI-C" function void set_callfunc();
-import "DPI-C" function void set_retfunc();
+import "DPI-C" function void commit_instruction(input int pc, input int next_pc,
+                                                  input int inst, input int skip_ref);
+import "DPI-C" function void ebreak(input int pc);
 
 // 性能计数器DPI-C函数
 import "DPI-C" function void perf_alu_inst();
@@ -687,12 +742,15 @@ import "DPI-C" function void perf_csr_inst();
 import "DPI-C" function void perf_mem_inst();
 `endif
 
+// 在 WBU 的有效退休边界通知仿真框架；寄存器写回也在该时钟沿完成。
 always @(posedge clock) begin
 `ifdef VERILATOR
-    if(ID_EX_jal_en)
-        set_callfunc();
-    if(ID_EX_jalr_en)
-        set_retfunc();
+    if (!reset && LSU_WB_data_valid) begin
+        commit_instruction(LSU_WB_pc, LSU_WB_next_pc, LSU_WB_inst,
+                           {31'b0, LSU_WB_skip_ref});
+        if (LSU_WB_ebreak)
+            ebreak(LSU_WB_pc);
+    end
 `endif
 end
 

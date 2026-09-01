@@ -1,12 +1,23 @@
 menu "Memory Configuration"
 
+config YSYXSOC
+  bool "Use the ysyxSoC physical memory map"
+  depends on ISA_riscv
+  default n
+  help
+    Model the discontiguous MROM, SRAM, flash, PSRAM and SDRAM regions
+    used by ysyxSoC.  This is intended for a NEMU difftest reference of
+    an SoC CPU whose reset vector is in XIP flash at 0x30000000.
+
 config MBASE
   hex "Memory base address"
   default 0x0        if ISA_x86
+  default 0x30000000 if YSYXSOC
   default 0x80000000
 
 config MSIZE
   hex "Memory size"
+  default 0x1000000 if YSYXSOC
   default 0x8000000
 
 config PC_RESET_OFFSET
