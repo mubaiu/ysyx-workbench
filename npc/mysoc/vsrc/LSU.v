@@ -36,7 +36,7 @@ module LSU(
     output reg  [31:0] io_lsu_wdata,
     output reg  [3:0]  io_lsu_wstrb,
     output reg         io_lsu_wvalid,
-    output wire        io_lsu_wlast,
+    output reg         io_lsu_wlast,
     input  wire        io_lsu_wready,
 
     // ===== AXI写响应通道 =====
@@ -52,6 +52,7 @@ module LSU(
     import "DPI-C" function void perf_lsu_store();  // LSU完成写操作
     import "DPI-C" function void perf_lsu_load_latency(input longint latency);   // LSU读延迟
     import "DPI-C" function void perf_lsu_store_latency(input longint latency);  // LSU写延迟
+    import "DPI-C" function void perf_dcache_access(input int hit, input int cacheable);
 `endif
 
     // ===== 状态机定义 =====
@@ -59,23 +60,28 @@ module LSU(
     localparam [1:0] READ  = 2'b01;
     localparam [1:0] WRITE = 2'b10;
 
-    reg [1:0] state, next_state, prev_state;
+    reg [1:0] state, next_state;
+
+    wire        dcache_hit;
+    wire        dcache_cacheable;
+    wire [31:0] dcache_data;
+    wire        load_hit = (state == IDLE) && mem_read && dcache_hit;
+    wire        read_done = (state == READ) && io_lsu_rvalid && io_lsu_rready;
+    wire        write_done = (state == WRITE) && io_lsu_bvalid && io_lsu_bready;
 
     // ===== 状态转换 =====
     always @(posedge clock) begin
         if (reset) begin
             state <= IDLE;
-            prev_state <= IDLE;
         end else begin
             state <= next_state;
-            prev_state <= state;
         end
     end
 
     always @(*) begin
         case (state)
             IDLE: begin
-                if (mem_read)
+                if (mem_read && !dcache_hit)
                     next_state = READ;
                 else if (mem_write)
                     next_state = WRITE;
@@ -84,14 +90,14 @@ module LSU(
             end
             READ: begin
                 // 读操作：等待rvalid
-                if (io_lsu_rvalid)
+                if (read_done)
                     next_state = IDLE;
                 else
                     next_state = READ;
             end
             WRITE: begin
                 // 写操作：等待bvalid
-                if (io_lsu_bvalid)
+                if (write_done)
                     next_state = IDLE;
                 else
                     next_state = WRITE;
@@ -106,7 +112,7 @@ module LSU(
     always @(posedge clock) begin
         if (reset) begin
             io_lsu_arvalid <= 1'b0;
-        end else if (state == IDLE && mem_read) begin
+        end else if (state == IDLE && mem_read && !dcache_hit) begin
             io_lsu_arvalid <= 1'b1;
         end else if (io_lsu_arready) begin
             io_lsu_arvalid <= 1'b0;
@@ -117,9 +123,9 @@ module LSU(
     always @(posedge clock) begin
         if (reset) begin
             io_lsu_rready <= 1'b0;
-        end else if (state == IDLE && mem_read) begin
+        end else if (state == IDLE && mem_read && !dcache_hit) begin
             io_lsu_rready <= 1'b1;
-        end else if (io_lsu_rvalid) begin
+        end else if (read_done) begin
             io_lsu_rready <= 1'b0;
 `ifdef VERILATOR
             perf_lsu_load();
@@ -159,7 +165,7 @@ module LSU(
             io_lsu_bready <= 1'b0;
         end else if (state == IDLE && mem_write) begin
             io_lsu_bready <= 1'b1;
-        end else if (io_lsu_bvalid) begin
+        end else if (write_done) begin
             io_lsu_bready <= 1'b0;
 `ifdef VERILATOR
             perf_lsu_store();
@@ -168,50 +174,64 @@ module LSU(
         end
     end
 
-    assign io_lsu_arsize = lsu_size;
-    assign io_lsu_awsize = lsu_size;
-    assign mem_to_reg = io_lsu_rvalid && (state == READ);
-    assign lsu_busy = (state != IDLE);  // LSU在非IDLE状态时为busy
-    assign lsu_done = (state == READ && io_lsu_rvalid) || (state == WRITE && io_lsu_bvalid);  // 访存完成的同一周期为1
+    assign io_lsu_arsize = size_reg;
+    assign io_lsu_awsize = size_reg;
+    assign mem_to_reg = load_hit || read_done;
+    // Include the request-accept cycle.  Looking only at the registered FSM
+    // state leaves a one-cycle hole in which IF/ID can overwrite the
+    // instruction behind a newly arrived memory operation.
+    // The completion cycle can admit the next instruction into ID/EX; the
+    // completing operation itself is removed from EX/LSU by lsu_done.
+    assign lsu_busy = ((state != IDLE) && !lsu_done) ||
+                      ((state == IDLE) &&
+                       ((mem_read && !load_hit) || mem_write));
+    assign lsu_done = load_hit || read_done || write_done;
 
     reg [31:0] addr_reg;
-    reg [2:0]  lsu_size;
+    reg [2:0]  request_size;
+    reg [2:0]  size_reg;
     reg [2:0]  funct3_reg;
     reg [63:0] load_latency_counter;
     reg [63:0] store_latency_counter;
 
     // 地址对齐和锁存
-    wire [31:0] aligned_addr = (lsu_size == 3'b010) ? {addr[31:2], 2'b00} :  // 字对齐
-                               (lsu_size == 3'b001) ? {addr[31:1], 1'b0} :   // 半字对齐
+    wire [31:0] aligned_addr = (request_size == 3'b010) ? {addr[31:2], 2'b00} :  // 字对齐
+                               (request_size == 3'b001) ? {addr[31:1], 1'b0} :   // 半字对齐
                                addr;                                          // 字节不对齐
 
     always @(posedge clock) begin
-        if (state == IDLE && mem_read) begin
+        if (reset) begin
+            io_lsu_araddr <= 32'b0;
+            io_lsu_awaddr <= 32'b0;
+            addr_reg <= 32'b0;
+            funct3_reg <= 3'b0;
+            size_reg <= 3'b010;
+        end
+        else if (state == IDLE && mem_read && !dcache_hit) begin
             io_lsu_araddr <= aligned_addr;
             addr_reg <= addr;
             funct3_reg <= funct3;
+            size_reg <= request_size;
         end
-    end
-
-    always @(posedge clock) begin
-        if (state == IDLE && mem_write) begin
+        else if (state == IDLE && mem_write) begin
             io_lsu_awaddr <= aligned_addr;
             addr_reg <= addr;
+            size_reg <= request_size;
         end
     end
 
     // lsu_size计算（在IDLE状态根据funct3或lsu_wmask计算）
     always @(*) begin
         if (mem_read) begin
-            lsu_size = (funct3 == 3'b000 || funct3 == 3'b100) ? 3'b000 : // byte
+            request_size = (funct3 == 3'b000 || funct3 == 3'b100) ? 3'b000 : // byte
                       (funct3 == 3'b001 || funct3 == 3'b101) ? 3'b001 : // halfword
                       3'b010; // word
         end else if (mem_write) begin
-            lsu_size = (lsu_wmask == 4'b0001) ? 3'b000 : // byte
+            request_size = (lsu_wmask == 4'b0001) ? 3'b000 : // byte
                       (lsu_wmask == 4'b0011) ? 3'b001 : // halfword
                       3'b010; // word
         end else begin
-            lsu_size = 3'b010;
+            request_size = 3'b010;
         end
     end
 
@@ -219,6 +239,12 @@ module LSU(
     always @(posedge clock) begin
         if (reset) begin
             load_latency_counter <= 64'h0;
+        end else if (load_hit) begin
+            load_latency_counter <= 64'h1;
+`ifdef VERILATOR
+            perf_lsu_load();
+            perf_lsu_load_latency(64'd1);
+`endif
         end else if (state == IDLE && mem_read) begin
             load_latency_counter <= 64'h1;  // 开始计数
         end else if (state == READ && !io_lsu_rvalid) begin
@@ -239,7 +265,11 @@ module LSU(
 
     // 写数据和写字节使能
     always @(posedge clock) begin
-        if (state == IDLE && mem_write) begin
+        if (reset) begin
+            io_lsu_wstrb <= 4'b0;
+            io_lsu_wdata <= 32'b0;
+        end
+        else if (state == IDLE && mem_write) begin
             case (lsu_wmask)
                 4'b0001: begin //SB
                     case (addr[1:0])
@@ -285,41 +315,72 @@ module LSU(
         end
     end
 
+    DCache #(
+        .LINE_COUNT(256),
+        .ADDR_WIDTH(32),
+        .DATA_WIDTH(32)
+    ) u_dcache (
+        .clock       (clock),
+        .reset       (reset),
+        .lookup_addr (addr),
+        .lookup_cacheable(dcache_cacheable),
+        .lookup_hit  (dcache_hit),
+        .lookup_data (dcache_data),
+        .fill_en     (read_done),
+        .fill_addr   (addr_reg),
+        .fill_data   (io_lsu_rdata),
+        .store_en    (write_done),
+        .store_addr  (addr_reg),
+        .store_data  (io_lsu_wdata),
+        .store_wstrb (io_lsu_wstrb)
+    );
+
+`ifdef VERILATOR
+    always @(posedge clock) begin
+        if (!reset && state == IDLE && mem_read)
+            perf_dcache_access({31'b0, dcache_hit}, {31'b0, dcache_cacheable});
+    end
+`endif
+
+    wire [31:0] selected_load_word = load_hit ? dcache_data : io_lsu_rdata;
+    wire [2:0] selected_funct3 = load_hit ? funct3 : funct3_reg;
+    wire [1:0] selected_offset = load_hit ? addr[1:0] : addr_reg[1:0];
+
     // 读数据处理
     always @(*) begin
         load_data = 32'b0;
-        if (io_lsu_rvalid && (state == READ)) begin
-            case(funct3_reg)
+        if (load_hit || read_done) begin
+            case(selected_funct3)
                 3'b000: begin // lb
-                    case (addr_reg[1:0])
-                        2'b00: load_data = {{24{io_lsu_rdata[7]}}, io_lsu_rdata[7:0]};
-                        2'b01: load_data = {{24{io_lsu_rdata[15]}}, io_lsu_rdata[15:8]};
-                        2'b10: load_data = {{24{io_lsu_rdata[23]}}, io_lsu_rdata[23:16]};
-                        2'b11: load_data = {{24{io_lsu_rdata[31]}}, io_lsu_rdata[31:24]};
+                    case (selected_offset)
+                        2'b00: load_data = {{24{selected_load_word[7]}}, selected_load_word[7:0]};
+                        2'b01: load_data = {{24{selected_load_word[15]}}, selected_load_word[15:8]};
+                        2'b10: load_data = {{24{selected_load_word[23]}}, selected_load_word[23:16]};
+                        2'b11: load_data = {{24{selected_load_word[31]}}, selected_load_word[31:24]};
                     endcase
                 end
                 3'b100: begin // lbu
-                    case (addr_reg[1:0])
-                        2'b00: load_data = {24'b0, io_lsu_rdata[7:0]};
-                        2'b01: load_data = {24'b0, io_lsu_rdata[15:8]};
-                        2'b10: load_data = {24'b0, io_lsu_rdata[23:16]};
-                        2'b11: load_data = {24'b0, io_lsu_rdata[31:24]};
+                    case (selected_offset)
+                        2'b00: load_data = {24'b0, selected_load_word[7:0]};
+                        2'b01: load_data = {24'b0, selected_load_word[15:8]};
+                        2'b10: load_data = {24'b0, selected_load_word[23:16]};
+                        2'b11: load_data = {24'b0, selected_load_word[31:24]};
                     endcase
                 end
                 3'b001: begin // lh
-                    case (addr_reg[1])
-                        1'b0: load_data = {{16{io_lsu_rdata[15]}}, io_lsu_rdata[15:0]};
-                        1'b1: load_data = {{16{io_lsu_rdata[31]}}, io_lsu_rdata[31:16]};
+                    case (selected_offset[1])
+                        1'b0: load_data = {{16{selected_load_word[15]}}, selected_load_word[15:0]};
+                        1'b1: load_data = {{16{selected_load_word[31]}}, selected_load_word[31:16]};
                     endcase
                 end
                 3'b101: begin // lhu
-                    case (addr_reg[1])
-                        1'b0: load_data = {16'b0, io_lsu_rdata[15:0]};
-                        1'b1: load_data = {16'b0, io_lsu_rdata[31:16]};
+                    case (selected_offset[1])
+                        1'b0: load_data = {16'b0, selected_load_word[15:0]};
+                        1'b1: load_data = {16'b0, selected_load_word[31:16]};
                     endcase
                 end
-                3'b010: load_data = io_lsu_rdata; // lw
-                default: load_data = io_lsu_rdata;
+                3'b010: load_data = selected_load_word; // lw
+                default: load_data = selected_load_word;
             endcase
         end
     end

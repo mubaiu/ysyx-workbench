@@ -125,6 +125,7 @@ import "DPI-C" function void invalid_inst(input int thispc);
             7'b0000011: begin // Load
                 alu_src = 1'b1;
                 mem_read = 1'b1;
+                reg_write = 1'b1;
                 alu_op = 4'b0000; // 加法计算地址
                 imm = {{20{inst[31]}}, inst[31:20]};
 
@@ -254,4 +255,3 @@ import "DPI-C" function void invalid_inst(input int thispc);
 end
 
 endmodule
-

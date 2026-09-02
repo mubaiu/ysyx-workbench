@@ -148,12 +148,12 @@ import "DPI-C" function void etrace_exception(input int mcause, input int epc, i
             marchid <= 32'h17d9f53; // '25010003'
         end
         else begin
-            if (ecall_en) begin
+            if (data_valid && ecall_en) begin
                 mepc <= pc;            // 保存当前PC到mepc
                 mcause <= 32'd11;      // 设置mcause为ECALL异常码
                 // etrace_exception(32'd11, pc, mtvec);
             end
-            else if (is_csr_op) begin
+            else if (data_valid && is_csr_op) begin
                 case (imm)
                     32'h300: mstatus <= rs1_data; // 写入mstatus
                     32'h341: mepc <= rs1_data;    // 写入mepc

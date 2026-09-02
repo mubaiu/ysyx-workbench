@@ -44,64 +44,184 @@ extern "C" void commit_instruction(uint32_t pc, uint32_t next_pc,
   commit_event.skip_ref = (skip_ref != 0);
 }
 
-// 性能计数器
-static uint64_t g_ifu_fetch_count = 0;   // IFU取指次数
-static uint64_t g_lsu_load_count = 0;    // LSU读数据次数
-static uint64_t g_lsu_store_count = 0;   // LSU写数据次数
-static uint64_t g_alu_inst_count = 0;    // ALU计算指令
-static uint64_t g_mem_inst_count = 0;    // 访存指令
-static uint64_t g_branch_inst_count = 0; // 分支跳转指令
-static uint64_t g_csr_inst_count = 0;    // CSR指令
+// Performance accounting starts with cpu_exec(), not during reset/warm-up.
+static bool g_perf_enabled = false;
 
-// IFU stall 原因计数器
-static uint64_t g_ifu_stall_lsu = 0;     // 因LSU占用总线而stall
-static uint64_t g_ifu_stall_wait = 0;    // 等待AXI响应而stall
-static uint64_t g_ifu_idle_cycles = 0;   // IFU空闲周期
+// Retired instruction classes.  Classification happens at the architectural
+// retirement boundary, so replayed/stalled/squashed EX instructions cannot be
+// counted twice.
+static uint64_t g_retired_load_count = 0;
+static uint64_t g_retired_store_count = 0;
+static uint64_t g_retired_branch_count = 0;
+static uint64_t g_retired_branch_taken_count = 0;
+static uint64_t g_retired_jump_count = 0;
+static uint64_t g_retired_csr_count = 0;
+static uint64_t g_retired_system_count = 0;
+static uint64_t g_retired_alu_count = 0;
+static uint64_t g_retired_other_count = 0;
 
-// LSU 延迟计数器
-static uint64_t g_lsu_load_latency_total = 0;   // 读操作总延迟（周期）
-static uint64_t g_lsu_store_latency_total = 0;  // 写操作总延迟（周期）
+// Front-end and memory events.  Occupancy counters intentionally overlap and
+// are printed as such; the no-retire breakdown below is exclusive.
+static uint64_t g_ifu_fetch_count = 0;
+static uint64_t g_ifu_request_wait_cycles = 0;
+static uint64_t g_ifu_queue_empty_cycles = 0;
+static uint64_t g_ifu_squashed_count = 0;
+static uint64_t g_lsu_load_count = 0;
+static uint64_t g_lsu_store_count = 0;
+static uint64_t g_lsu_load_latency_total = 0;
+static uint64_t g_lsu_store_latency_total = 0;
 
-// ICache 性能计数器
-static uint64_t g_icache_access_count = 0;      // ICache总访问次数
-static uint64_t g_icache_hit_count = 0;         // ICache命中次数
-static uint64_t g_icache_miss_count = 0;        // ICache缺失次数
-static uint64_t g_icache_hit_cycles = 0;        // Cache命中总周期数
-static uint64_t g_icache_miss_cycles = 0;       // Cache缺失总周期数
+static uint64_t g_icache_access_count = 0;
+static uint64_t g_icache_hit_count = 0;
+static uint64_t g_icache_miss_count = 0;
+static uint64_t g_icache_hit_cycles = 0;
+static uint64_t g_icache_miss_cycles = 0;
+static uint64_t g_dcache_access_count = 0;
+static uint64_t g_dcache_cacheable_count = 0;
+static uint64_t g_dcache_hit_count = 0;
+
+// Exclusive cycle accounting for cycles with no retirement.
+static uint64_t g_pipeline_cycles = 0;
+static uint64_t g_reset_cycles = 0;
+static uint64_t g_retire_cycles = 0;
+static uint64_t g_no_retire_lsu_cycles = 0;
+static uint64_t g_no_retire_frontend_cycles = 0;
+static uint64_t g_no_retire_other_cycles = 0;
+static uint64_t g_memory_issue_interlocks = 0;
+static uint64_t g_redirect_events = 0;
+static uint64_t g_control_mispredict_events = 0;
+static uint64_t g_conditional_mispredict_events = 0;
 
 void device_update();
 void wp_difftest();
 void free_symbol();
 void print_log();
 
-// DPI-C函数：性能计数器递增
-extern "C" void perf_ifu_fetch() { g_ifu_fetch_count++; }
-extern "C" void perf_lsu_load() { g_lsu_load_count++; }
-extern "C" void perf_lsu_store() { g_lsu_store_count++; }
-extern "C" void perf_alu_inst() { g_alu_inst_count++; }
-extern "C" void perf_mem_inst() { g_mem_inst_count++; }
-extern "C" void perf_branch_inst() { g_branch_inst_count++; }
-extern "C" void perf_csr_inst() { g_csr_inst_count++; }
+// DPI-C event hooks.
+extern "C" void perf_ifu_fetch() {
+  if (g_perf_enabled) g_ifu_fetch_count++;
+}
+extern "C" void perf_lsu_load() {
+  if (g_perf_enabled) g_lsu_load_count++;
+}
+extern "C" void perf_lsu_store() {
+  if (g_perf_enabled) g_lsu_store_count++;
+}
 
 // DPI-C函数：ICache性能计数
-extern "C" void perf_icache_access() { g_icache_access_count++; }
+extern "C" void perf_icache_access() {
+  if (g_perf_enabled) g_icache_access_count++;
+}
 extern "C" void perf_icache_hit(uint64_t cycles) {
+    if (!g_perf_enabled) return;
     g_icache_hit_count++;
     g_icache_hit_cycles += cycles;
 }
 extern "C" void perf_icache_miss(uint64_t cycles) {
+    if (!g_perf_enabled) return;
     g_icache_miss_count++;
     g_icache_miss_cycles += cycles;
 }
+extern "C" void perf_dcache_access(uint32_t hit, uint32_t cacheable) {
+  if (!g_perf_enabled) return;
+  g_dcache_access_count++;
+  g_dcache_cacheable_count += (cacheable != 0);
+  g_dcache_hit_count += (hit != 0);
+}
 
-// DPI-C函数：IFU stall 原因
-extern "C" void perf_ifu_stall_lsu() { g_ifu_stall_lsu++; }
-extern "C" void perf_ifu_stall_wait() { g_ifu_stall_wait++; }
-extern "C" void perf_ifu_idle() { g_ifu_idle_cycles++; }
+extern "C" void perf_ifu_stall_wait() {
+  if (g_perf_enabled) g_ifu_request_wait_cycles++;
+}
+extern "C" void perf_ifu_idle() {
+  if (g_perf_enabled) g_ifu_queue_empty_cycles++;
+}
+extern "C" void perf_ifu_squash(uint32_t count) {
+  if (g_perf_enabled) g_ifu_squashed_count += count;
+}
 
-// DPI-C函数：LSU 延迟
-extern "C" void perf_lsu_load_latency(uint64_t latency) { g_lsu_load_latency_total += latency; }
-extern "C" void perf_lsu_store_latency(uint64_t latency) { g_lsu_store_latency_total += latency; }
+extern "C" void perf_lsu_load_latency(uint64_t latency) {
+  if (g_perf_enabled) g_lsu_load_latency_total += latency;
+}
+extern "C" void perf_lsu_store_latency(uint64_t latency) {
+  if (g_perf_enabled) g_lsu_store_latency_total += latency;
+}
+
+enum {
+  PIPE_LSU_BUSY  = 1u << 0,
+  PIPE_IFU_VALID = 1u << 1,
+  PIPE_IFID_VALID = 1u << 2,
+  PIPE_IDEX_VALID = 1u << 3,
+  PIPE_EXLSU_VALID = 1u << 4,
+  PIPE_WB_VALID = 1u << 5,
+  PIPE_MEM_ISSUE = 1u << 6,
+  PIPE_REDIRECT = 1u << 7,
+  PIPE_RESET = 1u << 8,
+  PIPE_CONTROL_MISPREDICT = 1u << 9,
+  PIPE_CONDITIONAL_MISPREDICT = 1u << 10,
+};
+
+extern "C" void perf_pipeline_cycle(uint32_t flags) {
+  if (!g_perf_enabled) return;
+
+  g_pipeline_cycles++;
+  g_memory_issue_interlocks += ((flags & PIPE_MEM_ISSUE) != 0);
+  g_redirect_events += ((flags & PIPE_REDIRECT) != 0);
+  g_control_mispredict_events += ((flags & PIPE_CONTROL_MISPREDICT) != 0);
+  g_conditional_mispredict_events +=
+      ((flags & PIPE_CONDITIONAL_MISPREDICT) != 0);
+
+  if (flags & PIPE_RESET) {
+    g_reset_cycles++;
+  }
+  else if (flags & PIPE_WB_VALID) {
+    g_retire_cycles++;
+  }
+  else if (flags & PIPE_LSU_BUSY) {
+    g_no_retire_lsu_cycles++;
+  }
+  else if ((flags & (PIPE_IFU_VALID | PIPE_IFID_VALID |
+                     PIPE_IDEX_VALID | PIPE_EXLSU_VALID)) == 0) {
+    g_no_retire_frontend_cycles++;
+  }
+  else {
+    g_no_retire_other_cycles++;
+  }
+}
+
+static void count_retired_instruction(uint32_t pc, uint32_t next_pc,
+                                      uint32_t inst) {
+  switch (inst & 0x7fu) {
+    case 0x03: // LOAD
+      g_retired_load_count++;
+      break;
+    case 0x23: // STORE
+      g_retired_store_count++;
+      break;
+    case 0x63: // conditional branch
+      g_retired_branch_count++;
+      g_retired_branch_taken_count += (next_pc != pc + 4u);
+      break;
+    case 0x6f: // JAL
+    case 0x67: // JALR
+      g_retired_jump_count++;
+      break;
+    case 0x73: // SYSTEM/CSR
+      if (((inst >> 12) & 0x7u) != 0)
+        g_retired_csr_count++;
+      else
+        g_retired_system_count++;
+      break;
+    case 0x13: // OP-IMM
+    case 0x17: // AUIPC
+    case 0x33: // OP
+    case 0x37: // LUI
+      g_retired_alu_count++;
+      break;
+    default:
+      g_retired_other_count++;
+      break;
+  }
+}
 
 
 typedef struct ItraceNode
@@ -224,6 +344,7 @@ static void process_commit() {
   CommitEvent event = commit_event;
   commit_event.valid = false;
 
+  count_retired_instruction(event.pc, event.next_pc, event.inst);
   g_nr_guest_inst++;
   npc.pc = event.next_pc;
   exec_once(&d, event.pc, event.next_pc, event.inst);
@@ -283,66 +404,133 @@ static void statistic() {
   }
   if (g_timer > 0) Log(ANSI_FG_CYAN "simulation frequency = " NUMBERIC_FMT " inst/s", g_nr_guest_inst * 1000000 / g_timer);
   else Log(ANSI_FG_CYAN "Finish running in less than 1 us and can not calculate the simulation frequency");
-  // 输出性能计数器
-  Log(ANSI_FMT("=== Performance Counters ===", ANSI_FG_YELLOW));
-  Log(ANSI_FG_YELLOW "IFU fetch count = " NUMBERIC_FMT ANSI_NONE, g_ifu_fetch_count);
-  Log(ANSI_FG_YELLOW "LSU load count = " NUMBERIC_FMT ANSI_NONE, g_lsu_load_count);
-  Log(ANSI_FG_YELLOW "LSU store count = " NUMBERIC_FMT ANSI_NONE, g_lsu_store_count);
-  Log(ANSI_FG_YELLOW "ALU instruction count = " NUMBERIC_FMT ANSI_NONE, g_alu_inst_count);
-  Log(ANSI_FG_YELLOW "Memory instruction count = " NUMBERIC_FMT ANSI_NONE, g_mem_inst_count);
-  Log(ANSI_FG_YELLOW "Branch instruction count = " NUMBERIC_FMT ANSI_NONE, g_branch_inst_count);
-  Log(ANSI_FG_YELLOW "CSR instruction count = " NUMBERIC_FMT ANSI_NONE, g_csr_inst_count);
+  uint64_t classified = g_retired_load_count + g_retired_store_count +
+      g_retired_branch_count + g_retired_jump_count + g_retired_csr_count +
+      g_retired_system_count + g_retired_alu_count + g_retired_other_count;
 
-  // IFU stall 原因分析
   Log("");
-  Log(ANSI_FMT("=== IFU Stall Analysis ===", ANSI_FG_CYAN));
-  uint64_t total_ifu_stalls = g_ifu_stall_lsu + g_ifu_stall_wait + g_ifu_idle_cycles;
-  if (total_ifu_stalls > 0) {
-    Log(ANSI_FG_RED "IFU stalled by LSU: " NUMBERIC_FMT " cycles (%.2f%%)" ANSI_NONE,
-        g_ifu_stall_lsu, 100.0 * g_ifu_stall_lsu / total_ifu_stalls);
-    Log(ANSI_FG_RED "IFU waiting for AXI: " NUMBERIC_FMT " cycles (%.2f%%)" ANSI_NONE,
-        g_ifu_stall_wait, 100.0 * g_ifu_stall_wait / total_ifu_stalls);
-    Log(ANSI_FG_RED "IFU idle cycles: " NUMBERIC_FMT " cycles (%.2f%%)" ANSI_NONE,
-        g_ifu_idle_cycles, 100.0 * g_ifu_idle_cycles / total_ifu_stalls);
-    Log(ANSI_FG_YELLOW "Total IFU stall cycles: " NUMBERIC_FMT ANSI_NONE, total_ifu_stalls);
-    if (g_nr_cycles > 0) {
-      Log(ANSI_FG_YELLOW "IFU stall ratio: %.2f%%" ANSI_NONE, 100.0 * total_ifu_stalls / g_nr_cycles);
+  Log(ANSI_FMT("=== Retired Instruction Mix ===", ANSI_FG_YELLOW));
+  Log("ALU (OP/OP-IMM/LUI/AUIPC): " NUMBERIC_FMT, g_retired_alu_count);
+  Log("Loads: " NUMBERIC_FMT, g_retired_load_count);
+  Log("Stores: " NUMBERIC_FMT, g_retired_store_count);
+  Log("Conditional branches: " NUMBERIC_FMT, g_retired_branch_count);
+  if (g_retired_branch_count > 0) {
+    Log("Taken conditional branches: " NUMBERIC_FMT " (%.2f%%)",
+        g_retired_branch_taken_count,
+        100.0 * g_retired_branch_taken_count / g_retired_branch_count);
+  }
+  Log("JAL/JALR: " NUMBERIC_FMT, g_retired_jump_count);
+  Log("CSR: " NUMBERIC_FMT, g_retired_csr_count);
+  Log("Other system instructions: " NUMBERIC_FMT, g_retired_system_count);
+  Log("Other instructions: " NUMBERIC_FMT, g_retired_other_count);
+  Log("Classified retired instructions: " NUMBERIC_FMT "%s", classified,
+      classified == g_nr_guest_inst ? " (matches total)" : " (MISMATCH)");
+
+  Log("");
+  Log(ANSI_FMT("=== Pipeline Cycle Breakdown ===", ANSI_FG_CYAN));
+  if (g_pipeline_cycles > 0) {
+    uint64_t accounted = g_reset_cycles + g_retire_cycles + g_no_retire_lsu_cycles +
+        g_no_retire_frontend_cycles + g_no_retire_other_cycles;
+    Log("Measured RTL cycles: " NUMBERIC_FMT "%s", g_pipeline_cycles,
+        g_pipeline_cycles == g_nr_cycles ? " (matches driver)" : " (driver mismatch)");
+    Log("Reset synchronization cycles: " NUMBERIC_FMT " (%.2f%%)",
+        g_reset_cycles, 100.0 * g_reset_cycles / g_pipeline_cycles);
+    Log(ANSI_FG_GREEN "Retirement cycles: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
+        g_retire_cycles, 100.0 * g_retire_cycles / g_pipeline_cycles);
+    Log(ANSI_FG_RED "No-retire, LSU busy: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
+        g_no_retire_lsu_cycles,
+        100.0 * g_no_retire_lsu_cycles / g_pipeline_cycles);
+    Log(ANSI_FG_RED "No-retire, pipeline empty: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
+        g_no_retire_frontend_cycles,
+        100.0 * g_no_retire_frontend_cycles / g_pipeline_cycles);
+    Log("No-retire, fill/hazard/control: " NUMBERIC_FMT " (%.2f%%)",
+        g_no_retire_other_cycles,
+        100.0 * g_no_retire_other_cycles / g_pipeline_cycles);
+    Log("Exclusive cycle classes: " NUMBERIC_FMT "%s", accounted,
+        accounted == g_pipeline_cycles ? " (matches total)" : " (MISMATCH)");
+    Log("Memory instructions issued: " NUMBERIC_FMT, g_memory_issue_interlocks);
+    Log("EX redirect events: " NUMBERIC_FMT, g_redirect_events);
+    Log("Control-flow mispredictions: " NUMBERIC_FMT, g_control_mispredict_events);
+    Log("Conditional-branch mispredictions: " NUMBERIC_FMT,
+        g_conditional_mispredict_events);
+    if (g_retired_branch_count > 0) {
+      Log("Conditional-branch prediction accuracy: %.2f%%",
+          100.0 * (g_retired_branch_count -
+                   g_conditional_mispredict_events) /
+          g_retired_branch_count);
+    }
+    uint64_t jump_mispredicts = g_control_mispredict_events -
+                                g_conditional_mispredict_events;
+    if (g_retired_jump_count > 0) {
+      Log("JAL/JALR prediction accuracy: %.2f%%",
+          100.0 * (g_retired_jump_count - jump_mispredicts) /
+          g_retired_jump_count);
+    }
+    uint64_t control_instructions = g_retired_branch_count + g_retired_jump_count;
+    if (control_instructions > 0) {
+      Log("Control-flow prediction accuracy: %.2f%%",
+          100.0 * (control_instructions - g_control_mispredict_events) /
+          control_instructions);
     }
   }
 
-  // LSU 平均访存延迟分析
   Log("");
-  Log(ANSI_FMT("=== LSU Latency Analysis ===", ANSI_FG_CYAN));
+  Log(ANSI_FMT("=== Front-end ===", ANSI_FG_CYAN));
+  Log("I-cache requests launched: " NUMBERIC_FMT, g_icache_access_count);
+  Log("Instruction responses queued: " NUMBERIC_FMT, g_ifu_fetch_count);
+  Log("Wrong-path queued/in-flight requests squashed: " NUMBERIC_FMT,
+      g_ifu_squashed_count);
+  if (g_pipeline_cycles > 0) {
+    Log("I-cache request service cycles: " NUMBERIC_FMT " (%.2f%%, non-exclusive)",
+        g_ifu_request_wait_cycles,
+        100.0 * g_ifu_request_wait_cycles / g_pipeline_cycles);
+    Log("Fetch queue empty cycles: " NUMBERIC_FMT " (%.2f%%, non-exclusive)",
+        g_ifu_queue_empty_cycles,
+        100.0 * g_ifu_queue_empty_cycles / g_pipeline_cycles);
+  }
+
+  Log("");
+  Log(ANSI_FMT("=== LSU and D-cache ===", ANSI_FG_CYAN));
+  Log("Completed loads: " NUMBERIC_FMT, g_lsu_load_count);
+  Log("Completed stores: " NUMBERIC_FMT, g_lsu_store_count);
   if (g_lsu_load_count > 0) {
     double avg_load_latency = (double)g_lsu_load_latency_total / g_lsu_load_count;
     Log(ANSI_FG_GREEN "Average load latency: %.2f cycles" ANSI_NONE, avg_load_latency);
-    Log(ANSI_FG_GREEN "Total load operations: " NUMBERIC_FMT ANSI_NONE, g_lsu_load_count);
-    Log(ANSI_FG_GREEN "Total load latency: " NUMBERIC_FMT " cycles" ANSI_NONE, g_lsu_load_latency_total);
+    Log("Total load latency: " NUMBERIC_FMT " cycles", g_lsu_load_latency_total);
   }
   if (g_lsu_store_count > 0) {
     double avg_store_latency = (double)g_lsu_store_latency_total / g_lsu_store_count;
     Log(ANSI_FG_MAGENTA "Average store latency: %.2f cycles" ANSI_NONE, avg_store_latency);
-    Log(ANSI_FG_MAGENTA "Total store operations: " NUMBERIC_FMT ANSI_NONE, g_lsu_store_count);
-    Log(ANSI_FG_MAGENTA "Total store latency: " NUMBERIC_FMT " cycles" ANSI_NONE, g_lsu_store_latency_total);
-  }
-  if (g_lsu_load_count + g_lsu_store_count > 0) {
-    double avg_mem_latency = (double)(g_lsu_load_latency_total + g_lsu_store_latency_total) /
-                             (g_lsu_load_count + g_lsu_store_count);
-    Log(ANSI_FG_YELLOW "Average memory access latency: %.2f cycles" ANSI_NONE, avg_mem_latency);
+    Log("Total store latency: " NUMBERIC_FMT " cycles", g_lsu_store_latency_total);
   }
 
-  // ICache AMAT 统计
+  if (g_dcache_access_count > 0) {
+    uint64_t dcache_misses = g_dcache_cacheable_count - g_dcache_hit_count;
+    uint64_t uncached_loads = g_dcache_access_count - g_dcache_cacheable_count;
+    Log("D-cache load lookups: " NUMBERIC_FMT, g_dcache_access_count);
+    Log("Cacheable load lookups: " NUMBERIC_FMT, g_dcache_cacheable_count);
+    if (g_dcache_cacheable_count > 0) {
+      Log(ANSI_FG_GREEN "D-cache hits: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
+          g_dcache_hit_count,
+          100.0 * g_dcache_hit_count / g_dcache_cacheable_count);
+    }
+    Log(ANSI_FG_RED "D-cache misses: " NUMBERIC_FMT ANSI_NONE, dcache_misses);
+    Log("Uncached loads: " NUMBERIC_FMT, uncached_loads);
+  }
+
   Log("");
-  Log(ANSI_FMT("=== ICache AMAT Analysis ===", ANSI_FG_CYAN));
-  if (g_icache_access_count > 0) {
-    double hit_rate = (double)g_icache_hit_count / g_icache_access_count;
-    double amat = (double)(g_icache_hit_cycles + g_icache_miss_cycles) / g_icache_access_count;
+  Log(ANSI_FMT("=== I-cache ===", ANSI_FG_CYAN));
+  uint64_t icache_completed = g_icache_hit_count + g_icache_miss_count;
+  if (icache_completed > 0) {
+    double hit_rate = (double)g_icache_hit_count / icache_completed;
+    double amat = (double)(g_icache_hit_cycles + g_icache_miss_cycles) /
+                  icache_completed;
 
-    Log(ANSI_FG_GREEN "Total accesses: " NUMBERIC_FMT ANSI_NONE, g_icache_access_count);
-    Log(ANSI_FG_GREEN "Cache hits: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
+    Log("Completed accesses: " NUMBERIC_FMT, icache_completed);
+    Log(ANSI_FG_GREEN "Hits: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
         g_icache_hit_count, hit_rate * 100.0);
-    Log(ANSI_FG_RED "Cache misses: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
-        g_icache_miss_count, (1.0 - hit_rate) * 100.0);
+    Log(ANSI_FG_RED "Misses: " NUMBERIC_FMT " (%.2f%%)" ANSI_NONE,
+        g_icache_miss_count, 100.0 * g_icache_miss_count / icache_completed);
 
     if (g_icache_hit_count > 0) {
       double avg_hit_cycles = (double)g_icache_hit_cycles / g_icache_hit_count;
@@ -353,7 +541,7 @@ static void statistic() {
       Log(ANSI_FG_RED "Average miss penalty: %.2f cycles" ANSI_NONE, avg_miss_cycles);
     }
 
-    Log(ANSI_FG_YELLOW "AMAT (Average Memory Access Time): %.2f cycles" ANSI_NONE, amat);
+    Log(ANSI_FG_YELLOW "AMAT: %.2f cycles" ANSI_NONE, amat);
   }
 }
 
@@ -372,6 +560,7 @@ void cpu_exec(uint64_t n) {
     default: nemu_state.state = NEMU_RUNNING;
   }
 
+  g_perf_enabled = true;
   uint64_t timer_start = get_time();
   
   execute(n);

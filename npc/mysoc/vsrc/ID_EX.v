@@ -7,6 +7,7 @@ module ID_EX(
 
     // 数据输入
     input wire [31:0] pc_in,
+    input wire [31:0] predicted_next_in,
     input wire [31:0] inst_in,
     input wire [31:0] rs1_data_in,
     input wire [31:0] rs2_data_in,
@@ -31,9 +32,11 @@ module ID_EX(
     input wire mret_en_in,
     input wire auipc_flag_in,
     input wire is_csr_op_in,
+    input wire fence_i_en_in,
 
     // 数据输出
     output reg [31:0] pc_out,
+    output reg [31:0] predicted_next_out,
     output reg [31:0] inst_out,
     output reg [31:0] rs1_data_out,
     output reg [31:0] rs2_data_out,
@@ -58,7 +61,8 @@ module ID_EX(
     output reg ecall_en_out,
     output reg mret_en_out,
     output reg auipc_flag_out,
-    output reg is_csr_op_out
+    output reg is_csr_op_out,
+    output reg fence_i_en_out
 );
 
     always @(posedge clock) begin
@@ -75,12 +79,14 @@ module ID_EX(
             ecall_en_out <= 1'b0;
             mret_en_out <= 1'b0;
             is_csr_op_out <= 1'b0;
+            fence_i_en_out <= 1'b0;
             alu_op_out <= 4'b0;
             alu_src_out <= 1'b0;
             funct3_out <= 3'b0;
             lsu_wmask_out <= 4'b0;
             auipc_flag_out <= 1'b0;
             pc_out <= 32'h0;
+            predicted_next_out <= 32'h0;
             inst_out <= 32'h0;
             rs1_data_out <= 32'h0;
             rs2_data_out <= 32'h0;
@@ -92,6 +98,7 @@ module ID_EX(
         else if (!stall) begin
             data_valid_out <= data_valid_in;
             pc_out <= pc_in;
+            predicted_next_out <= predicted_next_in;
             inst_out <= inst_in;
             rs1_data_out <= rs1_data_in;
             rs2_data_out <= rs2_data_in;
@@ -114,6 +121,7 @@ module ID_EX(
             mret_en_out <= mret_en_in;
             auipc_flag_out <= auipc_flag_in;
             is_csr_op_out <= is_csr_op_in;
+            fence_i_en_out <= fence_i_en_in;
         end
     end
 

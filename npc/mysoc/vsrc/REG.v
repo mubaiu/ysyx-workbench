@@ -24,8 +24,6 @@ module REG(
   // 16个寄存器(RV32E)
   reg [31:0] registers [0:15];
   
-  integer i;
-  
   // 寄存器读取逻辑
   always @(*) begin
       if (reset) begin
@@ -33,8 +31,14 @@ module REG(
           rs2_data = 32'h0;
       end else begin
           // x0寄存器恒为0
-          rs1_data = (rs1_addr == 4'h0) ? 32'h0 : registers[rs1_addr];
-          rs2_data = (rs2_addr == 4'h0) ? 32'h0 : registers[rs2_addr];
+          // Explicit WB-to-ID bypass.  A consumer decoded on the same edge as
+          // its producer writes back must see rd_data, not the old array word.
+          rs1_data = (rs1_addr == 4'h0) ? 32'h0 :
+                     (((rd_wen || mem_to_reg) && rd_addr == rs1_addr) ?
+                      rd_data : registers[rs1_addr]);
+          rs2_data = (rs2_addr == 4'h0) ? 32'h0 :
+                     (((rd_wen || mem_to_reg) && rd_addr == rs2_addr) ?
+                      rd_data : registers[rs2_addr]);
       end
   end
 

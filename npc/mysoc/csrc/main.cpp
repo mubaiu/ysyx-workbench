@@ -80,18 +80,9 @@ int main(int argc, char** argv) {
         ysyxSoCFull->eval();
         IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
     }
-    // 释放复位信号后，给予额外的时钟周期稳定系统
+    // Release reset.  The first active edge is driven by cpu_exec(), so cycle
+    // and cache statistics start at the same architectural boundary.
     ysyxSoCFull->reset = 0;
-    for (int i = 0; i < 2; i++) {
-        nvboard_update();
-        ysyxSoCFull->clock = 0;
-        ysyxSoCFull->eval();
-        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
-
-        ysyxSoCFull->clock = 1;
-        ysyxSoCFull->eval();
-        IF(ENABLE_WAVE_TRACE, tfp->dump(sim_time++));
-    }
     
     /* Start engine. */
     engine_start();

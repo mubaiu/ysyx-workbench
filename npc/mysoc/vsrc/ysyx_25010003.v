@@ -94,20 +94,23 @@ module ysyx_25010003(
     wire [31:0] pc;
     wire [31:0] inst_out;
     wire        inst_valid;
+    wire [31:0] predicted_next;
     wire [31:0] snpc;  // 静态下一个PC
 
     // ===== 流水线控制信号 =====
-    wire stall_IF, stall_ID, stall_EX, stall_LSU, flush_IF, flush_ID, flush_EX, flush_LSU;
+    wire stall_IF, stall_ID, stall_EX, flush_IF, flush_ID, flush_EX, flush_LSU;
     wire lsu_busy, lsu_done;
 
     // ===== IF/ID 流水线寄存器 =====
     wire [31:0] IF_ID_pc;
+    wire [31:0] IF_ID_predicted_next;
     wire [31:0] IF_ID_inst;
     wire        IF_ID_inst_valid;
 
     // ===== ID/EX 流水线寄存器 =====
     wire        ID_EX_data_valid;
     wire [31:0] ID_EX_pc;
+    wire [31:0] ID_EX_predicted_next;
     wire [31:0] ID_EX_inst;
     wire [31:0] ID_EX_rs1_data;
     wire [31:0] ID_EX_rs2_data;
@@ -128,6 +131,7 @@ module ysyx_25010003(
     wire        ID_EX_mret_en;
     wire        ID_EX_auipc_flag;
     wire        ID_EX_is_csr_op;
+    wire        ID_EX_fence_i_en;
     wire [2:0]  ID_EX_funct3;
     wire [3:0]  ID_EX_lsu_wmask;
 
@@ -183,14 +187,24 @@ module ysyx_25010003(
     wire        mret_taken;
     wire [31:0] mret_target;
 
+    // An ID/EX instruction executes only when the occupied EX/LSU stage can
+    // accept it.  In particular, a held branch/JALR must not redirect (and be
+    // flushed) while an older memory transaction still owns EX/LSU.
+    wire        ID_EX_fire = ID_EX_data_valid && !stall_EX;
+
     // ===== 退休元数据 =====
     wire [31:0] ID_EX_next_pc = mret_taken   ? mret_target :
                                  ecall_taken  ? ecall_target :
                                  branch_taken ? branch_target :
                                                 ID_EX_pc + 32'd4;
-
+    wire ID_EX_control = ID_EX_branch || ID_EX_jal_en || ID_EX_jalr_en;
+    wire control_mispredict = ID_EX_fire && ID_EX_control &&
+                              (ID_EX_next_pc != ID_EX_predicted_next);
+    wire fence_redirect = ID_EX_fire && ID_EX_fence_i_en;
+    wire frontend_redirect = control_mispredict || ecall_taken || mret_taken ||
+                             fence_redirect;
     // MMIO 指令由 DUT 执行，退休时把 DUT 状态同步给参考模型。
-    wire ID_EX_skip_ref = ID_EX_data_valid &&
+    wire ID_EX_skip_ref = ID_EX_fire &&
                           (ID_EX_mem_read || ID_EX_mem_write) &&
                           (((alu_result >= 32'h02000000) && (alu_result < 32'h02010000)) ||
                            ((alu_result >= 32'h10000000) && (alu_result < 32'h10012000)) ||
@@ -273,24 +287,24 @@ module ysyx_25010003(
         .clock              (clock),
         .reset              (reset),
         .stall              (stall_IF),
-        .flush_IF           (flush_IF),
 
         .io_clint_arvalid   (io_clint_arvalid),
         .io_clint_arready   (io_clint_arready),
 
-        //===== 分支控制信号 =====
-        .mret_taken         (mret_taken),
-        .mret_target        (mret_target),
-        .ecall_taken        (ecall_taken),
-        .ecall_target       (ecall_target),
-        .branch_taken       (branch_taken),
-        .branch_target      (branch_target),
-        .fence_i_en         (fence_i_en),
+        .redirect_valid     (flush_IF),
+        .redirect_target    (ID_EX_next_pc),
+        .resolve_valid      (ID_EX_fire),
+        .resolve_pc         (ID_EX_pc),
+        .resolve_inst       (ID_EX_inst),
+        .resolve_next_pc    (ID_EX_next_pc),
+        .resolve_branch_taken(branch_taken),
+        .fence_i_en         (fence_redirect),
         .pc                 (pc),
         .snpc               (snpc),
 
         .inst_valid         (inst_valid),
         .inst               (inst_out),
+        .predicted_next     (predicted_next),
 
         // ===== IFU Arbiter 接口 =====
         .io_ifu_arvalid     (io_ifu_arvalid),
@@ -318,10 +332,11 @@ module ysyx_25010003(
         .stall              (stall_ID),
         .flush              (flush_ID),
         .pc_in              (pc),
+        .predicted_next_in  (predicted_next),
         .inst_in            (inst_out),
         .inst_valid_in      (inst_valid),
-        .stall_out          (stall_EX),
         .pc_out             (IF_ID_pc),
+        .predicted_next_out (IF_ID_predicted_next),
         .inst_out           (IF_ID_inst),
         .inst_valid_out     (IF_ID_inst_valid)
     );
@@ -483,6 +498,7 @@ module ysyx_25010003(
         .flush              (flush_EX),
         .data_valid_in      (IF_ID_inst_valid),    
         .pc_in              (IF_ID_pc),
+        .predicted_next_in  (IF_ID_predicted_next),
         .inst_in            (IF_ID_inst),
         .rs1_data_in        (rs1_data),
         .rs2_data_in        (rs2_data),
@@ -503,10 +519,12 @@ module ysyx_25010003(
         .mret_en_in         (mret_en),
         .auipc_flag_in      (auipc_flag),
         .is_csr_op_in       (is_csr_op),
+        .fence_i_en_in      (fence_i_en),
         .funct3_in          (funct3),
         .lsu_wmask_in       (lsu_wmask),
         .data_valid_out     (ID_EX_data_valid),
         .pc_out             (ID_EX_pc),
+        .predicted_next_out (ID_EX_predicted_next),
         .inst_out           (ID_EX_inst),
         .rs1_data_out       (ID_EX_rs1_data),
         .rs2_data_out       (ID_EX_rs2_data),
@@ -527,6 +545,7 @@ module ysyx_25010003(
         .mret_en_out        (ID_EX_mret_en),
         .auipc_flag_out     (ID_EX_auipc_flag),
         .is_csr_op_out      (ID_EX_is_csr_op),
+        .fence_i_en_out     (ID_EX_fence_i_en),
         .funct3_out         (ID_EX_funct3),
         .lsu_wmask_out      (ID_EX_lsu_wmask)
     );
@@ -549,7 +568,7 @@ module ysyx_25010003(
     EXU ysyx_25010003_EXU(
         .clock              (clock),
         .reset              (reset),
-        .data_valid         (ID_EX_data_valid),
+        .data_valid         (ID_EX_fire),
         .alu_op             (ID_EX_alu_op),
         .rs1_data           (forward_a),
         .rs2_data           (forward_b),
@@ -557,8 +576,8 @@ module ysyx_25010003(
         .alu_src            (ID_EX_alu_src),
         .pc                 (ID_EX_pc),
         .branch             (ID_EX_branch),
-        .jal_en             (ID_EX_jal_en),
-        .jalr_en            (ID_EX_jalr_en),
+        .jal_en             (ID_EX_fire && ID_EX_jal_en),
+        .jalr_en            (ID_EX_fire && ID_EX_jalr_en),
         .ecall_en           (ID_EX_ecall_en),
         .mret_en            (ID_EX_mret_en),
         .mret_taken         (mret_taken),
@@ -576,9 +595,9 @@ module ysyx_25010003(
     EX_LSU ysyx_25010003_EX_LSU(
         .clock              (clock),
         .reset              (reset),
-        .stall              (stall_LSU),
+        .stall              (1'b0),
         .flush              (flush_LSU),
-        .data_valid_in      (ID_EX_data_valid),
+        .data_valid_in      (ID_EX_fire),
         .pc_in              (ID_EX_pc),
         .next_pc_in         (ID_EX_next_pc),
         .inst_in            (ID_EX_inst),
@@ -692,22 +711,14 @@ module ysyx_25010003(
 
     // 冒险检测单元
     Hazard ysyx_25010003_Hazard(
-        .clock              (clock),
         .ID_EX_mem_read     (ID_EX_mem_read),
-        .ID_EX_rd           (ID_EX_rd_addr),
-        .ID_rs1             (rs1_addr),
-        .ID_rs2             (rs2_addr),
-        .branch_taken       (branch_taken),
-        .jal_en             (ID_EX_jal_en),
-        .jalr_en            (ID_EX_jalr_en),
-        .ecall_taken        (ecall_taken),
-        .mret_taken         (mret_taken),
+        .ID_EX_mem_write    (ID_EX_mem_write),
+        .redirect           (frontend_redirect),
         .lsu_busy           (lsu_busy),
         .lsu_done           (lsu_done),
         .stall_IF           (stall_IF),
         .stall_ID           (stall_ID),
-        .stall_EX           (),
-        .stall_LSU          (stall_LSU),
+        .stall_EX           (stall_EX),
         .flush_IF           (flush_IF),
         .flush_ID           (flush_ID),
         .flush_EX           (flush_EX),
@@ -734,45 +745,27 @@ module ysyx_25010003(
 import "DPI-C" function void commit_instruction(input int pc, input int next_pc,
                                                   input int inst, input int skip_ref);
 import "DPI-C" function void ebreak(input int pc);
-
-// 性能计数器DPI-C函数
-import "DPI-C" function void perf_alu_inst();
-import "DPI-C" function void perf_branch_inst();
-import "DPI-C" function void perf_csr_inst();
-import "DPI-C" function void perf_mem_inst();
+import "DPI-C" function void perf_pipeline_cycle(input int flags);
 `endif
+
+wire perf_mem_issue = ID_EX_fire && (ID_EX_mem_read || ID_EX_mem_write);
+wire perf_redirect = frontend_redirect;
 
 // 在 WBU 的有效退休边界通知仿真框架；寄存器写回也在该时钟沿完成。
 always @(posedge clock) begin
 `ifdef VERILATOR
+    perf_pipeline_cycle({21'b0,
+                         (control_mispredict && ID_EX_branch),
+                         control_mispredict, reset,
+                         perf_redirect, perf_mem_issue,
+                         LSU_WB_data_valid, EX_LSU_data_valid,
+                         ID_EX_data_valid, IF_ID_inst_valid,
+                         inst_valid, lsu_busy});
     if (!reset && LSU_WB_data_valid) begin
         commit_instruction(LSU_WB_pc, LSU_WB_next_pc, LSU_WB_inst,
                            {31'b0, LSU_WB_skip_ref});
         if (LSU_WB_ebreak)
             ebreak(LSU_WB_pc);
-    end
-`endif
-end
-
-// 指令类型性能计数器（在EX阶段计数有效指令）
-always @(posedge clock) begin
-`ifdef VERILATOR
-    if (!reset && ID_EX_data_valid) begin
-        // 分支跳转指令
-        if (branch_taken || ID_EX_jal_en || ID_EX_jalr_en)
-            perf_branch_inst();
-
-        // CSR指令
-        if (ID_EX_is_csr_op)
-            perf_csr_inst();
-
-        // ALU计算指令（排除访存、分支、CSR指令）
-        if (!ID_EX_mem_read && !ID_EX_mem_write && !branch_taken && !ID_EX_jal_en && !ID_EX_jalr_en && !ID_EX_is_csr_op)
-            perf_alu_inst();
-
-        // 访存指令
-        if (ID_EX_mem_read || ID_EX_mem_write)
-            perf_mem_inst();
     end
 `endif
 end

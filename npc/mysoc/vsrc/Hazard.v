@@ -1,18 +1,11 @@
 module Hazard(
-    input wire clock,
 
-    // Load-Use冒险检测
+    // Memory-stage ownership
     input wire ID_EX_mem_read,
-    input wire [3:0] ID_EX_rd,
-    input wire [3:0] ID_rs1,
-    input wire [3:0] ID_rs2,
+    input wire ID_EX_mem_write,
 
-    // 控制冒险检测
-    input wire branch_taken,
-    input wire jal_en,
-    input wire jalr_en,
-    input wire ecall_taken,
-    input wire mret_taken,
+    // Control-flow misprediction/exception/fence redirect
+    input wire redirect,
 
     // LSU访存停顿检测
     input wire lsu_busy,
@@ -22,23 +15,17 @@ module Hazard(
     output reg stall_IF,
     output reg stall_ID,
     output reg stall_EX,
-    output reg stall_LSU,
     output reg flush_IF,
     output reg flush_ID,
     output reg flush_EX,
     output reg flush_LSU
 );
 
-`ifdef VERILATOR
-    import "DPI-C" function void perf_ifu_stall_lsu();  // IFU被LSU阻塞
-`endif
-
     always @(*) begin
         // 默认不阻塞、不冲刷
         stall_IF = 1'b0;
         stall_ID = 1'b0;
         stall_EX = 1'b0;
-        stall_LSU = 1'b0;
         flush_IF = 1'b0;
         flush_ID = 1'b0;
         flush_EX = 1'b0;
@@ -48,7 +35,7 @@ module Hazard(
         if (lsu_busy) begin
             stall_IF = 1'b1;
             stall_ID = 1'b1;
-            // stall_EX = 1'b1;
+            stall_EX = 1'b1;
         end
 
         // LSU访存完成后清除EX_LSU中的访存指令
@@ -56,28 +43,21 @@ module Hazard(
             flush_LSU = 1'b1;
         end
 
-        // Load-Use冒险检测
-        if (ID_EX_mem_read && ID_EX_rd != 4'h0 &&
-            (ID_EX_rd == ID_rs1 || ID_EX_rd == ID_rs2)) begin
+        // A memory instruction moves to EX/LSU while the following
+        // instruction remains in IF/ID.  This avoids latching a consumer in
+        // ID/EX for an arbitrarily long AXI wait after its forwarding source
+        // has already left WB.
+        if (ID_EX_mem_read || ID_EX_mem_write) begin
             stall_IF = 1'b1;
             stall_ID = 1'b1;
-            flush_EX = 1'b1;  // 在EX阶段插入气泡
+            flush_EX = 1'b1;
         end
 
         // 控制冒险检测
-        if (branch_taken || jal_en || jalr_en || ecall_taken || mret_taken) begin
+        if (redirect) begin
             flush_IF = 1'b1;
             flush_ID = 1'b1;
             flush_EX = 1'b1;
-        end
-    end
-
-    // IFU被LSU阻塞计数
-    always @(posedge clock) begin
-        if (lsu_busy) begin
-`ifdef VERILATOR
-            perf_ifu_stall_lsu();
-`endif
         end
     end
 
