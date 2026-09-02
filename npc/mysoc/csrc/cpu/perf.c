@@ -41,6 +41,8 @@ enum PipelineFlag {
   PIPE_EXLSU_LOAD = 1u << 15,
   PIPE_EXLSU_STORE = 1u << 16,
   PIPE_STORE_BUFFERED = 1u << 17,
+  PIPE_LOAD_USE_INTERLOCK = 1u << 18,
+  PIPE_STORE_ORDERING_WAIT = 1u << 19,
 };
 
 typedef struct {
@@ -75,6 +77,8 @@ typedef struct {
   uint64_t redirect_events;
   uint64_t control_mispredict_events;
   uint64_t conditional_mispredict_events;
+  uint64_t load_use_interlock_cycles;
+  uint64_t store_ordering_wait_cycles;
 
   uint64_t load_path_count[LOAD_PATH_COUNT];
   uint64_t load_path_latency[LOAD_PATH_COUNT];
@@ -209,6 +213,10 @@ static void count_pipeline_cycle(PerfWindow *window, uint32_t flags) {
       ((flags & PIPE_CONTROL_MISPREDICT) != 0);
   window->conditional_mispredict_events +=
       ((flags & PIPE_CONDITIONAL_MISPREDICT) != 0);
+  window->load_use_interlock_cycles +=
+      ((flags & PIPE_LOAD_USE_INTERLOCK) != 0);
+  window->store_ordering_wait_cycles +=
+      ((flags & PIPE_STORE_ORDERING_WAIT) != 0);
 
   if (flags & PIPE_RESET) {
     window->reset_cycles++;
@@ -467,6 +475,10 @@ static void report_pipeline(uint64_t driver_cycles) {
   Log("Exclusive cycle classes: " NUMBERIC_FMT "%s", accounted,
       accounted == g_all.pipeline_cycles ? " (matches total)" : " (MISMATCH)");
   Log("Memory instructions issued: " NUMBERIC_FMT, g_all.memory_issue_events);
+  Log("Load-use interlock cycles: " NUMBERIC_FMT,
+      g_all.load_use_interlock_cycles);
+  Log("Store-ordering wait cycles: " NUMBERIC_FMT,
+      g_all.store_ordering_wait_cycles);
   Log("EX redirect events: " NUMBERIC_FMT, g_all.redirect_events);
   Log("Control-flow mispredictions: " NUMBERIC_FMT,
       g_all.control_mispredict_events);
@@ -591,6 +603,10 @@ static void report_timed_window() {
   report_other_pipeline_breakdown(&g_timed);
   Log("Memory instructions issued: " NUMBERIC_FMT,
       g_timed.memory_issue_events);
+  Log("Load-use interlock cycles: " NUMBERIC_FMT,
+      g_timed.load_use_interlock_cycles);
+  Log("Store-ordering wait cycles: " NUMBERIC_FMT,
+      g_timed.store_ordering_wait_cycles);
   Log("EX redirect events: " NUMBERIC_FMT, g_timed.redirect_events);
   Log("Control-flow mispredictions: " NUMBERIC_FMT,
       g_timed.control_mispredict_events);

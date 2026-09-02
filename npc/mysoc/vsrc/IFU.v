@@ -132,9 +132,9 @@ module IFU(
     assign io_ifu_bready = 1'b0;
 
     ICache #(
-        // 64 direct-mapped lines x 16 B = 1 KiB. The old 4-line (64 B)
+        // 512 direct-mapped lines x 16 B = 8 KiB. The old 4-line (64 B)
         // cache thrashed even on the small cpu-tests loops.
-        .CACHE_SIZE(64),
+        .CACHE_SIZE(512),
         .BLOCK_SIZE(16),
         .ADDR_WIDTH(32),
         .DATA_WIDTH(32)

@@ -4,8 +4,8 @@
 // does not add a fetch stage. Predictor state is updated only when an
 // instruction really executes in EX (resolve_valid).
 module BPU #(
-    parameter BHT_ENTRIES = 256,
-    parameter [2:0] BHT_USE_THRESHOLD = 3'd2,
+    parameter LOCAL_HISTORY_ENTRIES = 256,
+    parameter LOCAL_HISTORY_BITS = 8,
     parameter JALR_BTB_ENTRIES = 64,
     parameter RAS_DEPTH = 8
 )(
@@ -27,8 +27,8 @@ module BPU #(
     input  wire        resolve_branch_taken
 );
 
-    localparam BHT_INDEX_WIDTH = $clog2(BHT_ENTRIES);
-    localparam BHT_TAG_WIDTH = 12;
+    localparam LOCAL_HISTORY_INDEX_WIDTH = $clog2(LOCAL_HISTORY_ENTRIES);
+    localparam LOCAL_PATTERN_ENTRIES = 1 << LOCAL_HISTORY_BITS;
     localparam JALR_BTB_INDEX_WIDTH = $clog2(JALR_BTB_ENTRIES);
     localparam JALR_BTB_TAG_WIDTH = 14;
     localparam RAS_PTR_WIDTH = $clog2(RAS_DEPTH);
@@ -49,26 +49,29 @@ module BPU #(
                               query_inst[19:12], query_inst[20],
                               query_inst[30:21], 1'b0};
 
-    // Conditional-direction table. Cold entries use backward-taken,
-    // forward-not-taken. A learned direction is selected only after its
-    // usefulness counter shows that it consistently beats the static rule.
-    reg                         bht_valid   [0:BHT_ENTRIES-1];
-    reg [1:0]                   bht_counter [0:BHT_ENTRIES-1];
-    reg [2:0]                   bht_useful  [0:BHT_ENTRIES-1];
-    reg [BHT_TAG_WIDTH-1:0]     bht_tag     [0:BHT_ENTRIES-1];
+    // Per-PC outcome histories index a shared table of two-bit counters.
+    // Cold entries retain backward-taken, forward-not-taken behavior.
+    reg                         local_history_valid
+                                [0:LOCAL_HISTORY_ENTRIES-1];
+    reg [LOCAL_HISTORY_BITS-1:0] local_history
+                                [0:LOCAL_HISTORY_ENTRIES-1];
+    reg                         local_pattern_valid
+                                [0:LOCAL_PATTERN_ENTRIES-1];
+    reg [1:0]                   local_pattern_counter
+                                [0:LOCAL_PATTERN_ENTRIES-1];
 
-    wire [BHT_INDEX_WIDTH-1:0] query_bht_index =
-        query_pc[BHT_INDEX_WIDTH+1:2];
-    wire [BHT_TAG_WIDTH-1:0] query_bht_tag =
-        {query_pc[31:28], query_pc[17:10]};
-    wire query_bht_hit = bht_valid[query_bht_index] &&
-                         (bht_tag[query_bht_index] == query_bht_tag);
+    wire [LOCAL_HISTORY_INDEX_WIDTH-1:0] query_local_index =
+        query_pc[LOCAL_HISTORY_INDEX_WIDTH+1:2];
+    wire [LOCAL_HISTORY_BITS-1:0] query_local_history =
+        local_history_valid[query_local_index] ?
+        local_history[query_local_index] : {LOCAL_HISTORY_BITS{1'b0}};
     wire query_static_taken = query_bimm[31];
-    wire query_dynamic_taken = bht_counter[query_bht_index][1];
+    wire query_local_hit = local_history_valid[query_local_index] &&
+        local_pattern_valid[query_local_history];
+    wire query_dynamic_taken =
+        local_pattern_counter[query_local_history][1];
     wire query_branch_taken =
-        (query_bht_hit && bht_useful[query_bht_index] >=
-         BHT_USE_THRESHOLD) ?
-        query_dynamic_taken : query_static_taken;
+        query_local_hit ? query_dynamic_taken : query_static_taken;
 
     // Return-address stack. Updates are non-speculative, so wrong-path calls
     // and returns cannot corrupt it.
@@ -138,51 +141,45 @@ module BPU #(
                                     (resolve_inst[11:7] == 5'd0) &&
                                     !resolve_is_return;
 
-    wire [BHT_INDEX_WIDTH-1:0] resolve_bht_index =
-        resolve_pc[BHT_INDEX_WIDTH+1:2];
-    wire [BHT_TAG_WIDTH-1:0] resolve_bht_tag =
-        {resolve_pc[31:28], resolve_pc[17:10]};
-    wire resolve_bht_hit = bht_valid[resolve_bht_index] &&
-                           (bht_tag[resolve_bht_index] == resolve_bht_tag);
-    wire resolve_static_taken = resolve_inst[31];
+    wire [LOCAL_HISTORY_INDEX_WIDTH-1:0] resolve_local_index =
+        resolve_pc[LOCAL_HISTORY_INDEX_WIDTH+1:2];
+    wire [LOCAL_HISTORY_BITS-1:0] resolve_local_history =
+        local_history_valid[resolve_local_index] ?
+        local_history[resolve_local_index] : {LOCAL_HISTORY_BITS{1'b0}};
 
-    integer bht_i;
+    integer local_history_i;
+    integer local_pattern_i;
     always @(posedge clock) begin
         if (reset) begin
-            for (bht_i = 0; bht_i < BHT_ENTRIES; bht_i = bht_i + 1)
-                bht_valid[bht_i] <= 1'b0;
+            for (local_history_i = 0;
+                 local_history_i < LOCAL_HISTORY_ENTRIES;
+                 local_history_i = local_history_i + 1)
+                local_history_valid[local_history_i] <= 1'b0;
+            for (local_pattern_i = 0;
+                 local_pattern_i < LOCAL_PATTERN_ENTRIES;
+                 local_pattern_i = local_pattern_i + 1)
+                local_pattern_valid[local_pattern_i] <= 1'b0;
         end
         else if (resolve_valid && resolve_is_branch) begin
-            bht_valid[resolve_bht_index] <= 1'b1;
-            if (!resolve_bht_hit) begin
-                bht_tag[resolve_bht_index] <= resolve_bht_tag;
-                bht_counter[resolve_bht_index] <=
+            local_history_valid[resolve_local_index] <= 1'b1;
+            local_history[resolve_local_index] <=
+                {resolve_local_history[LOCAL_HISTORY_BITS-2:0],
+                 resolve_branch_taken};
+
+            local_pattern_valid[resolve_local_history] <= 1'b1;
+            if (!local_pattern_valid[resolve_local_history]) begin
+                local_pattern_counter[resolve_local_history] <=
                     resolve_branch_taken ? 2'b10 : 2'b01;
-                bht_useful[resolve_bht_index] <= 3'b000;
             end
             else begin
                 if (resolve_branch_taken &&
-                    bht_counter[resolve_bht_index] != 2'b11)
-                    bht_counter[resolve_bht_index] <=
-                        bht_counter[resolve_bht_index] + 2'b01;
+                    local_pattern_counter[resolve_local_history] != 2'b11)
+                    local_pattern_counter[resolve_local_history] <=
+                        local_pattern_counter[resolve_local_history] + 2'b01;
                 else if (!resolve_branch_taken &&
-                         bht_counter[resolve_bht_index] != 2'b00)
-                    bht_counter[resolve_bht_index] <=
-                        bht_counter[resolve_bht_index] - 2'b01;
-
-                if (bht_counter[resolve_bht_index][1] !=
-                    resolve_static_taken) begin
-                    if ((bht_counter[resolve_bht_index][1] ==
-                         resolve_branch_taken) &&
-                        bht_useful[resolve_bht_index] != 3'b111)
-                        bht_useful[resolve_bht_index] <=
-                            bht_useful[resolve_bht_index] + 3'b001;
-                    else if ((resolve_static_taken ==
-                              resolve_branch_taken) &&
-                             bht_useful[resolve_bht_index] != 3'b000)
-                        bht_useful[resolve_bht_index] <=
-                            bht_useful[resolve_bht_index] - 3'b001;
-                end
+                         local_pattern_counter[resolve_local_history] != 2'b00)
+                    local_pattern_counter[resolve_local_history] <=
+                        local_pattern_counter[resolve_local_history] - 2'b01;
             end
         end
     end

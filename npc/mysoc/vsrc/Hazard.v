@@ -2,12 +2,14 @@ module Hazard(
 
     // Memory-stage ownership
     input wire ID_EX_data_valid,
+    input wire [6:0] ID_EX_opcode,
     input wire [3:0] ID_EX_rs1,
     input wire [3:0] ID_EX_rs2,
     input wire ID_EX_ordering,
 
     input wire EX_LSU_mem_read,
     input wire [3:0] EX_LSU_rd,
+    input wire EX_LSU_load_forwardable,
 
     // Control-flow misprediction/exception/fence redirect
     input wire redirect,
@@ -24,13 +26,26 @@ module Hazard(
     output reg flush_IF,
     output reg flush_ID,
     output reg flush_EX,
-    output reg flush_LSU
+    output reg flush_LSU,
+    output wire load_use_interlock
 );
 
+    wire id_ex_uses_rs1 = (ID_EX_opcode == 7'b0110011) || // OP
+                          (ID_EX_opcode == 7'b0010011) || // OP-IMM
+                          (ID_EX_opcode == 7'b0000011) || // LOAD
+                          (ID_EX_opcode == 7'b0100011) || // STORE
+                          (ID_EX_opcode == 7'b1100011) || // BRANCH
+                          (ID_EX_opcode == 7'b1100111) || // JALR
+                          (ID_EX_opcode == 7'b1110011);   // register CSR
+    wire id_ex_uses_rs2 = (ID_EX_opcode == 7'b0110011) || // OP
+                          (ID_EX_opcode == 7'b0100011) || // STORE
+                          (ID_EX_opcode == 7'b1100011);   // BRANCH
     wire load_use_hazard = ID_EX_data_valid && EX_LSU_mem_read && lsu_done &&
+                           !EX_LSU_load_forwardable &&
                            (EX_LSU_rd != 4'h0) &&
-                           ((ID_EX_rs1 == EX_LSU_rd) ||
-                            (ID_EX_rs2 == EX_LSU_rd));
+                           ((id_ex_uses_rs1 && ID_EX_rs1 == EX_LSU_rd) ||
+                            (id_ex_uses_rs2 && ID_EX_rs2 == EX_LSU_rd));
+    assign load_use_interlock = load_use_hazard;
 
     always @(*) begin
         // 默认不阻塞、不冲刷

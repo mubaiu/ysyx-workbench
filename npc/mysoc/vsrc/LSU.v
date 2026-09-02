@@ -15,6 +15,7 @@ module LSU(
     output wire        lsu_done,  // LSU完成信号
     output wire        store_pending,
     output wire        store_buffered,
+    output wire        load_hit_forwardable,
 
     // ===== AXI读地址通道 =====
     output wire [31:0] io_lsu_araddr,
@@ -94,21 +95,14 @@ module LSU(
                            mem_read && dcache_hit;
     wire        read_done = (state == READ) && io_lsu_rvalid && io_lsu_rready;
     wire        write_done = (state == WRITE) && io_lsu_bvalid && io_lsu_bready;
-    wire        aw_fire = io_lsu_awvalid && io_lsu_awready;
-    wire        w_fire = io_lsu_wvalid && io_lsu_wready;
-
-    reg aw_accepted;
-    reg w_accepted;
     reg store_released;
 
-    wire write_payload_accepted = (direct_store_request ||
-                                   (state == WRITE)) &&
-                                  (aw_accepted || aw_fire) &&
-                                  (w_accepted || w_fire);
     wire active_request_cacheable = direct_store_request ?
                                     dcache_cacheable : request_cacheable;
-    wire buffered_store_done = active_request_cacheable && !store_released &&
-                               write_payload_accepted;
+    // A cacheable store is architecturally complete once this LSU has captured
+    // its payload. The existing hold registers keep AW/W stable until accepted;
+    // later memory operations still wait behind this single buffered store.
+    wire buffered_store_done = direct_store_request && dcache_cacheable;
     wire architectural_store_done = active_request_cacheable ?
                                      buffered_store_done : write_done;
 
@@ -248,6 +242,7 @@ module LSU(
     assign lsu_done = load_hit || read_done || architectural_store_done;
     assign store_pending = (state == WRITE) || direct_store_request;
     assign store_buffered = (state == WRITE) && store_released;
+    assign load_hit_forwardable = load_hit;
 
     reg [31:0] addr_reg;
     reg [2:0]  request_size;
@@ -261,30 +256,13 @@ module LSU(
 
     always @(posedge clock) begin
         if (reset) begin
-            aw_accepted <= 1'b0;
-            w_accepted <= 1'b0;
             store_released <= 1'b0;
         end
-        else begin
-            if (state == IDLE && mem_write) begin
-                aw_accepted <= aw_fire;
-                w_accepted <= w_fire;
-                store_released <= buffered_store_done;
-            end
-            else if (state == WRITE) begin
-                if (aw_fire)
-                    aw_accepted <= 1'b1;
-                if (w_fire)
-                    w_accepted <= 1'b1;
-                if (buffered_store_done)
-                    store_released <= 1'b1;
-                if (write_done) begin
-                    aw_accepted <= 1'b0;
-                    w_accepted <= 1'b0;
-                    store_released <= 1'b0;
-                end
-            end
+        else if (direct_store_request) begin
+            store_released <= buffered_store_done;
         end
+        else if (write_done)
+            store_released <= 1'b0;
     end
 
     // 地址对齐和锁存
@@ -435,7 +413,7 @@ module LSU(
     end
 
     DCache #(
-        .LINE_COUNT(512),
+        .LINE_COUNT(2048),
         .ADDR_WIDTH(32),
         .DATA_WIDTH(32)
     ) u_dcache (

@@ -100,6 +100,8 @@ module ysyx_25010003(
     // ===== 流水线控制信号 =====
     wire stall_IF, stall_ID, stall_EX, flush_IF, flush_ID, flush_EX, flush_LSU;
     wire lsu_busy, lsu_done, store_pending, store_buffered;
+    wire load_hit_forwardable;
+    wire load_use_interlock;
 
     // ===== IF/ID 流水线寄存器 =====
     wire [31:0] IF_ID_pc;
@@ -646,6 +648,7 @@ module ysyx_25010003(
         .lsu_done           (lsu_done),
         .store_pending      (store_pending),
         .store_buffered     (store_buffered),
+        .load_hit_forwardable(load_hit_forwardable),
 
         // ===== AXI读地址通道 =====
         .io_lsu_araddr      (io_lsu_araddr),
@@ -717,12 +720,14 @@ module ysyx_25010003(
     // 冒险检测单元
     Hazard ysyx_25010003_Hazard(
         .ID_EX_data_valid   (ID_EX_data_valid),
+        .ID_EX_opcode       (ID_EX_inst[6:0]),
         .ID_EX_rs1          (ID_EX_rs1_addr),
         .ID_EX_rs2          (ID_EX_rs2_addr),
         .ID_EX_ordering     (ID_EX_fence_i_en || ID_EX_ecall_en ||
                              ID_EX_mret_en || ID_EX_ebreak_en),
         .EX_LSU_mem_read    (EX_LSU_mem_read),
         .EX_LSU_rd          (EX_LSU_rd_addr),
+        .EX_LSU_load_forwardable(load_hit_forwardable),
         .redirect           (frontend_redirect),
         .lsu_busy           (lsu_busy),
         .lsu_done           (lsu_done),
@@ -733,10 +738,15 @@ module ysyx_25010003(
         .flush_IF           (flush_IF),
         .flush_ID           (flush_ID),
         .flush_EX           (flush_EX),
-        .flush_LSU          (flush_LSU)
+        .flush_LSU          (flush_LSU),
+        .load_use_interlock (load_use_interlock)
     );
 
     // 数据前递单元
+    wire [31:0] EX_LSU_forward_data =
+        (EX_LSU_mem_read && load_hit_forwardable) ?
+        load_data : EX_LSU_alu_result;
+
     Forwarding ysyx_25010003_Forwarding(
         .ID_EX_rs1          (ID_EX_rs1_addr),
         .ID_EX_rs2          (ID_EX_rs2_addr),
@@ -744,7 +754,7 @@ module ysyx_25010003(
         .ID_EX_rs2_data     (ID_EX_rs2_data),
         .EX_LSU_rd          (EX_LSU_rd_addr),
         .EX_LSU_reg_write   (EX_LSU_reg_write),
-        .EX_LSU_alu_result  (EX_LSU_alu_result),
+        .EX_LSU_alu_result  (EX_LSU_forward_data),
         .LSU_WB_rd          (LSU_WB_rd_addr),
         .LSU_WB_reg_write   (LSU_WB_reg_write),
         .LSU_WB_wb_data     (wb_data),
@@ -767,11 +777,15 @@ wire perf_call = (perf_jal || perf_jalr) && (ID_EX_inst[11:7] == 5'd1);
 wire perf_return = perf_jalr && (ID_EX_inst[11:7] == 5'd0) &&
                    (ID_EX_inst[19:15] == 5'd1) &&
                    (ID_EX_inst[31:20] == 12'd0);
+wire perf_store_ordering_wait = store_pending &&
+                                (ID_EX_fence_i_en || ID_EX_ecall_en ||
+                                 ID_EX_mret_en || ID_EX_ebreak_en);
 
 // 在 WBU 的有效退休边界通知仿真框架；寄存器写回也在该时钟沿完成。
 always @(posedge clock) begin
 `ifdef VERILATOR
-    perf_pipeline_cycle({14'b0, store_buffered,
+    perf_pipeline_cycle({12'b0, perf_store_ordering_wait,
+                         load_use_interlock, store_buffered,
                          EX_LSU_mem_write, EX_LSU_mem_read,
                          perf_return, perf_call, perf_jalr, perf_jal,
                          (control_mispredict && ID_EX_branch),
