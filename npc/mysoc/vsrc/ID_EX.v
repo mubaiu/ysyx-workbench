@@ -16,6 +16,13 @@ module ID_EX(
     input wire [3:0] rs2_addr_in,
     input wire [3:0] rd_addr_in,
 
+    // Refresh operands while this stage is held behind an older memory
+    // transaction. This preserves a WB value that would otherwise disappear
+    // from the forwarding network before the held instruction executes.
+    input wire wb_valid,
+    input wire [3:0] wb_rd_addr,
+    input wire [31:0] wb_data,
+
     // 控制信号输入
     input wire [3:0] alu_op_in,
     input wire alu_src_in,
@@ -122,6 +129,14 @@ module ID_EX(
             auipc_flag_out <= auipc_flag_in;
             is_csr_op_out <= is_csr_op_in;
             fence_i_en_out <= fence_i_en_in;
+        end
+        else begin
+            if (wb_valid && wb_rd_addr != 4'h0 &&
+                wb_rd_addr == rs1_addr_out)
+                rs1_data_out <= wb_data;
+            if (wb_valid && wb_rd_addr != 4'h0 &&
+                wb_rd_addr == rs2_addr_out)
+                rs2_data_out <= wb_data;
         end
     end
 

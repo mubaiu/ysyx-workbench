@@ -5,6 +5,7 @@
 // instruction really executes in EX (resolve_valid).
 module BPU #(
     parameter BHT_ENTRIES = 256,
+    parameter [2:0] BHT_USE_THRESHOLD = 3'd2,
     parameter JALR_BTB_ENTRIES = 64,
     parameter RAS_DEPTH = 8
 )(
@@ -65,7 +66,8 @@ module BPU #(
     wire query_static_taken = query_bimm[31];
     wire query_dynamic_taken = bht_counter[query_bht_index][1];
     wire query_branch_taken =
-        (query_bht_hit && bht_useful[query_bht_index] == 3'b111) ?
+        (query_bht_hit && bht_useful[query_bht_index] >=
+         BHT_USE_THRESHOLD) ?
         query_dynamic_taken : query_static_taken;
 
     // Return-address stack. Updates are non-speculative, so wrong-path calls
@@ -77,20 +79,29 @@ module BPU #(
         return_stack_ptr - 1'b1;
     wire [31:0] return_stack_top = return_stack[return_stack_top_index];
 
-    wire query_is_return = (query_opcode == OPCODE_JALR) &&
-                           (query_inst[11:7] == 5'd0) &&
-                           (query_inst[19:15] == 5'd1) &&
-                           (query_inst[31:20] == 12'd0) &&
+    wire query_is_canonical_return = (query_opcode == OPCODE_JALR) &&
+                                     (query_inst[11:7] == 5'd0) &&
+                                     (query_inst[19:15] == 5'd1) &&
+                                     (query_inst[31:20] == 12'd0);
+    wire query_is_return = query_is_canonical_return &&
                            (return_stack_count != 0);
+    wire query_is_indirect_jump = (query_opcode == OPCODE_JALR) &&
+                                  (query_inst[11:7] == 5'd0) &&
+                                  !query_is_canonical_return;
 
-    // Target cache for non-return JALR instructions. If a return misses the
-    // RAS, the same table can still provide its most recently observed target.
+    // Returns use the RAS and do not pollute this non-return target cache.
     reg                             jalr_btb_valid  [0:JALR_BTB_ENTRIES-1];
     reg [JALR_BTB_TAG_WIDTH-1:0]    jalr_btb_tag    [0:JALR_BTB_ENTRIES-1];
     reg [31:0]                      jalr_btb_target [0:JALR_BTB_ENTRIES-1];
 
+    reg [JALR_BTB_INDEX_WIDTH-1:0] indirect_jump_history;
+    wire [JALR_BTB_INDEX_WIDTH-1:0] rotated_indirect_jump_history =
+        (indirect_jump_history << 3) |
+        (indirect_jump_history >> (JALR_BTB_INDEX_WIDTH - 3));
     wire [JALR_BTB_INDEX_WIDTH-1:0] query_jalr_btb_index =
-        query_pc[JALR_BTB_INDEX_WIDTH+1:2];
+        query_pc[JALR_BTB_INDEX_WIDTH+1:2] ^
+        (query_is_indirect_jump ? indirect_jump_history :
+                                  {JALR_BTB_INDEX_WIDTH{1'b0}});
     wire [JALR_BTB_TAG_WIDTH-1:0] query_jalr_btb_tag =
         {query_pc[31:28], query_pc[17:8]};
     wire query_jalr_btb_hit = jalr_btb_valid[query_jalr_btb_index] &&
@@ -123,6 +134,9 @@ module BPU #(
                              (resolve_inst[11:7] == 5'd0) &&
                              (resolve_inst[19:15] == 5'd1) &&
                              (resolve_inst[31:20] == 12'd0);
+    wire resolve_is_indirect_jump = resolve_is_jalr &&
+                                    (resolve_inst[11:7] == 5'd0) &&
+                                    !resolve_is_return;
 
     wire [BHT_INDEX_WIDTH-1:0] resolve_bht_index =
         resolve_pc[BHT_INDEX_WIDTH+1:2];
@@ -174,21 +188,28 @@ module BPU #(
     end
 
     wire [JALR_BTB_INDEX_WIDTH-1:0] resolve_jalr_btb_index =
-        resolve_pc[JALR_BTB_INDEX_WIDTH+1:2];
+        resolve_pc[JALR_BTB_INDEX_WIDTH+1:2] ^
+        (resolve_is_indirect_jump ? indirect_jump_history :
+                                    {JALR_BTB_INDEX_WIDTH{1'b0}});
     wire [JALR_BTB_TAG_WIDTH-1:0] resolve_jalr_btb_tag =
         {resolve_pc[31:28], resolve_pc[17:8]};
 
     integer jalr_btb_i;
     always @(posedge clock) begin
         if (reset) begin
+            indirect_jump_history <= {JALR_BTB_INDEX_WIDTH{1'b0}};
             for (jalr_btb_i = 0; jalr_btb_i < JALR_BTB_ENTRIES;
                  jalr_btb_i = jalr_btb_i + 1)
                 jalr_btb_valid[jalr_btb_i] <= 1'b0;
         end
-        else if (resolve_valid && resolve_is_jalr) begin
+        else if (resolve_valid && resolve_is_jalr && !resolve_is_return) begin
             jalr_btb_valid[resolve_jalr_btb_index] <= 1'b1;
             jalr_btb_tag[resolve_jalr_btb_index] <= resolve_jalr_btb_tag;
             jalr_btb_target[resolve_jalr_btb_index] <= resolve_next_pc;
+            if (resolve_is_indirect_jump)
+                indirect_jump_history <=
+                    rotated_indirect_jump_history ^
+                    resolve_next_pc[JALR_BTB_INDEX_WIDTH+1:2];
         end
     end
 

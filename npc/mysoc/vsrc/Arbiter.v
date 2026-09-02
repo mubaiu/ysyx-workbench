@@ -137,7 +137,10 @@ module Arbiter (
     reg [2:0] state, next_state;
     
     always @(posedge clock) begin
-        state <= next_state;
+        if (reset)
+            state <= IDLE;
+        else
+            state <= next_state;
     end
 
     
@@ -157,6 +160,23 @@ module Arbiter (
     wire lsu_write_req = io_lsu_awvalid && io_lsu_wvalid;      // LSU写请求
     wire lsu_read_req  = io_lsu_arvalid && !is_clint_access;   // LSU读请求
     wire clint_read_req = io_lsu_arvalid && is_clint_access;  // CLINT读请求
+
+    // Present a newly selected address request in the IDLE cycle instead of
+    // spending one cycle only recording the owner. Response routing remains
+    // state-based, so exactly one transaction is still outstanding.
+    wire idle_grant_lsu_write = (state == IDLE) && lsu_write_req;
+    wire idle_grant_lsu_read = (state == IDLE) && !lsu_write_req &&
+                               lsu_read_req;
+    wire idle_grant_ifu = (state == IDLE) && !lsu_write_req &&
+                          !lsu_read_req && io_ifu_arvalid;
+    wire idle_grant_clint = (state == IDLE) && !lsu_write_req &&
+                            !lsu_read_req && !io_ifu_arvalid &&
+                            clint_read_req;
+
+    wire select_lsu_write = (state == LSU_WRITE) || idle_grant_lsu_write;
+    wire select_lsu_read = (state == LSU_READ) || idle_grant_lsu_read;
+    wire select_ifu = (state == IFU_ACTIVE) || idle_grant_ifu;
+    wire select_clint = (state == CLINT_READ) || idle_grant_clint;
 
     always @(*) begin
         if(reset) begin
@@ -214,21 +234,21 @@ module Arbiter (
     // =========================================================================
     // 读地址/数据通道仲裁 - CLINT
     // =========================================================================
-    assign io_clint_arvalid = (state == CLINT_READ) ? io_lsu_arvalid : 1'b0;
+    assign io_clint_arvalid = select_clint ? io_lsu_arvalid : 1'b0;
 
-    assign io_clint_araddr = (state == CLINT_READ) ? io_lsu_araddr : 32'b0;
+    assign io_clint_araddr = select_clint ? io_lsu_araddr : 32'b0;
 
     // =========================================================================
     // 读地址/数据通道仲裁 - 直通式组合逻辑
     // =========================================================================
-    assign io_master_arvalid = (state == IFU_ACTIVE) ? io_ifu_arvalid :
-                          (state == LSU_READ)   ? io_lsu_arvalid :
+    assign io_master_arvalid = select_ifu ? io_ifu_arvalid :
+                          select_lsu_read ? io_lsu_arvalid :
                           1'b0;
 
-    assign io_master_araddr = (state == IFU_ACTIVE) ? io_ifu_araddr : io_lsu_araddr;
-    assign io_master_arsize = (state == IFU_ACTIVE) ? 3'b010 : io_lsu_arsize;  // IFU固定字访问，LSU动态
-    assign io_master_arlen = (state == IFU_ACTIVE) ? io_ifu_arlen : 8'd0;  // IFU支持突发，LSU单次传输
-    assign io_master_arburst = (state == IFU_ACTIVE) ? io_ifu_arburst : 2'b00;  // IFU支持突发，LSU固定
+    assign io_master_araddr = select_ifu ? io_ifu_araddr : io_lsu_araddr;
+    assign io_master_arsize = select_ifu ? 3'b010 : io_lsu_arsize;  // IFU固定字访问，LSU动态
+    assign io_master_arlen = select_ifu ? io_ifu_arlen : 8'd0;  // IFU支持突发，LSU单次传输
+    assign io_master_arburst = select_ifu ? io_ifu_arburst : 2'b00;  // IFU支持突发，LSU固定
 
     // =========================================================================
     // 读数据通道响应 - CLINT
@@ -247,15 +267,15 @@ module Arbiter (
     assign io_ifu_rlast = (state == IFU_ACTIVE) ? io_master_rlast : 1'b0;
 
     // IFU读地址ready信号
-    assign io_ifu_arready = (state == IFU_ACTIVE) ? io_master_arready : 1'b0;
+    assign io_ifu_arready = select_ifu ? io_master_arready : 1'b0;
 
     assign io_lsu_rdata = (state == LSU_READ) ? io_master_rdata : (state == CLINT_READ) ? io_clint_rdata : 32'b0;
     assign io_lsu_rvalid = (state == LSU_READ) ? io_master_rvalid : (state == CLINT_READ) ? io_clint_rvalid : 1'b0;
     assign io_lsu_rresp = (state == LSU_READ) ? io_master_rresp : (state == CLINT_READ) ? io_clint_rresp : 2'b0;
 
     // LSU读地址ready信号
-    assign io_lsu_arready = (state == LSU_READ) ? io_master_arready :
-                            (state == CLINT_READ) ? io_clint_arready : 1'b0;
+    assign io_lsu_arready = select_lsu_read ? io_master_arready :
+                            select_clint ? io_clint_arready : 1'b0;
 
     // =========================================================================
     // 写地址/数据通道仲裁 - CLINT
@@ -269,13 +289,13 @@ module Arbiter (
     // =========================================================================
     // 写地址/数据通道仲裁 - 直通式组合逻辑
     // =========================================================================
-    assign io_master_awvalid = (state == LSU_WRITE) ? io_lsu_awvalid : io_ifu_awvalid;
-    assign io_master_awaddr  = (state == LSU_WRITE) ? io_lsu_awaddr : io_ifu_awaddr;
-    assign io_master_awsize  = (state == LSU_WRITE) ? io_lsu_awsize : 3'b010;  // LSU动态，IFU固定字访问
-    assign io_master_wvalid  = (state == LSU_WRITE) ? io_lsu_wvalid : io_ifu_wvalid;
-    assign io_master_wlast   = (state == LSU_WRITE) ? io_lsu_wlast : 1'b0;
-    assign io_master_wdata   = (state == LSU_WRITE) ? io_lsu_wdata : io_ifu_wdata;
-    assign io_master_wstrb   = (state == LSU_WRITE) ? io_lsu_wstrb : io_ifu_wstrb;
+    assign io_master_awvalid = select_lsu_write ? io_lsu_awvalid : io_ifu_awvalid;
+    assign io_master_awaddr  = select_lsu_write ? io_lsu_awaddr : io_ifu_awaddr;
+    assign io_master_awsize  = select_lsu_write ? io_lsu_awsize : 3'b010;  // LSU动态，IFU固定字访问
+    assign io_master_wvalid  = select_lsu_write ? io_lsu_wvalid : io_ifu_wvalid;
+    assign io_master_wlast   = select_lsu_write ? io_lsu_wlast : 1'b0;
+    assign io_master_wdata   = select_lsu_write ? io_lsu_wdata : io_ifu_wdata;
+    assign io_master_wstrb   = select_lsu_write ? io_lsu_wstrb : io_ifu_wstrb;
 
     // =========================================================================
     // 写响应通道 - CLINT
@@ -291,7 +311,7 @@ module Arbiter (
     assign io_lsu_bvalid = (state == LSU_WRITE) ? io_master_bvalid : 1'b0;
 
     // LSU写地址和写数据ready信号
-    assign io_lsu_awready = (state == LSU_WRITE) ? io_master_awready : 1'b0;
-    assign io_lsu_wready = (state == LSU_WRITE) ? io_master_wready : 1'b0;
+    assign io_lsu_awready = select_lsu_write ? io_master_awready : 1'b0;
+    assign io_lsu_wready = select_lsu_write ? io_master_wready : 1'b0;
 
 endmodule

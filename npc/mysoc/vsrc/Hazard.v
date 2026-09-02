@@ -1,8 +1,13 @@
 module Hazard(
 
     // Memory-stage ownership
-    input wire ID_EX_mem_read,
-    input wire ID_EX_mem_write,
+    input wire ID_EX_data_valid,
+    input wire [3:0] ID_EX_rs1,
+    input wire [3:0] ID_EX_rs2,
+    input wire ID_EX_ordering,
+
+    input wire EX_LSU_mem_read,
+    input wire [3:0] EX_LSU_rd,
 
     // Control-flow misprediction/exception/fence redirect
     input wire redirect,
@@ -10,6 +15,7 @@ module Hazard(
     // LSU访存停顿检测
     input wire lsu_busy,
     input wire lsu_done,
+    input wire store_pending,
 
     // 输出控制信号
     output reg stall_IF,
@@ -20,6 +26,11 @@ module Hazard(
     output reg flush_EX,
     output reg flush_LSU
 );
+
+    wire load_use_hazard = ID_EX_data_valid && EX_LSU_mem_read && lsu_done &&
+                           (EX_LSU_rd != 4'h0) &&
+                           ((ID_EX_rs1 == EX_LSU_rd) ||
+                            (ID_EX_rs2 == EX_LSU_rd));
 
     always @(*) begin
         // 默认不阻塞、不冲刷
@@ -43,14 +54,21 @@ module Hazard(
             flush_LSU = 1'b1;
         end
 
-        // A memory instruction moves to EX/LSU while the following
-        // instruction remains in IF/ID.  This avoids latching a consumer in
-        // ID/EX for an arbitrarily long AXI wait after its forwarding source
-        // has already left WB.
-        if (ID_EX_mem_read || ID_EX_mem_write) begin
+        // On a load-use dependency, retire the completed load into WB while
+        // retaining its consumer in ID/EX for one cycle. The next cycle uses
+        // the existing WB forwarding path, avoiding an AXI-to-EX critical path.
+        if (load_use_hazard) begin
             stall_IF = 1'b1;
             stall_ID = 1'b1;
-            flush_EX = 1'b1;
+            stall_EX = 1'b1;
+        end
+
+        // A buffered cacheable store may overlap ordinary ALU/control work,
+        // but ordering points must wait until its AXI B response arrives.
+        if (store_pending && ID_EX_ordering) begin
+            stall_IF = 1'b1;
+            stall_ID = 1'b1;
+            stall_EX = 1'b1;
         end
 
         // 控制冒险检测

@@ -42,7 +42,7 @@ module EX_LSU(
 );
 
     always @(posedge clock) begin
-        if (reset || flush) begin
+        if (reset || (flush && !data_valid_in)) begin
             data_valid_out <= 1'b0;
             reg_write_out <= 1'b0;
             mem_read_out <= 1'b0;
@@ -59,7 +59,12 @@ module EX_LSU(
             rd_addr_out <= 4'h0;
         end
         // A memory operation owns this stage until its AXI response arrives.
-        else if (!stall && !(data_valid_out && (mem_read_out || mem_write_out))) begin
+        // A completing memory operation may be replaced on the same edge by
+        // an independent instruction. A load-use dependency drives
+        // data_valid_in low for this edge and takes the clear path above.
+        else if (!stall &&
+                 (flush || !(data_valid_out &&
+                             (mem_read_out || mem_write_out)))) begin
             data_valid_out <= data_valid_in;
             if (data_valid_in) begin
                 pc_out <= pc_in;
